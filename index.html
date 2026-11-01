@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>看門狗：殘響</title>
+  <link rel="stylesheet" href="css/terminal.css">
+</head>
+<body>
+  <section id="title" class="title-screen">
+    <div class="title-art" id="title-art" aria-hidden="true"></div>
+    <div class="title-box">
+      <div class="glitch" data-text="WATCH_DOGS: ECHO">WATCH_DOGS: ECHO</div>
+      <h1 data-i18n="ui.title"></h1>
+      <p class="subtitle" data-i18n="ui.subtitle"></p>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="zh-Hant">繁中</button>
+        <button type="button" data-lang="zh-Hans">简中</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <div class="title-actions">
+        <button type="button" id="btn-start" class="primary" data-i18n="ui.start"></button>
+        <button type="button" id="btn-continue" data-i18n="ui.continue" hidden></button>
+      </div>
+      <p class="disclaimer" data-i18n="ui.disclaimer"></p>
+    </div>
+  </section>
+
+  <main id="game" hidden>
+    <!-- 舞台：場景插畫、地點、隊伍、演出 -->
+    <section id="stage">
+      <div id="art-wrap">
+        <div id="art"></div>
+        <div class="stage-shade" aria-hidden="true"></div>
+        <div class="stage-top">
+          <span class="node-dot" aria-hidden="true"></span>
+          <span id="stage-tag"></span>
+        </div>
+        <div id="fx-layer"></div>
+      </div>
+      <!-- 檔案區：大字地點、隊伍、Profiler 人物卡 -->
+      <div id="dossier">
+        <div class="dossier-loc">
+          <div id="stage-loc"></div>
+          <div id="stage-sub"></div>
+        </div>
+        <div id="party"></div>
+        <div id="pcard-dock"></div>
+      </div>
+    </section>
+
+    <!-- 故事：狀態列、文字、指令 -->
+    <section id="story">
+      <header class="hud">
+        <div class="hud-top">
+          <span id="hud-loc"></span>
+          <span class="spacer"></span>
+          <span id="hud-actor" class="actor present-only" hidden></span>
+          <button type="button" id="btn-sound" class="icon-btn" aria-label="Sound"></button>
+          <div class="lang-switch" role="group" aria-label="Language">
+            <button type="button" data-lang="zh-Hant">繁</button>
+            <button type="button" data-lang="zh-Hans">简</button>
+            <button type="button" data-lang="en">EN</button>
+          </div>
+          <button type="button" id="btn-menu" data-i18n="ui.menu"></button>
+        </div>
+        <div class="hud-stats">
+          <div class="stat present-only"><span class="label" data-i18n="hud.bandwidth"></span><span id="hud-bw" class="pips"></span></div>
+          <div class="stat present-only"><span class="label" data-i18n="hud.exposure"></span><span class="bar exp"><i id="hud-exp-bar"></i></span><span id="hud-exp" class="val"></span></div>
+          <div class="stat present-only"><span class="label" id="hud-meter-label"></span><span class="bar trace"><i id="hud-trace-bar"></i><b class="mark" id="hud-trace-mark"></b></span><span id="hud-trace" class="val"></span></div>
+          <div class="stat memory-only sync-stat"><span class="label" data-i18n="hud.sync"></span><span class="bar sync"><i id="hud-sync-bar"></i><b class="mark"></b></span><span id="hud-sync" class="val"></span></div>
+          <div class="stat"><span class="label" data-i18n="hud.bleed"></span><span id="hud-bleed" class="val"></span></div>
+        </div>
+      </header>
+
+      <div id="log" class="log"></div>
+
+      <footer class="console">
+        <div id="chips" class="chips"></div>
+        <form id="cmd-form" autocomplete="off">
+          <span class="prompt" aria-hidden="true">&gt;</span>
+          <input id="cmd" type="text" spellcheck="false" data-i18n-placeholder="ui.placeholder" aria-label="Command">
+          <button type="submit" data-i18n="ui.send"></button>
+        </form>
+      </footer>
+    </section>
+  </main>
+
+  <!-- 全螢幕演出：標題卡、獨白、同步崩塌、結局 -->
+  <div id="cine" class="cine" aria-live="polite"></div>
+
+  <!-- 引擎 -->
+  <script src="js/engine/i18n.js"></script>
+  <script src="js/engine/state.js"></script>
+  <script src="js/engine/parser.js"></script>
+  <script src="js/engine/scene.js"></script>
+  <script src="js/engine/save.js"></script>
+  <!-- 內容 -->
+  <script src="content/commands.js"></script>
+  <script src="content/locales/zh-Hant.js"></script>
+  <script src="content/locales/zh-Hans.js"></script>
+  <script src="content/locales/en.js"></script>
+  <script src="content/locales/zh-Hant.part2.js"></script>
+  <script src="content/locales/zh-Hans.part2.js"></script>
+  <script src="content/locales/en.part2.js"></script>
+  <script src="content/locales/part3.js"></script>
+  <script src="content/scenes/prologue.js"></script>
+  <script src="content/scenes/memory-maya.js"></script>
+  <script src="content/scenes/chinatown.js"></script>
+  <script src="content/scenes/memory-homan.js"></script>
+  <script src="content/scenes/chapter3.js"></script>
+  <script src="content/scenes/memory-eileen.js"></script>
+  <script src="content/scenes/finale.js"></script>
+  <script src="content/dev-routes.js"></script>
+  <!-- 介面 -->
+  <script src="js/ui/art.js"></script>
+  <script src="js/ui/fx.js"></script>
+  <script src="js/ui/terminal.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

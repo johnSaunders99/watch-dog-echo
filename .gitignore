@@ -1,0 +1,17 @@
+# 系統與編輯器產生的檔案
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# 上傳 itch.io 用的壓縮包，從原始碼重新打包即可
+*.zip
+build/
+dist/
+
+# 錄影素材與截圖不放進 repo
+recordings/
+*.mp4
+*.mov
