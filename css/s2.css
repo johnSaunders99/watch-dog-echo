@@ -314,3 +314,75 @@ body.alarm::after { content: ""; position: fixed; inset: 0; z-index: 30; pointer
   .person, .person.scanned, .appr.is-hidden, .modal-card { animation: none; }
   #s2-main.flash-ok .stage, #s2-main.flash-bad .stage, body.alarm::after { animation: none; }
 }
+
+/* ===== 第二版原型：外圍網路、分頭行動、限時、反擊事件、手動駭入 ===== */
+.p-badge { position: absolute; top: 10px; right: 44px; display: flex; gap: 4px; }
+.p-badge em, .op-top em.split { font-style: normal; font-size: 11.5px; padding: 1px 7px; border-radius: 3px; border: 1px solid var(--line); white-space: nowrap; }
+.p-badge em.net { border-color: var(--warn); color: var(--warn); }
+.p-badge em.lane-main, .lane-tag.lane-main { border-color: var(--accent); color: var(--accent); }
+.p-badge em.lane-decoy, .lane-tag.lane-decoy { border-color: var(--sys); color: var(--sys); }
+.person.is-decoy.selected { border-color: var(--sys); box-shadow: inset 0 0 0 1px var(--sys), 0 0 24px rgba(108, 214, 226, 0.18); }
+.person.is-decoy.selected::after { background: var(--sys); color: #06222a; }
+.op-top em.split { border-color: var(--sys); color: var(--sys); }
+.chain-label { font-size: 11px; letter-spacing: 0.2em; color: var(--sys); margin-bottom: -4px; }
+.lane-tag { display: inline-block; margin-right: 8px; padding: 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; border: 1px solid; border-radius: 3px; vertical-align: 2px; }
+.stage.lane-decoy { border-color: rgba(108, 214, 226, 0.35); }
+.stage.done h2 { margin: 0; color: var(--ok); font-size: 15px; }
+.s2 .chip.timer { border-color: var(--warn); color: var(--warn); font-family: var(--mono); }
+.s2 .chip.timer.bad { border-color: var(--bad); color: var(--bad); animation: pulse 1s ease-in-out infinite; }
+.appr-head em.hackable { border-color: var(--sys); color: var(--sys); }
+.p-net { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+.p-net label { display: inline !important; margin-right: 6px; color: var(--warn) !important; }
+.p-meta em.threat.wanted { border-color: var(--bad); background: rgba(255, 93, 108, 0.15); color: #fff; }
+.s2 .tcard.inherited { border-color: rgba(232, 181, 74, 0.7); }
+
+/* 反擊事件 */
+.counter { padding: 14px 16px; border: 1px solid var(--bad); border-radius: 8px; background: linear-gradient(90deg, rgba(255, 93, 108, 0.16), rgba(255, 93, 108, 0.03)); }
+.counter b { font-size: 18px; letter-spacing: 0.2em; color: #fff; }
+.counter p { margin: 6px 0 0; line-height: 1.6; }
+.counter-blackout { border-color: var(--warn); background: linear-gradient(90deg, rgba(255, 181, 71, 0.14), rgba(255, 181, 71, 0.02)); }
+.counter-early { border-color: var(--echo); background: linear-gradient(90deg, rgba(194, 179, 255, 0.14), rgba(194, 179, 255, 0.02)); }
+
+/* 隊伍管理 */
+.team-group + .team-group { margin-top: 10px; }
+.team-label { font-size: 11px; letter-spacing: 0.25em; color: var(--dim); margin: 4px 0 2px; }
+.mem-st { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.mem-st small { font-size: 11px; color: var(--dim); }
+.mem-st small.high { color: var(--warn); }
+.mem-st small.wanted { color: var(--bad); font-weight: 700; }
+.st-network .mem-st { color: var(--warn); }
+.st-away .mem-st { color: var(--echo); }
+.st-retired { opacity: 0.6; }
+.st-retired .mem-st { color: #e8b54a; }
+.p-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.s2 .p-actions button.gold:not(:disabled) { border-color: #e8b54a; color: #e8b54a; }
+.hint.small { font-size: 12.5px; margin: 6px 0 0; }
+.p-traits.pick { margin: 10px 0; }
+.s2 .pick-card { padding: 0; border: 0; background: none; text-align: left; }
+.s2 .pick-card:hover .mini { border-color: #e8b54a; box-shadow: 0 0 18px rgba(232, 181, 74, 0.25); }
+.modal-actions.stack { flex-direction: column; align-items: stretch; }
+.modal-actions.stack button { text-align: left; padding: 12px 14px; line-height: 1.5; }
+
+/* 手動駭入：訊號接線 */
+.hack-play { --tile: min(58px, calc((100vw - 120px) / 5)); width: auto; max-width: 100%; text-align: center; border-color: var(--sys); }
+.hack-play h3 small { font-size: 14px; color: var(--muted); letter-spacing: 0; }
+.pz-timer { height: 6px; margin: 8px 0 4px; border-radius: 3px; background: #1a1f2b; overflow: hidden; }
+.pz-timer i { display: block; height: 100%; width: 100%; background: var(--sys); transition: width 0.1s linear; }
+.pz-timer i.low { background: var(--bad); }
+.pz-status { min-height: 26px; font-size: 18px; letter-spacing: 0.2em; }
+.pz-ok { color: var(--ok); }
+.pz-bad { color: var(--bad); }
+.pz-grid { display: inline-grid; gap: 4px; align-items: center; margin: 4px auto 0; }
+.pz-end { font-size: 18px; color: var(--dim); text-align: center; }
+.pz-end.src { color: var(--sys); text-shadow: 0 0 10px var(--sys); }
+.pz-end.dst { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+.s2 .pz-tile { width: var(--tile); height: var(--tile); padding: 0; border-radius: 6px; background: #0e1118; border-color: #232a38; }
+.pz-tile svg { width: 100%; height: 100%; display: block; }
+.pz-tile g { transform-origin: 50px 50px; transition: transform 0.15s ease; }
+.pz-tile path { fill: none; stroke: #3a4152; stroke-width: 14; stroke-linecap: square; }
+.pz-tile circle { fill: #3a4152; }
+.pz-tile.on path { stroke: var(--sys); filter: drop-shadow(0 0 4px var(--sys)); }
+.pz-tile.on circle { fill: var(--sys); }
+.stage-solved .pz-tile.on path { stroke: var(--ok); filter: drop-shadow(0 0 8px var(--ok)); }
+.stage-solved .pz-tile.on circle { fill: var(--ok); }
+.stage-timeout .pz-grid { animation: bad-shake 0.45s ease; opacity: 0.6; }

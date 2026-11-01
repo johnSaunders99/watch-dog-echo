@@ -354,5 +354,18 @@
   };
   for (const x of flaws.concat(quirks, [noFlaw])) x.desc = effects[x.id];
 
+  // 外圍效果：住在自己家、不佔床位的外圍成員，靠職業專長提供的被動幫助。
+  const networkFx = {
+    gossip: n("Reveals the first stage's hidden approach on every operation.", '每次行動，第一關的隱藏解法都會先被打聽出來。', '每次行动，第一关的隐藏解法都会先被打听出来。'),
+    heal: n('Injured teammates recover a night sooner.', '受傷的隊員少休養一晚。', '受伤的队员少休养一晚。'),
+    bail: n('Arrested teammates are transferred two nights later.', '被捕的隊員晚兩晚才會被轉移。', '被捕的队员晚两晚才会被转移。'),
+    press: n('Broadcast operations win 5 more support.', '插播行動的民心 +5。', '插播行动的民心 +5。'),
+    broadcast: n('Broadcast operations win 5 more support.', '插播行動的民心 +5。', '插播行动的民心 +5。'),
+    getaway: n('Once a night, a cab can pick the team up at the getaway stage.', '每晚一次，撤離時可以叫車來接。', '每晚一次，撤离时可以叫车来接。'),
+    unsuspicious: n('Vouches for the neighbourhood. Heat drops 3 more each night.', '替整個街區作保，熱度每晚多退 3。', '替整个街区作保，热度每晚多退 3。'),
+    pirate_radio: n('Broadcast operations win twice the support, even from home.', '人在家裡，插播行動的民心照樣加倍。', '人在家里，插播行动的民心照样加倍。'),
+  };
+  for (const k in networkFx) perks[k].network = networkFx[k];
+
   S2.people = { heritages, districts, perks, occupations, rares, traits, flaws, noFlaw, quirks, relations, scars, combos, secrets, problems };
 })(window.ECHO = window.ECHO || {});

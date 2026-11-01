@@ -268,20 +268,138 @@
       hidden: { id: 'old_map', name: n('The 1970s maintenance map', '1970 年代的維修圖', '1970 年代的维修图'), tags: [], risk: 0.1, exposure: 2,
         ok: n('The old map shows a second entrance with a light switch. {name} finds it.', '舊維修圖上有另一個有電燈開關的入口，{name}找到了。', '旧维修图上有另一个有电灯开关的入口，{name}找到了。') },
     },
+
+    // ----- 分頭行動的佯攻線：每成功一關，主力就多一層掩護 -----
+    decoy_guard: {
+      art: 'gerrard', tags: ['social'],
+      name: n('Keep the guard busy', '拖住樓下的保全', '拖住楼下的保安'),
+      desc: n('The night guard sits at the front desk with a view of the lift. Someone has to keep the guard looking the other way.', '值夜班的保全坐在櫃檯，正對著電梯。得有人讓保全一直看向別的地方。', '值夜班的保安坐在前台，正对着电梯。得有人让保安一直看向别的地方。'),
+      approaches: [
+        { id: 'complain', name: n('Complain about the bins', '去櫃檯投訴垃圾桶', '去前台投诉垃圾桶'), needs: { skill: { social: 1 } }, tags: ['social'], risk: 0.3, exposure: 4, perkBonus: { smooth_talk: -0.2 },
+          ok: n('{name} spends ten minutes on the recycling rota. The guard never looks up at the lift.', '{name}花了十分鐘抱怨垃圾分類的排班，保全一次都沒抬頭看電梯。', '{name}花了十分钟抱怨垃圾分类的排班，保安一次都没抬头看电梯。') },
+        { id: 'fake_alarm', name: n('Set off the car alarms', '弄響停車場的車子警報', '弄响停车场的汽车警报'), needs: { skill: { physical: 1 } }, tags: ['physical'], risk: 0.3, exposure: 8,
+          ok: n('Six car alarms go off at once. {name} is already gone; the guard runs out to look.', '六台車的警報同時大響。{name}早就走了，保全跑出去查看。', '六辆车的警报同时大响。{name}早就走了，保安跑出去查看。') },
+        { id: 'loop_lobby', name: n('Loop the lobby cameras', '讓大廳攝影機重播', '让大厅摄像头重播'), needs: { skill: { hack: 1 } }, tags: ['hack'], risk: 0.25, exposure: 5, bandwidth: 1,
+          ok: n("{name} loops the lobby feed. On the guard's screen, nobody ever takes the lift.", '{name}讓大廳的畫面一直重播。在保全的螢幕上，從來沒有人搭過電梯。', '{name}让大厅的画面一直重播。在保安的屏幕上，从来没有人坐过电梯。') },
+      ],
+      hidden: { id: 'football', name: n('The match on the radio', '收音機裡的球賽', '收音机里的球赛'), tags: [], risk: 0.1, exposure: 2,
+        ok: n("The guard is listening to the match. {name} just asks for the score, and the guard won't stop talking.", '保全在聽球賽轉播。{name}只是問了一句比數，保全就說個不停。', '保安在听球赛转播。{name}只是问了一句比分，保安就说个不停。') },
+    },
+    decoy_drone: {
+      art: 'arches', tags: ['patrol'],
+      name: n('Pull the drones away', '把無人機引開', '把无人机引开'),
+      desc: n('Two drones circle the block. If they look up at the roof, the whole thing is over.', '兩架無人機在附近盤旋。只要它們往屋頂看一眼，一切就結束了。', '两架无人机在附近盘旋。只要它们往屋顶看一眼，一切就结束了。'),
+      approaches: [
+        { id: 'flare', name: n('Light a flare two streets over', '在兩條街外點信號彈', '在两条街外点信号弹'), needs: { ability: 'run' }, tags: ['physical', 'run'], risk: 0.35, exposure: 10, injure: 0.2, perkBonus: { sprint: -0.2 },
+          ok: n('{name} lights the flare and runs. Both drones swing after the red glow.', '{name}點燃信號彈就跑，兩架無人機都追著紅光飛走了。', '{name}点燃信号弹就跑，两架无人机都追着红光飞走了。') },
+        { id: 'spoof', name: n('Spoof a fake intruder', '偽造一個入侵者訊號', '伪造一个入侵者信号'), needs: { skill: { hack: 2 } }, tags: ['hack'], risk: 0.3, exposure: 6, bandwidth: 2, perkBonus: { botnet: -0.25 },
+          ok: n('{name} plants a ghost on the drone network. Both drones go chasing nobody.', '{name}在無人機網路裡放了一個假人，兩架無人機都去追一個不存在的人。', '{name}在无人机网络里放了一个假人，两架无人机都去追一个不存在的人。') },
+        { id: 'crowd', name: n('Start a street party', '在街角辦起派對', '在街角办起派对'), needs: { skill: { social: 2 } }, tags: ['social'], risk: 0.3, exposure: 12, perkBonus: { distraction: -0.3 },
+          ok: n('Music, thirty people, and {name} in the middle of it. The drones hover over the party all night.', '音樂、三十個人，{name}在正中間。無人機整晚都盤旋在派對上空。', '音乐、三十个人，{name}在正中间。无人机整晚都盘旋在派对上空。') },
+      ],
+      hidden: { id: 'pigeons', name: n('The pigeons on the cables', '電線上的鴿子', '电线上的鸽子'), tags: [], risk: 0.1, exposure: 3,
+        ok: n('Drones are programmed to avoid flocks. {name} scatters breadcrumbs under the roof edge.', '無人機被設定成要閃開鳥群。{name}在屋簷下撒了一把麵包屑。', '无人机被设定成要避开鸟群。{name}在屋檐下撒了一把面包屑。') },
+    },
+
+    // ----- 突襲安全屋（限時的防守行動） -----
+    barricade: {
+      art: 'basement', tags: ['door'],
+      name: n('Hold the door', '堵住門口', '堵住门口'),
+      desc: n('Boots on the stairs. Lionheart are thirty seconds from the basement door.', '樓梯傳來靴子聲。獅心防務離地下室的門只剩三十秒。', '楼梯传来靴子声。狮心防务离地下室的门只剩三十秒。'),
+      approaches: [
+        { id: 'furniture', name: n('Pile the furniture against it', '把家具全堆到門後', '把家具全堆到门后'), needs: { skill: { physical: 1 } }, tags: ['physical'], risk: 0.3, exposure: 4, perkBonus: { heavy_lift: -0.25 },
+          ok: n('{name} drags the sofa, the fridge and the shelves against the door.', '{name}把沙發、冰箱和書架全拖到門後。', '{name}把沙发、冰箱和书架全拖到门后。') },
+        { id: 'jam_lock', name: n('Jam the lock', '卡死門鎖', '卡死门锁'), tags: ['hands'], risk: 0.4, exposure: 2, perkBonus: { lockpick: -0.3 },
+          ok: n('{name} snaps a key off in the lock. Nobody is opening that from outside.', '{name}把一把鑰匙折斷在鎖孔裡，外面的人打不開了。', '{name}把一把钥匙折断在锁孔里，外面的人打不开了。') },
+        { id: 'fake_empty', name: n('Make it look abandoned', '讓這裡看起來沒人住', '让这里看起来没人住'), needs: { skill: { social: 1 } }, tags: ['social', 'lie'], risk: 0.35, exposure: 4, perkBonus: { disguise: -0.25 },
+          ok: n('Lights off, a padlock on the outside. {name} makes the basement look empty for years.', '關燈，門外掛上大鎖。{name}讓地下室看起來已經空了好幾年。', '关灯，门外挂上大锁。{name}让地下室看起来已经空了好几年。') },
+      ],
+      hidden: { id: 'coal_hatch', name: n('The old coal hatch', '舊的運煤口', '旧的运煤口'), tags: [], risk: 0.1, exposure: 2,
+        ok: n('{name} remembers the coal hatch. Someone can slip out and lead them the wrong way.', '{name}想起了舊的運煤口，可以先溜出去把他們引到別處。', '{name}想起了旧的运煤口，可以先溜出去把他们引到别处。') },
+    },
+    burn_files: {
+      art: 'basement', tags: ['data'],
+      name: n('Wipe everything', '銷毀所有資料', '销毁所有数据'),
+      desc: n('Names, addresses, everyone you have ever recruited. None of it can be here when the door goes.', '名單、地址、所有招募過的人。門被撞開之前，這些都不能留在這裡。', '名单、地址、所有招募过的人。门被撞开之前，这些都不能留在这里。'),
+      approaches: [
+        { id: 'wipe', name: n('Run the wipe script', '執行清除程式', '执行清除程序'), needs: { skill: { hack: 1 } }, tags: ['hack'], risk: 0.25, exposure: 2, bandwidth: 1,
+          ok: n('{name} runs the wipe. Seven years of DedSec London become zeros.', '{name}執行了清除程式。DedSec London 七年的紀錄變成一串零。', '{name}执行了清除程序。DedSec London 七年的记录变成一串零。') },
+        { id: 'smash', name: n('Smash the drives', '把硬碟全砸了', '把硬盘全砸了'), needs: { skill: { physical: 1 } }, tags: ['physical'], risk: 0.3, exposure: 6,
+          ok: n('{name} takes a hammer to every drive in the room.', '{name}拿鐵鎚把房間裡每一顆硬碟都砸了。', '{name}拿铁锤把房间里每一块硬盘都砸了。') },
+        { id: 'stash', name: n('Hide the drive in the wall', '把硬碟藏進牆裡', '把硬盘藏进墙里'), tags: ['hands'], risk: 0.35, exposure: 2,
+          ok: n('{name} slides the only drive that matters behind a loose brick.', '{name}把唯一重要的那顆硬碟塞到一塊鬆動的磚頭後面。', '{name}把唯一重要的那块硬盘塞到一块松动的砖头后面。') },
+      ],
+      hidden: { id: 'bagley_wipe', name: n('Ask Bagley', '請 Bagley 處理', '请 Bagley 处理'), tags: [], risk: 0.05, exposure: 0,
+        ok: n('"Already done," says Bagley. "I wiped it the moment I heard boots." {name} just unplugs the server.', '「已經處理好了，」Bagley 說，「我一聽到靴子聲就清掉了。」{name}只需要拔掉伺服器的電源。', '“已经处理好了，”Bagley 说，“我一听到靴子声就清掉了。”{name}只需要拔掉服务器的电源。') },
+    },
+    back_door: {
+      art: 'tunnels', tags: ['exit', 'tunnel'],
+      name: n('Out the back', '從後門撤離', '从后门撤离'),
+      desc: n('Behind the boiler, a passage into the old sewer. It is dark and it floods.', '鍋爐後面有一條通往舊下水道的通道，很黑，還會淹水。', '锅炉后面有一条通往旧下水道的通道，很黑，还会淹水。'),
+      approaches: [
+        { id: 'sewer', name: n('Into the sewer', '鑽進下水道', '钻进下水道'), needs: { ability: 'tunnel' }, tags: ['physical', 'tunnel'], risk: 0.3, exposure: 3,
+          ok: n('{name} leads everyone through knee-deep water and out under the canal.', '{name}帶著大家蹚過及膝的水，從運河底下鑽了出去。', '{name}带着大家蹚过及膝的水，从运河底下钻了出去。') },
+        { id: 'rooftop_run', name: n('Up and over the roofs', '從屋頂逃走', '从屋顶逃走'), needs: { skill: { physical: 1 }, ability: 'climb' }, tags: ['physical', 'climb', 'run'], risk: 0.35, exposure: 6, injure: 0.25,
+          ok: n('Through the skylight, across three roofs, down a drainpipe. {name} makes it look easy.', '從天窗出去，跨過三個屋頂，順著水管滑下來。{name}做得像散步一樣輕鬆。', '从天窗出去，跨过三个屋顶，顺着水管滑下来。{name}做得像散步一样轻松。') },
+        { id: 'walk_out', name: n('Walk out the front as neighbours', '假裝是鄰居從正門走出去', '假装是邻居从正门走出去'), needs: { skill: { social: 2 } }, tags: ['social', 'lie'], risk: 0.4, exposure: 6, perkBonus: { unsuspicious: -0.3, disguise: -0.2 },
+          ok: n('"Terrible business," says {name} to the officer at the door, and walks straight past.', '「真是可怕，」{name}對門口的警員說了一句，然後直接走了出去。', '“真是可怕，”{name}对门口的警员说了一句，然后直接走了出去。') },
+      ],
+      hidden: { id: 'next_door', name: n('The hole into next door', '通往隔壁的牆洞', '通往隔壁的墙洞'), tags: [], risk: 0.1, exposure: 2,
+        ok: n('There is a hole into the launderette next door behind the poster. {name} goes first.', '海報後面有一個通往隔壁洗衣店的牆洞，{name}第一個鑽了過去。', '海报后面有一个通往隔壁洗衣店的墙洞，{name}第一个钻了过去。') },
+    },
+
+    // ----- 擴充安全屋 -----
+    landlord: {
+      art: 'flat', tags: ['social'],
+      name: n('The landlord', '房東', '房东'),
+      desc: n('The flat upstairs has been empty for a year. The landlord asks no questions, but wants something.', '樓上那層空了一年。房東不問問題，但總要有點好處。', '楼上那层空了一年。房东不问问题，但总要有点好处。'),
+      approaches: [
+        { id: 'charm', name: n('Charm the landlord', '跟房東套交情', '跟房东套交情'), needs: { skill: { social: 2 } }, tags: ['social'], risk: 0.3, exposure: 2, perkBonus: { smooth_talk: -0.25 },
+          ok: n('Three cups of tea later, {name} has the keys and a discount.', '喝了三杯茶之後，{name}拿到了鑰匙，還打了折。', '喝了三杯茶之后，{name}拿到了钥匙，还打了折。') },
+        { id: 'fix_score', name: n("Fix the landlord's threat score", '幫房東改掉威脅評分', '帮房东改掉威胁评分'), needs: { skill: { hack: 2 } }, tags: ['hack'], risk: 0.3, exposure: 5, bandwidth: 1,
+          ok: n("{name} quietly lowers the landlord's score. The rent is suddenly very reasonable.", '{name}悄悄調低了房東的威脅評分，租金突然變得非常合理。', '{name}悄悄调低了房东的威胁评分，租金突然变得非常合理。') },
+        { id: 'repairs', name: n('Offer to fix the boiler', '幫忙修好鍋爐', '帮忙修好锅炉'), needs: { skill: { physical: 1 } }, tags: ['physical', 'hands'], risk: 0.35, exposure: 2,
+          ok: n('{name} gets the boiler going for the first time since March. The landlord hands over the keys.', '{name}讓鍋爐從三月以來第一次動了起來，房東把鑰匙交了出來。', '{name}让锅炉从三月以来第一次动了起来，房东把钥匙交了出来。') },
+      ],
+      hidden: { id: 'landlord_secret', name: n('The landlord hates Lionheart too', '房東也恨獅心防務', '房东也恨狮心防务'), tags: [], risk: 0.05, exposure: 0,
+        ok: n("The landlord's son was taken in the first week of the curfew. {name} doesn't even have to ask.", '房東的兒子在宵禁第一週就被帶走了。{name}根本不用開口。', '房东的儿子在宵禁第一周就被带走了。{name}根本不用开口。') },
+    },
+    move_in: {
+      art: 'flat', tags: ['patrol'],
+      name: n('Move in after curfew', '宵禁後搬家', '宵禁后搬家'),
+      desc: n('Beds, mattresses and a server rack, carried across the street with drones overhead.', '床、床墊和一整個伺服器機櫃，要在無人機底下搬過馬路。', '床、床垫和一整个服务器机柜，要在无人机底下搬过马路。'),
+      approaches: [
+        { id: 'carry', name: n('Carry it all in one go', '一口氣全搬過去', '一口气全搬过去'), needs: { skill: { physical: 2 } }, tags: ['physical'], risk: 0.35, exposure: 8, injure: 0.2, perkBonus: { heavy_lift: -0.3 },
+          ok: n('{name} carries a mattress on each shoulder and does not stop once.', '{name}兩邊肩膀各扛一張床墊，一次都沒停下來。', '{name}两边肩膀各扛一张床垫，一次都没停下来。') },
+        { id: 'van', name: n('Use a "removals" van', '開一台「搬家公司」的車', '开一台“搬家公司”的车'), needs: { skill: { social: 1 } }, tags: ['social', 'lie'], risk: 0.3, exposure: 6, perkBonus: { getaway: -0.25 },
+          ok: n('A van with a fake logo, {name} in overalls. The drones log it as a licensed night move.', '一台貼著假標誌的貨車，{name}穿著工作服。無人機把它記成合法的夜間搬家。', '一辆贴着假标志的货车，{name}穿着工作服。无人机把它记成合法的夜间搬家。') },
+        { id: 'drone_window', name: n('Time it between drone passes', '算準無人機經過的空檔', '算准无人机经过的空档'), needs: { skill: { hack: 1 } }, tags: ['hack'], risk: 0.3, exposure: 4, bandwidth: 1,
+          ok: n('{name} calls out the gaps. Every trip across the street lands in a blind window.', '{name}喊著空檔的倒數。每一趟過馬路都剛好落在死角。', '{name}喊着空档的倒数。每一趟过马路都刚好落在死角。') },
+      ],
+      hidden: { id: 'basement_link', name: n('The connecting cellar', '連通的地窖', '连通的地窖'), tags: [], risk: 0.1, exposure: 1,
+        ok: n('The two buildings share a cellar. {name} moves everything underground.', '兩棟樓共用一個地窖，{name}從地下把東西全搬了過去。', '两栋楼共用一个地窖，{name}从地下把东西全搬了过去。') },
+    },
   };
 
   // ===== 行動 =====
-  // kind：district 行政區行動（提高民心）、rescue 救出被捕的隊員、recruit 招募任務（幫路人解決麻煩）。
+  // kind：district 行政區行動（提高民心）、base 擴充安全屋、rescue 救出被捕的隊員、defense 守住安全屋、recruit 招募任務。
+  // timer：限時行動，只有這麼多步可以用。split：分頭行動，lanes.main 是主力、lanes.decoy 是佯攻。
   const ops = {
     tower: { kind: 'district', stages: ['fence', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 20 },
       name: n('Take down a surveillance tower', '拆掉一座監控塔', '拆掉一座监控塔'),
       desc: n('Every tower down is one less eye on the curfew.', '每拆掉一座塔，宵禁就少一隻眼睛。', '每拆掉一座塔，宵禁就少一只眼睛。') },
-    broadcast: { kind: 'district', stages: ['lobby', 'antenna', 'broadcast', 'getaway'], reward: { support: 15 }, tags: ['broadcast'],
+    broadcast: { kind: 'district', split: true, lanes: { main: ['lobby', 'antenna', 'broadcast', 'getaway'], decoy: ['decoy_guard', 'decoy_drone'] }, reward: { support: 15 },
       name: n('Hijack the screens', '插播反宣傳', '插播反宣传'),
-      desc: n('Ninety seconds on every screen in Camden.', '康登每一塊螢幕，九十秒。', '卡姆登每一块屏幕，九十秒。') },
-    rescue: { kind: 'rescue', stages: ['holding_yard', 'side_door', 'cells', 'getaway'], reward: { support: 5 },
+      desc: n('Ninety seconds on every screen in Camden. One team goes up to the roof; the other keeps the guard and the drones busy downstairs.', '康登每一塊螢幕，九十秒。一組人上屋頂，另一組在樓下拖住保全和無人機。', '卡姆登每一块屏幕，九十秒。一组人上屋顶，另一组在楼下拖住保安和无人机。') },
+    expand: { kind: 'base', stages: ['landlord', 'move_in'], reward: { beds: 2 },
+      name: n('Take the flat upstairs', '租下樓上那層', '租下楼上那层'),
+      desc: n('Two more beds. More people can live at the safe house and go out at night.', '多兩張床，就能多住兩個人、多派兩個人出門。', '多两张床，就能多住两个人、多派两个人出门。') },
+    rescue: { kind: 'rescue', stages: ['holding_yard', 'side_door', 'cells', 'getaway'], timer: 8, reward: { support: 5 },
       name: n('Break {name} out', '救出{name}', '救出{name}'),
-      desc: n('Three nights, then they move prisoners somewhere nobody can find.', '三個晚上之後，人就會被轉移到沒有人找得到的地方。', '三个晚上之后，人就会被转移到没有人找得到的地方。') },
+      desc: n('The transfer van leaves at dawn. Eight moves, no more.', '移送車天亮就開走。只有八步，不能再多。', '移送车天亮就开走。只有八步，不能再多。') },
+    raid: { kind: 'defense', stages: ['barricade', 'burn_files', 'back_door'], timer: 6, reward: { support: 5 },
+      name: n('Lionheart are at the door', '獅心防務攻進來了', '狮心防务攻进来了'),
+      desc: n('Hold the door, wipe the data, get out. Six moves before they are through. Stay in, and someone gets taken.', '堵門、銷毀資料、撤離。六步之內不完成，門就會被撞開。不應戰的話，一定有人被帶走。', '堵门、销毁数据、撤离。六步之内不完成，门就会被撞开。不应战的话，一定有人被带走。') },
   };
   // 招募任務：依路人的麻煩（problems 的 mission）決定關卡。
   const recruit = {
@@ -300,6 +418,8 @@
 
   // 由道具、稀有人物、特質和默契組合帶來的解法。引擎會在符合條件的關卡加上它們。
   const special = {
+    network_cab: { id: 'network_cab', name: n('Call the cab from the network', '叫外圍的計程車來接', '叫外围的出租车来接'), tags: [], sure: true, exposure: 1,
+      ok: n('A cab from the network is waiting round the corner. {name} gets everyone in.', '外圍的計程車已經在轉角等著了，{name}讓大家上車。', '外围的出租车已经在转角等着了，{name}让大家上车。') },
     keycard: { id: 'keycard', name: n('Swipe the stolen keycard', '刷偷來的門卡', '刷偷来的门卡'), tags: ['door'], sure: true, exposure: 1,
       ok: n('{name} swipes the stolen card. The light blinks green.', '{name}刷了偷來的門卡，燈閃成了綠色。', '{name}刷了偷来的门卡，灯闪成了绿色。') },
     master_keys: { id: 'master_keys', name: n('Master keys', '萬能鑰匙', '万能钥匙'), tags: ['door'], sure: true, exposure: 0,

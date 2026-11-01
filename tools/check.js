@@ -73,11 +73,14 @@ for (const v of Object.keys(E.commands)) used.add('verb.' + v);
 const families = {
   's2.p.tier.': ['common', 'uncommon', 'rare'],
   's2.p.cat.': ['hacker', 'physical', 'social', 'specialist'],
-  's2.p.status.': ['active', 'injured', 'arrested', 'lost'],
+  's2.p.status.': ['active', 'injured', 'arrested', 'lost', 'network', 'away', 'retired'],
   's2.p.': ['hack', 'physical', 'social'],
+  's2.op.': ['main', 'decoy'],
   's2.op.kind.': ['active', 'react', 'passive'],
   's2.op.alert.': ['0', '30', '60'],
-  's2.day.kind.': ['district', 'rescue', 'recruit'],
+  's2.squad.lane.': ['main', 'decoy'],
+  's2.counter.': ['raid', 'blackout', 'early', 'raid.title', 'blackout.title', 'early.title'],
+  's2.day.kind.': ['district', 'rescue', 'recruit', 'base', 'defense'],
   's2.res.': ['win', 'fail', 'retreat', 'rest'],
   's2.fail.': ['hack', 'physical', 'social', 'hands', 'other'],
   's2.bagley.d': ['1', '2', '3', '4', '5'],
@@ -223,7 +226,8 @@ const okLines = [];
 for (const [id, st] of Object.entries(OPS.stages)) for (const a of st.approaches.concat(st.hidden ? [st.hidden] : [])) okLines.push([id + '.' + a.id, a]);
 for (const [id, a] of Object.entries(OPS.special)) okLines.push(['special.' + id, a]);
 for (const [where, a] of okLines) for (const l of ['en', 'tc', 'sc']) if (!a.ok || !a.ok[l].includes('{name}')) fail(`${where}: ${l} success line has no {name}`);
-for (const list of Object.values(OPS.ops).map((o) => o.stages).concat(Object.values(OPS.recruit))) {
+const stageLists = Object.values(OPS.ops).flatMap((o) => (o.split ? [o.lanes.main, o.lanes.decoy] : [o.stages]));
+for (const list of stageLists.concat(Object.values(OPS.recruit))) {
   for (const id of list) if (!OPS.stages[id]) fail(`unknown stage ${id}`);
 }
 for (const p of P.problems) if (!OPS.recruit[p.mission]) fail(`problem ${p.id}: no recruit mission ${p.mission}`);
@@ -365,47 +369,73 @@ section('任務框架');
 section('夜間行動');
 {
   const N = E.night;
-  // smart 為 true 時像玩家一樣優先拆塔、救人，派最穩的人；否則隨便亂選。
+  // smart 為 true 時像玩家一樣優先拆塔、救人，派最穩的人，威脅太高就避風頭、老手就退休；否則隨便亂選。
+  // 兩種機器人都會用到外圍網路、分頭行動和手動駭入（解開與否隨機）。
   function play(seed, smart) {
     const s = N.create(seed);
     const bot = E.rng.create('bot:' + seed);
     N.pickVolunteers(s, s.volunteers.slice(0, 2));
-    const rank = (e, team) => ({ rescue: 0, recruit: team < 4 ? 1 : 5, tower: 2, broadcast: 3 }[e.op]);
+    const rank = (e, team) => ({ raid: 0, rescue: 0, recruit: team < 3 ? 1 : 5, expand: 6, tower: 2, broadcast: 3 }[e.op]);
+    const seenStatus = new Set();
     for (let guard = 0; s.phase !== 'end'; guard++) {
-      if (guard > 3000) { fail(`${seed}: run never ended (stuck in ${s.phase})`); break; }
+      if (guard > 4000) { fail(`${seed}: run never ended (stuck in ${s.phase})`); break; }
+      for (const m of s.roster.members) seenStatus.add(m.status);
       if (s.phase === 'day') {
         N.street(s).forEach((id) => N.scan(s, id));
         Object.keys(s.owed).forEach((id) => N.recruitOwed(s, id));
+        let retiredToday = false;
+        for (const m of s.roster.members.slice()) {
+          const id = m.person.id;
+          if (N.canRetire(s, id) && !retiredToday && (smart ? E.roster.housed(s.roster).length >= 5 : bot.chance(0.3))) { N.retire(s, id, bot.pick(m.person.traits)); retiredToday = true; }
+          else if (m.status === 'active' && (smart ? m.threat >= N.WANTED : bot.chance(0.05))) N.layLow(s, id);
+          else if (m.status === 'active' && !smart && bot.chance(0.05)) N.sendHome(s, id);
+          else if (m.status === 'network' && E.roster.canRecruit(s.roster) && (smart || bot.chance(0.3))) N.callBack(s, id);
+        }
         const active = s.roster.members.filter((m) => m.status === 'active').map((m) => m.person.id);
+        const network = s.roster.members.filter((m) => m.status === 'network').map((m) => m.person.id);
         const ops = N.ops(s);
         const e = smart ? ops.slice().sort((a, b) => rank(a, active.length) - rank(b, active.length))[0] : bot.pick(ops);
-        let squad = smart ? active.slice(0, 3) : bot.shuffle(active).slice(0, bot.int(1, 3));
-        while (squad.length && !N.squadCheck(s, squad).ok) squad.pop();
-        if (!squad.length) { N.rest(s); continue; }
+        let squad = smart ? active.slice(0, e.split ? 4 : 3) : bot.shuffle(active).slice(0, bot.int(1, e.split ? 4 : 3));
+        if (network.length && squad.length < 3 && bot.chance(0.3)) squad.push(bot.pick(network));
+        const lanes = {};
+        squad.forEach((id, i) => { lanes[id] = e.split && i >= Math.ceil(squad.length / 2) ? 'decoy' : 'main'; });
         N.pickOp(s, e.key);
-        if (!N.launch(s, squad)) fail(`${seed}: launch refused`);
+        while (squad.length && !N.squadCheck(s, squad, lanes).ok) squad.pop();
+        if (!squad.length) { N.cancel(s); N.rest(s); continue; }
+        if (!N.launch(s, squad, lanes)) fail(`${seed}: launch refused`);
       } else if (s.phase === 'event') N.answer(s, bot.pick(s.event.choices));
       else if (s.phase === 'react') N.react(s, bot.chance(0.7));
       else if (s.phase === 'op') {
         const usable = N.cards(s).filter((c) => c.usable);
         if (usable.length && bot.chance(smart ? 0.5 : 0.3)) { const c = bot.pick(usable); if (!N.useCard(s, c.owner, c.id)) fail(`${seed}: usable card refused`); continue; }
         const moves = [];
-        for (const o of N.options(s)) for (const c of o.candidates) if (c.ok) moves.push([o.approach.id, c.id, c.risk]);
-        if (!moves.length) { N.retreat(s); continue; }
+        for (const lane of Object.keys(s.op.lanes)) for (const o of N.options(s, lane)) for (const c of o.candidates) if (c.ok) moves.push([o.approach.id, c.id, c.risk, lane, o.approach]);
+        const main = moves.filter((m) => m[3] === 'main');
+        if (!main.length) { N.retreat(s); continue; }
         moves.sort((a, b) => a[2] - b[2]);
-        const m = smart || bot.chance(0.5) ? moves[0] : bot.pick(moves);
-        if (!N.act(s, m[0], m[1])) { fail(`${seed}: offered move refused`); N.retreat(s); }
+        // 有佯攻可以做的時候，先做佯攻幫主力鋪路。
+        const decoy = moves.filter((m) => m[3] === 'decoy');
+        const m = decoy.length && bot.chance(0.6) ? decoy[0] : smart || bot.chance(0.5) ? moves.find((x) => x[3] === 'main') : bot.pick(moves);
+        const manual = N.hackable(m[4]) && bot.chance(0.4) ? { solved: bot.chance(smart ? 0.8 : 0.5) } : undefined;
+        if (manual && !N.puzzleSpec(s, m[0], m[1])) fail(`${seed}: hack approach without a puzzle`);
+        if (!N.act(s, m[0], m[1], manual)) { fail(`${seed}: offered move refused`); N.retreat(s); }
       } else if (s.phase === 'result') N.nextDay(s);
       else { fail(`${seed}: unknown phase ${s.phase}`); break; }
     }
+    s.seenStatus = [...seenStatus];
     return s;
   }
 
   const ends = {};
   let nights = 0;
   const RUNS = 80;
+  const statuses = new Set();
+  const opsSeen = new Set();
   for (let i = 0; i < RUNS; i++) {
     const s = play('night-' + i, i % 2 === 0);
+    s.seenStatus.forEach((x) => statuses.add(x));
+    delete s.seenStatus;
+    s.log.forEach((e) => { if (e.k === 's2.counter.raid' || e.k === 's2.log.screen' || e.k === 's2.log.timeUp' || e.k === 's2.log.raidTime' || e.k === 's2.log.hackSolved' || e.k === 's2.log.retired' || e.k === 's2.log.inherit') opsSeen.add(e.k); });
     ends[(i % 2 ? 'random ' : 'smart ') + s.ended] = (ends[(i % 2 ? 'random ' : 'smart ') + s.ended] || 0) + 1;
     if (i % 2 === 0) nights += s.night;
     for (const lang of LANGS) {
@@ -418,6 +448,20 @@ section('夜間行動');
     if (JSON.stringify(JSON.parse(JSON.stringify(s))) !== JSON.stringify(s)) fail(`night-${i}: state does not survive a save`);
   }
   if (JSON.stringify(play('replay', true)) !== JSON.stringify(play('replay', true))) fail('the same choices gave a different run');
+  // 每一種新機制，八十輪裡至少要真的發生過一次。
+  for (const st of ['active', 'injured', 'arrested', 'network', 'away', 'retired']) if (!statuses.has(st)) fail(`no run ever had a member ${st}`);
+  for (const k of ['s2.counter.raid', 's2.log.screen', 's2.log.hackSolved', 's2.log.retired', 's2.log.inherit']) if (!opsSeen.has(k)) fail(`no run ever logged ${k}`);
+  if (!opsSeen.has('s2.log.timeUp') && !opsSeen.has('s2.log.raidTime')) fail('no timed operation ever ran out of moves');
+
+  // 手動駭入的題目：每一題一開始都沒接通，照路線轉好就一定接得通。
+  let broken = 0;
+  for (let i = 0; i < 500; i++) {
+    const pz = E.puzzle.generate('pz-' + i, 4 + (i % 2));
+    if (E.puzzle.solved(pz)) broken++;
+    for (const k in pz.solution) pz.cells[k].rot = pz.solution[k];
+    if (!E.puzzle.solved(pz)) broken++;
+  }
+  if (broken) fail(`${broken} hack puzzles were already solved or unsolvable`);
   const won = ends['smart liberated'] || 0;
   if (won < RUNS / 2 * 0.4) fail(`balance: a sensible player only frees Camden ${won}/${RUNS / 2} times`);
   console.log(Object.entries(ends).sort().map(([k, v]) => `${k} ${v}`).join(', '));
