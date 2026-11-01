@@ -81,6 +81,14 @@ Content files are `.js` rather than `.json` so the game runs straight from the f
 
 **新增內容 Adding content**：在 `content/scenes/` 新增場景（台詞只寫 key），在三份語言檔加上同一組 key，再到 `index.html` 加一行 `<script>`。Add a scene file with text keys only, add the keys to all three locales, and include the script in `index.html`.
 
+## 授權 License
+
+本作品全部內容（程式碼、文本、插畫）以 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 授權：可以自由分享與改編，但必須註明出處、**禁止任何商業用途**，改編作品也必須用相同授權。詳見 [LICENSE](LICENSE)。
+
+Everything in this repository (code, text, illustrations) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/): share and adapt freely with credit, **no commercial use of any kind**, and adaptations must use the same license. See [LICENSE](LICENSE).
+
+《看門狗》相關的名稱、角色與設定屬於 Ubisoft，不在授權範圍內。Ubisoft's names, characters and settings are not covered by this license.
+
 ## 製作 Credits
 
 由 [Claude](https://claude.ai)（Anthropic）與作者協作製作：程式、三語文本、插畫、音效與測試由 Claude 撰寫，方向、品味判斷與審閱由作者負責。
