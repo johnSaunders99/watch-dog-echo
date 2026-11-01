@@ -62,6 +62,13 @@ You are ECHO, an AI built to reconstruct anyone's past from their data. The DedS
 網址後面加 `?jump=` 可以直接跳到某一章，例如 `index.html?jump=finale`。Append `?jump=` to start from a chapter, e.g. `index.html?jump=finale`.
 可用 Available: `memory1` `chinatown` `memory2` `chapter3` `memory3` `finale` `choice`
 
+自動測試只需要 Node.js，不用安裝任何套件。它會檢查三語文本是否齊全、把四個結局各打一遍，並測試第二季的引擎。每次推送到 GitHub 也會自動執行。
+The automated check needs only Node.js and no packages. It checks that all three languages are complete, plays through all four endings and tests the Season 2 engine. It also runs on every push to GitHub.
+
+```bash
+node tools/check.js
+```
+
 ## 專案結構 Project structure
 
 ```text
@@ -74,7 +81,11 @@ content/commands.js    三語指令別名 command aliases
 content/scenes/        每個章節一個檔案 one file per chapter
 content/locales/       三語文本 story text in three languages
 content/dev-routes.js  章節跳轉路線 chapter-jump routes
+content-s2/            第二季《宵禁》資料（製作中）Season 2 "Curfew" data (in progress)
+tools/check.js         自動測試 automated check
 ```
+
+想參與翻譯、名字表或路人秘密，請看 [CONTRIBUTING.md](CONTRIBUTING.md)。Want to help with translations, name tables or passer-by secrets? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 內容檔用 `.js` 而不是 `.json`，因為瀏覽器不允許從本機檔案讀取 JSON，這樣才能直接雙擊 `index.html` 遊玩。
 Content files are `.js` rather than `.json` so the game runs straight from the file system.
