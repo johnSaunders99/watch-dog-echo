@@ -28,7 +28,7 @@
     for (const skill in needs.skill || {}) r -= 0.1 * Math.max(0, (p.skills[skill] || 0) - needs.skill[skill]);
     // 職業專長剛好就是這項能力（例如消防員的「攀爬」去翻牆），比較不會失手。
     if (needs.ability && E.people.occupationOf(p).perk === needs.ability) r -= 0.1;
-    if (E.people.traitOf(p).tags.includes('steady')) r -= 0.05;
+    if (E.people.traitsOf(p).some((t) => t.tags.includes('steady'))) r -= 0.05;
     r += E.people.flawOf(p).risk || 0;
     return Math.max(0, Math.min(0.95, Math.round(r * 100) / 100));
   }

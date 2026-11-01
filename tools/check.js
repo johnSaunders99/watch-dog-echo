@@ -31,9 +31,10 @@ const load = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'),
 // 第一季：照 index.html 的順序載入（介面相關的檔案除外）。
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]).filter((f) => !/ui\/|main\.js/.test(f));
-// 第二季的引擎與資料（還沒放進 index.html）。
-const S2_SCRIPTS = ['js/engine/rng.js', 'js/engine/people.js', 'js/engine/roster.js', 'js/engine/mission.js',
-  'content-s2/people.js', 'content-s2/locales.js'];
+// 第二季：照 s2.html 的順序載入第一季沒有的檔案。介面只載入頭像（純字串，不碰畫面）。
+const s2html = fs.readFileSync(path.join(root, 's2.html'), 'utf8');
+const S2_SCRIPTS = [...s2html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1])
+  .filter((f) => !scripts.includes(f) && (!/ui\//.test(f) || f.endsWith('faces.js')));
 
 const tables = {};
 let E;
@@ -59,8 +60,8 @@ const all = new Set(codes.flatMap((c) => Object.keys(tables[c])));
 for (const c of codes) for (const k of all) if (!(k in tables[c])) fail(`${c} missing ${k}`);
 
 const used = new Set();
-for (const m of html.matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g)) used.add(m[1]);
-const sources = ['js/main.js', 'js/ui/terminal.js', ...scripts.filter((f) => !f.includes('locales')), ...S2_SCRIPTS.filter((f) => !f.includes('locales'))];
+for (const m of (html + s2html).matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g)) used.add(m[1]);
+const sources = ['js/main.js', 'js/ui/terminal.js', 'js/ui/s2.js', ...scripts.filter((f) => !f.includes('locales')), ...S2_SCRIPTS.filter((f) => !f.includes('locales'))];
 for (const f of sources) {
   const src = fs.readFileSync(path.join(root, f), 'utf8');
   // 動作的 id（id: 'mem.plan'）和進度查詢（s.fired['...']）不是文字 key。
@@ -68,6 +69,27 @@ for (const f of sources) {
 }
 for (const sc of Object.values(E.scenes)) for (const id of Object.keys(sc.entities)) used.add('ent.' + id);
 for (const v of Object.keys(E.commands)) used.add('verb.' + v);
+// 第二季介面用字串拼出來的 key（例如 's2.p.cat.' + 類別），逐一列出來檢查。
+const families = {
+  's2.p.tier.': ['common', 'uncommon', 'rare'],
+  's2.p.cat.': ['hacker', 'physical', 'social', 'specialist'],
+  's2.p.status.': ['active', 'injured', 'arrested', 'lost'],
+  's2.p.': ['hack', 'physical', 'social'],
+  's2.op.kind.': ['active', 'react', 'passive'],
+  's2.op.alert.': ['0', '30', '60'],
+  's2.day.kind.': ['district', 'rescue', 'recruit'],
+  's2.res.': ['win', 'fail', 'retreat', 'rest'],
+  's2.fail.': ['hack', 'physical', 'social', 'hands', 'other'],
+  's2.bagley.d': ['1', '2', '3', '4', '5'],
+  's2.end.': ['liberated.title', 'liberated.text', 'curfew.title', 'curfew.text', 'wiped.title', 'wiped.text'],
+  's2.react.': ['reroll.title', 'reroll.use', 'reroll.skip', 'escape.title', 'escape.use', 'escape.skip'],
+  's2.ev.': ['freeze.title', 'freeze.text', 'freeze.out', 'freeze.go', 'freeze.outDone', 'freeze.goDone',
+    'phone.title', 'phone.text', 'phone.take', 'phone.risk'],
+};
+for (const [prefix, list] of Object.entries(families)) {
+  used.delete(prefix);
+  for (const x of list) used.add(prefix + x);
+}
 for (const k of used) if (!k.endsWith('.') && !all.has(k)) fail(`key used but not defined: ${k}`);
 console.log(`${all.size} keys × ${codes.length} languages`);
 
@@ -184,16 +206,28 @@ const P = E.s2.people;
     return;
   }
   for (const k of Object.keys(node)) walk(node[k], `${where}.${k}`);
-})(P, 'people');
+})(E.s2, 's2');
 for (const [id, h] of Object.entries(P.heritages)) if (h.given.length < 4 || h.family.length < 4) fail(`heritage ${id}: too few names`);
 for (const [id, d] of Object.entries(P.districts)) for (const h of Object.keys(d.heritage)) if (!P.heritages[h]) fail(`district ${id}: unknown heritage ${h}`);
-for (const o of P.occupations) {
+for (const o of P.occupations.concat(P.rares)) {
   if (!P.perks[o.perk]) fail(`occupation ${o.id}: unknown perk ${o.perk}`);
-  for (const d of Object.keys(o.districts)) if (!P.districts[d]) fail(`occupation ${o.id}: unknown district ${d}`);
+  for (const d of Object.keys(o.districts || {})) if (!P.districts[d]) fail(`occupation ${o.id}: unknown district ${d}`);
 }
 for (const p of P.problems) for (const l of ['en', 'tc', 'sc']) if (!p.text[l].includes('{name}')) fail(`problem ${p.id}: ${l} has no {name}`);
 for (const s of P.secrets) for (const l of ['en', 'tc', 'sc']) if (/[{}]/.test(s[l])) fail('secret has a placeholder: ' + s.en);
-console.log(`${Object.keys(P.heritages).length} heritages, ${P.occupations.length} jobs, ${P.traits.length} traits, ${P.flaws.length} flaws, ${P.secrets.length} secrets, ${P.problems.length} problems`);
+for (const x of P.traits) if (!x.card || !['active', 'react', 'passive'].includes(x.card.kind)) fail(`trait ${x.id}: missing card`);
+for (const x of P.flaws.concat(P.quirks)) if (!x.desc) fail(`${x.id}: missing effect description`);
+// 行動：每一個解法都要有成功句（含 {name}），每個行動引用的關卡都要存在。
+const OPS = E.s2.ops;
+const okLines = [];
+for (const [id, st] of Object.entries(OPS.stages)) for (const a of st.approaches.concat(st.hidden ? [st.hidden] : [])) okLines.push([id + '.' + a.id, a]);
+for (const [id, a] of Object.entries(OPS.special)) okLines.push(['special.' + id, a]);
+for (const [where, a] of okLines) for (const l of ['en', 'tc', 'sc']) if (!a.ok || !a.ok[l].includes('{name}')) fail(`${where}: ${l} success line has no {name}`);
+for (const list of Object.values(OPS.ops).map((o) => o.stages).concat(Object.values(OPS.recruit))) {
+  for (const id of list) if (!OPS.stages[id]) fail(`unknown stage ${id}`);
+}
+for (const p of P.problems) if (!OPS.recruit[p.mission]) fail(`problem ${p.id}: no recruit mission ${p.mission}`);
+console.log(`${Object.keys(P.heritages).length} heritages, ${P.occupations.length} jobs + ${P.rares.length} rare, ${P.traits.length} traits, ${P.flaws.length} flaws, ${P.quirks.length} quirks, ${P.secrets.length} secrets, ${P.problems.length} problems, ${Object.keys(OPS.stages).length} stages`);
 
 // ===== 4. 亂數 =====
 section('亂數');
@@ -233,6 +267,9 @@ for (const district of Object.keys(P.districts)) {
     if (p.threat < 0 || p.threat > 100) fail(`${p.id}: threat out of range`);
     const job = E.people.occupationOf(p);
     if (p.age < job.age[0] || p.age > job.age[1]) fail(`${p.id}: age ${p.age} outside ${job.id} range`);
+    if (p.traits[0] === p.traits[1] || p.quirks[0] === p.quirks[1]) fail(`${p.id}: duplicate trait or quirk`);
+    const face = E.faces.of(p);
+    if (!face.startsWith('<svg') || face.includes('undefined')) fail(`${p.id}: broken avatar`);
     for (const lang of LANGS) {
       E.i18n.set(lang);
       const text = render(E.people.profile(p)).join('\n') + E.i18n.pick(E.people.problemText(p));
@@ -242,6 +279,7 @@ for (const district of Object.keys(P.districts)) {
   if (ids.size !== people.length) fail(`${district}: duplicate ids`);
   const kinds = Object.keys(heritage).length;
   if (kinds < 5) fail(`${district}: only ${kinds} heritages in 200 people`);
+  if (!people.some((p) => p.rare)) fail(`${district}: no rare people in 200`);
   if (district === 'soho' && (heritage.hongkong || 0) + (heritage.mainland || 0) < 60) fail('soho: too few Chinese-heritage residents');
   console.log(`${district}: 200 people, ${kinds} heritages`);
 }
@@ -321,6 +359,69 @@ section('任務框架');
   const opts = E.mission.options({ approaches: [climb, pass, hack] }, pool.slice(0, 6));
   if (opts.length !== 3 || opts[0].candidates.length !== 6) fail('options() shape is wrong');
   console.log('requirements, flaws, perks, risk, exposure, reproducible results');
+}
+
+// ===== 7b. 夜間行動（原型）：讓機器人把整輪打完 =====
+section('夜間行動');
+{
+  const N = E.night;
+  // smart 為 true 時像玩家一樣優先拆塔、救人，派最穩的人；否則隨便亂選。
+  function play(seed, smart) {
+    const s = N.create(seed);
+    const bot = E.rng.create('bot:' + seed);
+    N.pickVolunteers(s, s.volunteers.slice(0, 2));
+    const rank = (e, team) => ({ rescue: 0, recruit: team < 4 ? 1 : 5, tower: 2, broadcast: 3 }[e.op]);
+    for (let guard = 0; s.phase !== 'end'; guard++) {
+      if (guard > 3000) { fail(`${seed}: run never ended (stuck in ${s.phase})`); break; }
+      if (s.phase === 'day') {
+        N.street(s).forEach((id) => N.scan(s, id));
+        Object.keys(s.owed).forEach((id) => N.recruitOwed(s, id));
+        const active = s.roster.members.filter((m) => m.status === 'active').map((m) => m.person.id);
+        const ops = N.ops(s);
+        const e = smart ? ops.slice().sort((a, b) => rank(a, active.length) - rank(b, active.length))[0] : bot.pick(ops);
+        let squad = smart ? active.slice(0, 3) : bot.shuffle(active).slice(0, bot.int(1, 3));
+        while (squad.length && !N.squadCheck(s, squad).ok) squad.pop();
+        if (!squad.length) { N.rest(s); continue; }
+        N.pickOp(s, e.key);
+        if (!N.launch(s, squad)) fail(`${seed}: launch refused`);
+      } else if (s.phase === 'event') N.answer(s, bot.pick(s.event.choices));
+      else if (s.phase === 'react') N.react(s, bot.chance(0.7));
+      else if (s.phase === 'op') {
+        const usable = N.cards(s).filter((c) => c.usable);
+        if (usable.length && bot.chance(smart ? 0.5 : 0.3)) { const c = bot.pick(usable); if (!N.useCard(s, c.owner, c.id)) fail(`${seed}: usable card refused`); continue; }
+        const moves = [];
+        for (const o of N.options(s)) for (const c of o.candidates) if (c.ok) moves.push([o.approach.id, c.id, c.risk]);
+        if (!moves.length) { N.retreat(s); continue; }
+        moves.sort((a, b) => a[2] - b[2]);
+        const m = smart || bot.chance(0.5) ? moves[0] : bot.pick(moves);
+        if (!N.act(s, m[0], m[1])) { fail(`${seed}: offered move refused`); N.retreat(s); }
+      } else if (s.phase === 'result') N.nextDay(s);
+      else { fail(`${seed}: unknown phase ${s.phase}`); break; }
+    }
+    return s;
+  }
+
+  const ends = {};
+  let nights = 0;
+  const RUNS = 80;
+  for (let i = 0; i < RUNS; i++) {
+    const s = play('night-' + i, i % 2 === 0);
+    ends[(i % 2 ? 'random ' : 'smart ') + s.ended] = (ends[(i % 2 ? 'random ' : 'smart ') + s.ended] || 0) + 1;
+    if (i % 2 === 0) nights += s.night;
+    for (const lang of LANGS) {
+      E.i18n.set(lang);
+      for (const e of s.log) {
+        const text = E.i18n.t(e.k, e.v);
+        if (unresolved(text)) { fail(`night-${i} (${lang}): ${text}`); break; }
+      }
+    }
+    if (JSON.stringify(JSON.parse(JSON.stringify(s))) !== JSON.stringify(s)) fail(`night-${i}: state does not survive a save`);
+  }
+  if (JSON.stringify(play('replay', true)) !== JSON.stringify(play('replay', true))) fail('the same choices gave a different run');
+  const won = ends['smart liberated'] || 0;
+  if (won < RUNS / 2 * 0.4) fail(`balance: a sensible player only frees Camden ${won}/${RUNS / 2} times`);
+  console.log(Object.entries(ends).sort().map(([k, v]) => `${k} ${v}`).join(', '));
+  console.log(`sensible player: ${won}/${RUNS / 2} liberated, ${(nights / (RUNS / 2)).toFixed(1)} nights on average`);
 }
 
 // ===== 8. 存檔 =====

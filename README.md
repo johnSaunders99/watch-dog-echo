@@ -24,6 +24,9 @@ You are ECHO, an AI built to reconstruct anyone's past from their data. The DedS
 - 進度自動儲存在瀏覽器裡。Progress saves automatically in your browser.
 - 遊玩時間約 40–60 分鐘，共 4 個結局。About 40–60 minutes, 4 endings.
 
+**第二季《宵禁》玩法原型**：打開 `s2.html`。只有康登一區、十個晚上，用來試玩招募任何人和夜間行動，還沒有主線劇情。網址加上 `?seed=任意文字` 可以重現同一批路人。
+**Season 2 "Curfew" gameplay prototype**: open `s2.html`. Camden only, ten nights, for trying out recruit-anyone and night operations; no main story yet. Add `?seed=anything` to replay the same people.
+
 ## 特色 Features
 
 - **同步率 Sync**：在記憶中，要照當事人的個性行動。違背他，記憶就會崩塌。每段記憶的規則都不同。Act as the person whose memory you are in; break character and the memory collapses.

@@ -345,6 +345,10 @@
       const key = sceneArt[sceneId] || 'basement';
       return { key, svg: scenes[key]() };
     },
+    // 第二季直接用插畫名稱取圖，例如 'alley'、'tunnels'。
+    byKey(key) {
+      return (scenes[key] || scenes.basement)();
+    },
     avatar(id) {
       return (avatars[id] || avatars.crowd)();
     },
