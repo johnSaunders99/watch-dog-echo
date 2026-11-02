@@ -23,6 +23,8 @@
   let cineTimer = null;
   let storySeen = 0;     // 主線任務已經播過的輸出行數
   let worldOpen = false; // 正在問玩家第一季的結局
+  const teamOpen = {};   // 側欄每一組有沒有展開（玩家自己點過才記下來）
+  let tacLegend = false; // 戰術地圖的圖例有沒有打開
 
   const who = (id) => N.person(s, id);
   const nm = (id) => P(E.people.name(who(id)));
@@ -313,6 +315,8 @@
 
   function renderSquad() {
     const e = N.picked(s);
+    // 有戰術地圖的行動（文字冒險的主線任務除外），可以選擇親自潛入。
+    const tac = !e.story && N.tacPlan(s);
     const pool = s.roster.members.filter((m) => m.status === 'active' || m.status === 'network').map((m) => m.person.id);
     const chosen = ids();
     const check = N.squadCheck(s, chosen, picks);
@@ -330,7 +334,10 @@
       + (chosen.length ? `<span class="chip">${T('s2.squad.startAlert', { n: N.startAlert(s, chosen) })}</span>` : '')
       + combos.map((c) => { const def = data().combos.find((x) => x.id === c); return `<span class="chip combo${c === 'derby' ? ' bad' : ''}" title="${P(def.desc)}">${T('s2.squad.combos')}：${P(def.name)}</span>`; }).join('')
       + (reason ? `<span class="warn">${esc(reason)}</span>` : '')
-      + `</div><button data-act="back">${T('s2.squad.back')}</button><button class="primary" data-act="go"${check.ok ? '' : ' disabled'}>${T('s2.squad.go')}</button></div></section>`;
+      + `</div><button data-act="back">${T('s2.squad.back')}</button>`
+      + (tac ? `<button data-act="go"${check.ok ? '' : ' disabled'}>${T('s2.squad.goQuick')}</button><button class="primary" data-act="goTac"${check.ok ? '' : ' disabled'}>${T('s2.squad.goTac')}</button>`
+        : `<button class="primary" data-act="go"${check.ok ? '' : ' disabled'}>${T('s2.squad.go')}</button>`) + `</div>`
+      + (tac ? `<p class="hint small">${T('s2.squad.tacHint')}</p>` : '') + `</section>`;
     return h;
   }
 
@@ -589,11 +596,17 @@
         + `<span class="mem-txt"><b>${nm(id)}</b><small>${P(E.people.occupationOf(m.person).name)}</small></span>`
         + `<span class="mem-st">${st}<small class="${threat >= N.WANTED ? 'wanted' : threat >= 50 ? 'high' : ''}">${T('s2.p.threat', { n: threat })}</small></span></button>`;
     };
-    const group = (label, list) => (list.length ? `<div class="team-group"><div class="team-label">${label}</div>${list.map(row).join('')}</div>` : '');
+    // 每一組都可以收合；外圍和離隊的人多了，預設收起來，只顯示人數。
+    const group = (key, label, list) => {
+      if (!list.length) return '';
+      const open = teamOpen[key] !== undefined ? teamOpen[key] : key === 'core' || list.length <= 4;
+      return `<div class="team-group"><button class="team-label" data-act="teamToggle" data-g="${key}" aria-expanded="${open}">${open ? '▾' : '▸'} ${label} <small>${list.length}</small></button>`
+        + (open ? list.map(row).join('') : '') + '</div>';
+    };
     const ms = s.roster.members;
-    $('s2-team').innerHTML = group(T('s2.ui.core'), ms.filter((m) => ['active', 'injured', 'away', 'arrested'].includes(m.status)))
-      + group(T('s2.ui.network'), ms.filter((m) => m.status === 'network'))
-      + group(T('s2.ui.gone'), ms.filter((m) => ['retired', 'lost', 'dead'].includes(m.status)));
+    $('s2-team').innerHTML = group('core', T('s2.ui.core'), ms.filter((m) => ['active', 'injured', 'away', 'arrested'].includes(m.status)))
+      + group('network', T('s2.ui.network'), ms.filter((m) => m.status === 'network'))
+      + group('gone', T('s2.ui.gone'), ms.filter((m) => ['retired', 'lost', 'dead'].includes(m.status)));
   }
 
   // ===== 整個畫面 =====
@@ -614,9 +627,10 @@
     log.scrollTop = log.scrollHeight;
 
     const main = $('s2-main');
-    const phase = s.phase === 'event' || s.phase === 'react' ? 'op' : s.phase;
+    const phase = s.phase === 'event' ? 'op' : s.phase === 'react' ? (s.op && s.op.mode === 'tac' ? 'tac' : 'op') : s.phase;
     main.dataset.phase = phase;
-    main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, result: renderResult, end: renderEnd }[phase]();
+    const renderTac = () => E.tacUI.render(s, { alertStatus, legend: tacLegend });
+    main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, tac: renderTac, result: renderResult, end: renderEnd }[phase]();
     renderModal();
     if (phase === 'story') {
       const log2 = $('story-log');
@@ -718,6 +732,20 @@
       E.fx.sfx.play('title');
     },
     rest() { N.rest(s); },
+    goTac() {
+      if (!N.launch(s, ids(), picks, 'tac')) return;
+      picks = {};
+      E.tacUI.reset();
+      window.scrollTo(0, 0);
+      cine('title', `<div class="cine-title">${P(s.op.name)}</div>`, 1400);
+      E.fx.sfx.play('title');
+    },
+    tacSel(d) { E.tacUI.click(s, d); },
+    tacTile(d) { E.tacUI.click(s, d); },
+    tacAb(d) { E.tacUI.click(s, d); },
+    tacCancel(d) { E.tacUI.click(s, d); },
+    tacEnd(d) { E.tacUI.click(s, d); },
+    tacLegend() { tacLegend = !tacLegend; },
     do(d) {
       if (s.phase !== 'op') return;
       const opt = N.options(s, N.laneOf(s, d.who)).find((o) => o.approach.id === d.a);
@@ -754,6 +782,7 @@
     },
     again() { newRun(); },
     profile(d) { profileId = d.id; },
+    teamToggle(d) { const g = d.g; const el = document.querySelector('[data-act=teamToggle][data-g=' + g + ']'); teamOpen[g] = !(el && el.getAttribute('aria-expanded') === 'true'); },
     close() { profileId = null; },
     home(d) { N.sendHome(s, d.id); },
     callBack(d) { N.callBack(s, d.id); },
@@ -763,7 +792,7 @@
     retireCancel() { profileId = retiring; retiring = null; },
   };
   // 這些操作只換對話框，不關掉人物檔案。
-  const KEEP_PROFILE = ['profile', 'close', 'home', 'callBack', 'lowkey', 'retire', 'retirePick', 'retireCancel'];
+  const KEEP_PROFILE = ['profile', 'close', 'home', 'callBack', 'lowkey', 'retire', 'retirePick', 'retireCancel', 'teamToggle'];
 
   function onClick(ev) {
     const el = ev.target.closest('[data-act]');

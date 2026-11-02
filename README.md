@@ -24,8 +24,8 @@ You are ECHO, an AI built to reconstruct anyone's past from their data. The DedS
 - 進度自動儲存在瀏覽器裡。Progress saves automatically in your browser.
 - 遊玩時間約 40–60 分鐘，共 4 個結局。About 40–60 minutes, 4 endings.
 
-**第二季《宵禁》測試版**：打開 `s2.html`，或從第一季的標題畫面點進去。在武裝無人機宵禁下的倫敦重建 DedSec：五個行政區（康登開始、西敏結束，中間三區的順序自己決定），八個用文字冒險進行的主線任務，招募街上的任何人，隊員會受傷、被捕，重傷沒人照顧也可能過世。結局有五種，依盟友、名單的處理方式和第一季的結局而不同。玩過第一季的話，會自動讀取第一季的結局。網址加上 `?seed=任意文字` 可以重現同一批路人。
-**Season 2 "Curfew" beta**: open `s2.html`, or follow the link on the Season 1 title screen. Rebuild DedSec in a London under armed-drone curfew: five districts (Camden first, Westminster last, the middle three in any order), eight main missions played as text adventures, and anyone on the street can be recruited. Your people get hurt, get arrested, and without care a serious wound can be fatal. Five endings, shaped by your ally, what you do with the List, and how Season 1 ended. If you finished Season 1, its ending carries over. Add `?seed=anything` to replay the same people.
+**第二季《宵禁》測試版**：打開 `s2.html`，或從第一季的標題畫面點進去。在武裝無人機宵禁下的倫敦重建 DedSec：五個行政區（康登開始、西敏結束，中間三區的順序自己決定），八個用文字冒險進行的主線任務，招募街上的任何人；夜間行動可以快速結算，也可以在俯視的戰術地圖上親自指揮（駭客遠端開門、身體類翻牆制伏、社交類引開守衛、專長各有一手，特質和弱點都會影響走法），隊員會受傷、被捕，重傷沒人照顧也可能過世。結局有五種，依盟友、名單的處理方式和第一季的結局而不同。玩過第一季的話，會自動讀取第一季的結局。網址加上 `?seed=任意文字` 可以重現同一批路人。
+**Season 2 "Curfew" beta**: open `s2.html`, or follow the link on the Season 1 title screen. Rebuild DedSec in a London under armed-drone curfew: five districts (Camden first, Westminster last, the middle three in any order), eight main missions played as text adventures, and anyone on the street can be recruited. Night operations can be quick-resolved or played on a top-down tactical map, where hackers open doors from range, physical types climb and take guards down, social types talk guards away, specialists use their trade, and traits and flaws change how everyone moves. Your people get hurt, get arrested, and without care a serious wound can be fatal. Five endings, shaped by your ally, what you do with the List, and how Season 1 ended. If you finished Season 1, its ending carries over. Add `?seed=anything` to replay the same people.
 
 ## 特色 Features
 

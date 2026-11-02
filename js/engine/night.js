@@ -624,7 +624,8 @@
   const spot = (s, lane) => lane + ':' + s.op.lanes[lane].i;
   const others = (s, id) => membersOf(s).filter((m) => m !== id);
 
-  function launch(s, ids, laneMap = {}) {
+  // mode 是 'tac' 時改用戰術地圖（js/engine/tactics.js）；沒有地圖的行動、文字冒險的主線任務照原本的方式。
+  function launch(s, ids, laneMap = {}, mode) {
     if (s.phase !== 'squad' || !squadCheck(s, ids, laneMap).ok) return false;
     const e = picked(s);
     const called = ids.filter((id) => member(s, id).status === 'network');
@@ -649,9 +650,67 @@
       beginMission(s);
       return true;
     }
+    const plan = mode === 'tac' && tacPlan(s, e);
+    if (plan) {
+      beginTac(s, e, plan, ids);
+      return true;
+    }
     startStages(s);
     return true;
   }
+
+  // ===== 戰術地圖 =====
+  // 這個行動用哪一張地圖（content-s2/maps.js 的 opMaps）；沒有的話回傳 null。
+  function tacPlan(s, e) {
+    const M = E.s2.opMaps;
+    if (!E.tactics || !M || !e) return null;
+    if (e.op === 'recruit') return M.recruit[people().problems.find((x) => x.id === person(s, e.target).problem).mission] || null;
+    if (e.op === 'main') return M.main[e.main] || null;
+    return M[e.op] || null;
+  }
+
+  // 地圖上有被關的人：救援行動就是被捕的隊員，其他行動是一個路人（救出來之後可以招募）。
+  // 外圍情報（酒保）或第一季「留下」的世界：一開始就看得到守衛的巡邏路線。
+  function beginTac(s, e, plan, ids) {
+    let escort = null;
+    if (E.s2.maps[plan.map].rows.some((r) => r.includes('P'))) escort = e.op === 'rescue' ? e.target : person(s, s.district + '-' + (HELPERS + s.helperCount++)).id;
+    s.op.mode = 'tac';
+    s.op.tac = E.tactics.build({ map: plan.map, obj: plan.obj, ids, rank: rank(s.district), limit: e.timer, escort, intel: !!networkWith(s, 'gossip') || s.world === 'stay' });
+    s.phase = 'tac';
+    say(s, 'op', 'tac.log.start');
+    if (s.op.tac.intel) say(s, 'gain', networkWith(s, 'gossip') ? 'tac.log.intelGossip' : 'tac.log.intelEcho');
+  }
+
+  // 戰術地圖要用到的夜間引擎功能。
+  const tacApi = {
+    person, perk: perkId, category: categoryOf, traits: traitIds, name: nameOf, say, rand, addAlert,
+    flaw: (s, id) => flawOf(s, id).id,
+    quirks: (s, id) => person(s, id).quirks,
+    bw: (s) => s.op.bw,
+    spend(s, n) { s.op.bw -= n; },
+    hurt: (s, id) => !!s.op.hurt[id],
+    wound(s, id) {
+      const serious = rand(s).chance(SERIOUS + (s.op.alert >= 60 ? 0.25 : 0));
+      s.op.hurt[id] = serious ? 'serious' : 'light';
+      say(s, 'bad', serious ? 's2.log.hurtBad' : 's2.log.hurt', { name: nameOf(s, id) });
+    },
+    heal(s, id) { delete s.op.hurt[id]; },
+    arrest(s, id) { arrest(s, id); },
+    finish(s, outcome) {
+      // 救出來的路人：之後可以招募。
+      const t = s.op.tac;
+      const e = t.escort && t.units.find((u) => u.escort);
+      if (outcome === 'win' && e && e.out && t.escort !== s.op.target) {
+        s.owed[t.escort] = 'helper';
+        say(s, 'gain', 's2.log.helperOwed', { name: nameOf(s, t.escort) });
+      }
+      finish(s, outcome);
+    },
+    timeUp(s) {
+      say(s, 'bad', s.op.op === 'raid' ? 's2.log.raidTime' : 's2.log.timeUp');
+      finish(s, 'fail');
+    },
+  };
 
   // 走一般關卡：外圍情報、Echo 的提示、會怯場的人，然後進第一關。
   function startStages(s) {
@@ -1102,7 +1161,7 @@
   }
 
   function retreat(s) {
-    if (s.phase !== 'op') return false;
+    if (s.phase !== 'op' && s.phase !== 'tac') return false;
     say(s, 'warn', 's2.log.retreat');
     return finish(s, 'retreat');
   }
@@ -1328,6 +1387,16 @@
     ops, pickOp, cancel, picked, squadCheck, startAlert, combosFor, launch, rest,
     stage, options, combos, cards, useCard, act, react, answer, retreat, nextDay,
     networkWith, puzzleSpec, hackable, clinic, travel, mainNow,
+    // 戰術地圖
+    tacPlan: (s) => !!tacPlan(s, picked(s)),
+    tacMove: (s, id, x, y) => E.tactics.move(s, tacApi, id, x, y),
+    tacUse: (s, id, ab, x, y) => E.tactics.use(s, tacApi, id, ab, x, y),
+    tacEnd: (s) => E.tactics.endTurn(s, tacApi),
+    tacReach: (s, id) => E.tactics.reach(s, tacApi, id),
+    tacRisky: (s, id) => E.tactics.risky(s, tacApi, id),
+    tacAbilities: (s, id) => E.tactics.abilities(s, tacApi, id),
+    tacCaps: (s, id) => E.tactics.caps(s, tacApi, id),
+    tacVision: (s) => E.tactics.vision(s),
     WORLDS, MAIN_NIGHT, storyCommand, storyFinish, skipStory, mainPending,
     members: (s) => (s.op ? membersOf(s) : []),
     laneOf: (s, id) => (s.op ? laneOf(s, id) : 'main'),
