@@ -31,8 +31,15 @@
   const round2 = (v) => Math.round(v * 100) / 100;
   const indexOf = (id) => Number(String(id).split('-').pop());
 
+  // 同一輪裡不會有兩個人同名：撞名的話換一個姓。
   function person(s, id) {
-    if (!s.people[id]) s.people[id] = E.people.generate(s.seed, DISTRICT, indexOf(id));
+    if (!s.people[id]) {
+      const p = E.people.generate(s.seed, DISTRICT, indexOf(id));
+      const taken = new Set(Object.values(s.people).map((x) => E.people.name(x).en));
+      const families = people().heritages[p.heritage].family.length;
+      for (let i = 0; i < families && taken.has(E.people.name(p).en); i++) p.family = (p.family + 1) % families;
+      s.people[id] = p;
+    }
     return s.people[id];
   }
   const nameOf = (s, id) => ({ l: E.people.name(person(s, id)) });
@@ -118,9 +125,63 @@
     if (s.featured) pool.push(indexOf(s.featured));
     s.relations = E.people.relations(s.seed, DISTRICT, pool);
 
+    // 第一季的結局決定這個世界：stay 留下、seal 封存、wildfire 燎原、recaptured 回收。
+    s.world = WORLDS.includes(opts.world) ? opts.world : 'stay';
+    if (s.world === 'seal') s.heat = 15;
+    // 主角是第一個自願者（一定是駭客）。主線任務一「熄燈」用文字冒險的方式玩，結束後才挑第二個人。
+    s.hero = s.volunteers[0];
+    if (opts.skipStory || !E.engine || !E.s2.storyStart) startPick(s);
+    else beginStory(s);
+    return s;
+  }
+
+  const WORLDS = ['stay', 'seal', 'wildfire', 'recaptured'];
+
+  // ===== 主線任務（文字冒險） =====
+  // 文字冒險沿用第一季的場景引擎，狀態另外放在 s.story，輸出放在 s.storyLog。
+  function beginStory(s) {
+    const st = E.state.create();
+    st.scene = E.s2.storyStart;
+    st.actor = 'player';
+    st.exposure = 0;
+    st.flags.world = s.world;
+    s.story = st;
+    const p = person(s, s.hero);
+    s.storyLog = [{ c: 'prof', k: 's2.hero.intro', who: s.hero, v: { name: nameOf(s, s.hero), job: { l: E.people.occupationOf(p).name }, age: p.age, n: p.threat } }]
+      .concat(E.engine.enter(st));
+    s.phase = 'story';
+  }
+
+  // 執行一個文字冒險指令。cmd 是 E.parser.parse 的結果；回傳新增的輸出行。
+  function storyCommand(s, cmd, input) {
+    if (s.phase !== 'story' || !cmd) return [];
+    const out = [input || { c: 'input', raw: cmd.raw }].concat(E.engine.exec(cmd, s.story));
+    s.storyLog.push(...out);
+    if (s.storyLog.length > 400) s.storyLog.splice(0, s.storyLog.length - 400);
+    if (s.story.flags.m1done) finishStory(s);
+    return out;
+  }
+
+  // 任務一的結果帶進夜間循環：被看到臉，主角的威脅評分上升；警戒越高，起始熱度越高。
+  function finishStory(s, skipped) {
+    if (!skipped) {
+      const f = s.story.flags;
+      s.heroBonus = (f.spotted ? 20 : 0) + (f.kicked ? 3 : 0);
+      s.heat = clamp(s.heat + Math.round((s.story.exposure || 0) / 5), 0, 60);
+    }
+    startPick(s);
+  }
+
+  function skipStory(s) {
+    if (s.phase !== 'story') return false;
+    finishStory(s, true);
+    return true;
+  }
+
+  function startPick(s) {
+    s.phase = 'start';
     say(s, 'bagley', 's2.bagley.intro1');
     say(s, 'bagley', 's2.bagley.intro2');
-    return s;
   }
 
   // 加入隊伍：有空床就住進安全屋，沒有就先加入外圍網路。
@@ -143,9 +204,12 @@
   }
   const traitCard = (t) => people().traits.find((x) => x.id === t).card;
 
+  // 開場挑兩個人：主角一定在隊上，所以只要再挑一個。
   function pickVolunteers(s, ids) {
-    if (s.phase !== 'start' || ids.length !== 2 || !ids.every((id) => s.volunteers.includes(id))) return false;
-    ids.forEach((id) => recruitPerson(s, id));
+    const team = s.hero ? [s.hero].concat(ids.filter((id) => id !== s.hero)) : ids;
+    if (s.phase !== 'start' || team.length !== 2 || !team.every((id) => s.volunteers.includes(id))) return false;
+    team.forEach((id) => recruitPerson(s, id));
+    if (s.hero && s.heroBonus) member(s, s.hero).threat = Math.min(100, member(s, s.hero).threat + s.heroBonus);
     s.phase = 'day';
     say(s, 'night', 's2.log.night', { n: s.night });
     say(s, 'bagley', 's2.bagley.first');
@@ -321,6 +385,10 @@
     if (gossip && content().stages[e.stages[0]].hidden) {
       s.op.revealed['main:0'] = true;
       say(s, 'gain', 's2.log.gossip', { name: nameOf(s, gossip) });
+    } else if (s.world === 'stay' && content().stages[e.stages[0]].hidden) {
+      // 第一季「留下」的世界：Echo 會先看穿第一關的另一條路。
+      s.op.revealed['main:0'] = true;
+      say(s, 'card', 's2.log.echoHint');
     }
     for (const id of ids) {
       if (flawOf(s, id).event === 'freeze' && rand(s).chance(0.5)) s.queue.push({ type: 'freeze', who: id, choices: ['out', 'go'] });
@@ -466,6 +534,7 @@
       if (related(s, id, o, 'ex')) r += 0.1;
     }
     if (combos(s).includes('derby')) r += 0.1;
+    if (s.world === 'wildfire') r += 0.05; // 燎原：連獅心防務都有重建引擎
     if (perk === 'legacy' && tags.has('hack')) r -= 0.25;
     if (perk === 'rooftops' && tags.has('climb')) r -= 0.3;
     if (s.op.alert >= 60) r += 0.2;
@@ -691,6 +760,8 @@
     const op = s.op;
     // 停電的晚上，無人機的感測器也受影響：增加的警戒減半。
     if (amount > 0 && tonight(s, 'blackout')) amount = Math.ceil(amount / 2);
+    // 回收：Echo 被困在守夜人裡，無人機學得更快。
+    if (amount > 0 && s.world === 'recaptured') amount += 1;
     const before = op.alert;
     op.alert = clamp(before + amount, 0, 100);
     if (before < 30 && op.alert >= 30) {
@@ -917,6 +988,7 @@
     ops, pickOp, cancel, picked, squadCheck, startAlert, combosFor, launch, rest,
     stage, options, combos, cards, useCard, act, react, answer, retreat, nextDay,
     networkWith, puzzleSpec, hackable,
+    WORLDS, storyCommand, skipStory,
     members: (s) => (s.op ? membersOf(s) : []),
     laneOf: (s, id) => (s.op ? laneOf(s, id) : 'main'),
     able: (s, id) => !!s.op && able(s, id),

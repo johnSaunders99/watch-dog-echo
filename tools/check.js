@@ -13,62 +13,80 @@ const arg = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1
 const show = arg('--show');
 const samples = Number(arg('--samples') || 0);
 
-// ===== 在 Node 裡模擬瀏覽器，載入遊戲腳本 =====
+// ===== 在 Node 裡模擬瀏覽器 =====
+// 第一季和第二季各自一個沙盒，跟真正的兩個頁面一樣互不干擾（第二季有自己一份引擎用的通用文字）。
+// 兩個沙盒共用同一個 localStorage，就像同一個網域下的兩個頁面。
 const storage = new Map();
-const ctx = {
-  console,
-  document: { documentElement: {} },
-  localStorage: {
-    getItem: (k) => (storage.has(k) ? storage.get(k) : null),
-    setItem: (k, v) => storage.set(k, String(v)),
-    removeItem: (k) => storage.delete(k),
-  },
-};
-ctx.window = ctx;
-vm.createContext(ctx);
-const load = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
+function sandbox(list) {
+  const ctx = {
+    console,
+    document: { documentElement: {} },
+    localStorage: {
+      getItem: (k) => (storage.has(k) ? storage.get(k) : null),
+      setItem: (k, v) => storage.set(k, String(v)),
+      removeItem: (k) => storage.delete(k),
+    },
+  };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  const tables = {};
+  for (const f of list) {
+    vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
+    if (f.endsWith('i18n.js')) {
+      const reg = ctx.ECHO.i18n.register;
+      ctx.ECHO.i18n.register = (code, table) => { tables[code] = Object.assign(tables[code] || {}, table); reg(code, table); };
+    }
+  }
+  return { E: ctx.ECHO, tables };
+}
 
 // 第一季：照 index.html 的順序載入（介面相關的檔案除外）。
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]).filter((f) => !/ui\/|main\.js/.test(f));
-// 第二季：照 s2.html 的順序載入第一季沒有的檔案。介面只載入頭像（純字串，不碰畫面）。
+// 第二季：照 s2.html 的順序載入。介面只載入頭像（純字串，不碰畫面）。
 const s2html = fs.readFileSync(path.join(root, 's2.html'), 'utf8');
 const S2_SCRIPTS = [...s2html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1])
-  .filter((f) => !scripts.includes(f) && (!/ui\//.test(f) || f.endsWith('faces.js')));
-
-const tables = {};
-let E;
-for (const f of [...scripts, ...S2_SCRIPTS]) {
-  load(f);
-  if (f.endsWith('i18n.js')) {
-    E = ctx.ECHO;
-    const reg = E.i18n.register;
-    E.i18n.register = (code, table) => { tables[code] = Object.assign(tables[code] || {}, table); reg(code, table); };
-  }
-}
+  .filter((f) => !/ui\//.test(f) || f.endsWith('faces.js'));
+const S1 = sandbox(scripts);
+const S2 = sandbox(S2_SCRIPTS);
+let E = S1.E; // 第一季的段落用第一季的沙盒；第二季的段落開始前換成 S2
 
 let problems = 0;
 const fail = (msg) => { problems++; console.log('FAIL', msg); };
 const section = (title) => console.log(`\n## ${title}`);
-const render = (entries) => entries.filter((e) => e.c !== 'pause').map((e) => E.i18n.t(e.k, e.v));
+const render = (entries) => entries.filter((e) => e.c !== 'pause' && e.k).map((e) => E.i18n.t(e.k, e.v));
 const unresolved = (text) => text.includes('⟦') || /\{\w+\}/.test(text);
 
-// ===== 1. 三語文本 =====
+// ===== 1. 三語文本：每個頁面三種語言的 key 一樣多，用到的 key 都有定義 =====
 section('三語文本');
-const codes = Object.keys(tables);
-const all = new Set(codes.flatMap((c) => Object.keys(tables[c])));
-for (const c of codes) for (const k of all) if (!(k in tables[c])) fail(`${c} missing ${k}`);
-
-const used = new Set();
-for (const m of (html + s2html).matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g)) used.add(m[1]);
-const sources = ['js/main.js', 'js/ui/terminal.js', 'js/ui/s2.js', ...scripts.filter((f) => !f.includes('locales')), ...S2_SCRIPTS.filter((f) => !f.includes('locales'))];
-for (const f of sources) {
-  const src = fs.readFileSync(path.join(root, f), 'utf8');
-  // 動作的 id（id: 'mem.plan'）和進度查詢（s.fired['...']）不是文字 key。
-  for (const m of src.matchAll(/(?<!id: |fired\[)['"]((?:ui|hud|loc|err|items|lang|help|fx|scan|boot|room|recall|ev|message|desk|note|graffiti|laptop|photo|camera|van|radio|maya|attack|desync|mem|mem1|mem2|mem3|cw|ch3|fin|end|wait|talk|switch|actor|co|cameo|chip|s2)\.[\w.]+)['"]/g)) used.add(m[1]);
+// 動作的 id（id: 'mem.plan'）和進度查詢（s.fired['...']）不是文字 key。
+const KEY = /(?<!id: |fired\[)['"]((?:ui|hud|loc|err|items|lang|help|fx|scan|boot|room|recall|ev|message|desk|note|graffiti|laptop|photo|camera|van|radio|maya|attack|desync|mem|mem1|mem2|mem3|cw|ch3|fin|end|wait|talk|switch|actor|co|cameo|chip|s2|m1)\.[\w.]+)['"]/g;
+// topics 為 true 時，對話話題也要有顯示用的 key（第二季的建議按鈕會顯示話題名稱）。
+function checkTexts(label, page, htmlText, sources, families = {}, topics = false) {
+  const { E: PE, tables } = page;
+  const codes = Object.keys(tables);
+  const all = new Set(codes.flatMap((c) => Object.keys(tables[c])));
+  for (const c of codes) for (const k of all) if (!(k in tables[c])) fail(`${label} ${c} missing ${k}`);
+  const used = new Set();
+  for (const m of htmlText.matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g)) used.add(m[1]);
+  for (const f of sources) for (const m of fs.readFileSync(path.join(root, f), 'utf8').matchAll(KEY)) used.add(m[1]);
+  for (const sc of Object.values(PE.scenes)) {
+    used.add(sc.location);
+    for (const [id, ent] of Object.entries(sc.entities)) {
+      used.add('ent.' + id);
+      if (topics) for (const act of Object.values(ent)) if (act && act.topics) for (const tp of Object.keys(act.topics)) used.add('topic.' + tp);
+    }
+  }
+  for (const v of Object.keys(PE.commands)) used.add('verb.' + v);
+  // 場景 id（goto: 's2.m1.alley'）長得像 key，但不是文字。
+  for (const id of Object.keys(PE.scenes)) used.delete(id);
+  for (const [prefix, list] of Object.entries(families)) {
+    used.delete(prefix);
+    for (const x of list) used.add(prefix + x);
+  }
+  for (const k of used) if (!k.endsWith('.') && !all.has(k)) fail(`${label} key used but not defined: ${k}`);
+  console.log(`${label}: ${all.size} keys × ${codes.length} languages`);
 }
-for (const sc of Object.values(E.scenes)) for (const id of Object.keys(sc.entities)) used.add('ent.' + id);
-for (const v of Object.keys(E.commands)) used.add('verb.' + v);
 // 第二季介面用字串拼出來的 key（例如 's2.p.cat.' + 類別），逐一列出來檢查。
 const families = {
   's2.p.tier.': ['common', 'uncommon', 'rare'],
@@ -88,13 +106,13 @@ const families = {
   's2.react.': ['reroll.title', 'reroll.use', 'reroll.skip', 'escape.title', 'escape.use', 'escape.skip'],
   's2.ev.': ['freeze.title', 'freeze.text', 'freeze.out', 'freeze.go', 'freeze.outDone', 'freeze.goDone',
     'phone.title', 'phone.text', 'phone.take', 'phone.risk'],
+  's2.world.': ['stay', 'seal', 'wildfire', 'recaptured', 'stay.d', 'seal.d', 'wildfire.d', 'recaptured.d'],
+  'm1.screen.': ['stay', 'seal', 'wildfire', 'recaptured', 'stay.b', 'seal.b', 'wildfire.b', 'recaptured.b'],
+  'm1.b.clock.': ['1', '2'],
 };
-for (const [prefix, list] of Object.entries(families)) {
-  used.delete(prefix);
-  for (const x of list) used.add(prefix + x);
-}
-for (const k of used) if (!k.endsWith('.') && !all.has(k)) fail(`key used but not defined: ${k}`);
-console.log(`${all.size} keys × ${codes.length} languages`);
+checkTexts('S1', S1, html, ['js/main.js', 'js/ui/terminal.js', ...scripts.filter((f) => !f.includes('locales'))]);
+// 第二季借用第一季的指令別名（content/commands.js），但每個場景都有自己的說明，用不到第一季的預設說明。
+checkTexts('S2', S2, s2html, ['js/ui/s2.js', ...S2_SCRIPTS.filter((f) => !f.includes('locales') && f !== 'content/commands.js')], families, true);
 
 // ===== 2. 第一季：四條路線打到四種結局 =====
 section('第一季路線');
@@ -198,7 +216,8 @@ for (const [input, verb, target] of [['items', 'items', null], ['i', 'items', nu
   if (c.verb !== verb || (c.target || null) !== target) fail(`parse "${input}" -> ${c.verb}/${c.target}, expected ${verb}/${target}`);
 }
 
-// ===== 3. 第二季資料表 =====
+// ===== 3. 第二季資料表（以下都在第二季的沙盒裡） =====
+E = S2.E;
 section('第二季資料表');
 const P = E.s2.people;
 // 每一個帶 en 的物件都必須同時有非空的 tc 與 sc。
@@ -372,7 +391,7 @@ section('夜間行動');
   // smart 為 true 時像玩家一樣優先拆塔、救人，派最穩的人，威脅太高就避風頭、老手就退休；否則隨便亂選。
   // 兩種機器人都會用到外圍網路、分頭行動和手動駭入（解開與否隨機）。
   function play(seed, smart) {
-    const s = N.create(seed);
+    const s = N.create(seed, { skipStory: true, world: N.WORLDS[E.rng.hash(seed) % 4] });
     const bot = E.rng.create('bot:' + seed);
     N.pickVolunteers(s, s.volunteers.slice(0, 2));
     const rank = (e, team) => ({ raid: 0, rescue: 0, recruit: team < 3 ? 1 : 5, expand: 6, tower: 2, broadcast: 3 }[e.op]);
@@ -466,6 +485,53 @@ section('夜間行動');
   if (won < RUNS / 2 * 0.4) fail(`balance: a sensible player only frees Camden ${won}/${RUNS / 2} times`);
   console.log(Object.entries(ends).sort().map(([k, v]) => `${k} ${v}`).join(', '));
   console.log(`sensible player: ${won}/${RUNS / 2} liberated, ${(nights / (RUNS / 2)).toFixed(1)} nights on average`);
+}
+
+// ===== 7c. 主線任務一「熄燈」：用打字把文字冒險打完 =====
+section('主線任務一');
+{
+  const N = E.night;
+  // zh-Hant：完美潛入（弄暗路燈、躲進熱氣）。zh-Hans：什麼都不管，被看到、還拖到門被撞開。en：踢販賣機，其他照規矩。
+  const ROUTES = {
+    'zh-Hant': ['讀取手機', '問 Bagley 為什麼是我', '跟 Bagley 說好', '拿外套', '看窗外', '前往後門',
+      '駭入路燈', '前往通風口', '等待', '前往後門', '看螢幕', '拿硬碟', '前往運煤口', '跟 Bagley 說話'],
+    'zh-Hans': ['说明', '读取手机', '问 Bagley 你是谁', '跟 Bagley 说好', '前往后门', '扫描无人机', '前往后门',
+      '查看屏幕', '拿硬盘', '看照片', '扫描照片', '跟 Bagley 说话'],
+    en: ['look', 'read phone', 'ask bagley who are you', 'go back door', 'tell bagley yes', 'hit vending machine', 'go back door',
+      'hack streetlight', 'go vent', 'go door', 'look screen', 'take drive', 'go hatch', 'talk bagley'],
+  };
+  const EXPECT = {
+    'zh-Hant': { exposure: 3, spotted: false, bonus: 0 },
+    'zh-Hans': { exposure: 50, spotted: true, bonus: 20 },
+    en: { exposure: 3, spotted: false, bonus: 3 },
+  };
+  for (const world of N.WORLDS) {
+    for (const lang of LANGS) {
+      E.i18n.set(lang);
+      const s = N.create('m1-' + world, { world });
+      if (s.phase !== 'story') { fail(`m1 ${lang}: did not start in story mode`); continue; }
+      for (const text of ROUTES[lang]) {
+        if (s.phase !== 'story') break;
+        N.storyCommand(s, E.parser.parse(text, E.scenes[s.story.scene], s.story), { c: 'input', raw: text });
+        for (const c of E.engine.suggestions(s.story || {})) if (c[1] && !E.scenes[s.story.scene].entities[c[1]]) fail(`m1: suggestion targets missing ${c[1]}`);
+      }
+      const x = EXPECT[lang];
+      if (s.phase !== 'start') { fail(`m1 ${lang}/${world}: still in ${s.story.scene} after the route`); continue; }
+      if (s.story.exposure !== x.exposure || !!s.story.flags.spotted !== x.spotted || (s.heroBonus || 0) !== x.bonus) {
+        fail(`m1 ${lang}/${world}: exposure ${s.story.exposure}, spotted ${s.story.flags.spotted}, bonus ${s.heroBonus}`);
+      }
+      const text = render(s.storyLog).join('\n');
+      if (unresolved(text)) fail(`m1 ${lang}/${world}: unresolved ${(text.match(/⟦[^⟧]+⟧|\{\w+\}/g) || []).join(' ')}`);
+      if (!s.storyLog.some((e) => e.k === 'm1.screen.' + world)) fail(`m1 ${lang}/${world}: the safe house screen never showed the ${world} line`);
+      if (show === 'm1-' + lang && world === 'stay') console.log(text);
+      // 主角一定在隊上，只要再挑一個人。
+      if (!N.pickVolunteers(s, [s.volunteers[2]]) || s.roster.members.length !== 2 || !E.roster.get(s.roster, s.hero)) fail(`m1 ${lang}: hero pick failed`);
+      else if (E.roster.get(s.roster, s.hero).threat !== N.person(s, s.hero).threat + x.bonus && E.roster.get(s.roster, s.hero).threat !== 100) fail(`m1 ${lang}: hero threat bonus not applied`);
+    }
+  }
+  const skipped = N.create('m1-skip');
+  if (!N.skipStory(skipped) || skipped.phase !== 'start') fail('m1: skipping the story failed');
+  console.log(`3 routes × ${N.WORLDS.length} worlds, clean / spotted / burst paths, hero pick`);
 }
 
 // ===== 8. 存檔 =====

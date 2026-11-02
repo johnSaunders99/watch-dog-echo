@@ -24,8 +24,8 @@ You are ECHO, an AI built to reconstruct anyone's past from their data. The DedS
 - 進度自動儲存在瀏覽器裡。Progress saves automatically in your browser.
 - 遊玩時間約 40–60 分鐘，共 4 個結局。About 40–60 minutes, 4 endings.
 
-**第二季《宵禁》玩法原型**：打開 `s2.html`。只有康登一區、十個晚上，用來試玩招募任何人和夜間行動，還沒有主線劇情。網址加上 `?seed=任意文字` 可以重現同一批路人。
-**Season 2 "Curfew" gameplay prototype**: open `s2.html`. Camden only, ten nights, for trying out recruit-anyone and night operations; no main story yet. Add `?seed=anything` to replay the same people.
+**第二季《宵禁》玩法原型**：打開 `s2.html`，或從第一季的標題畫面點進去。目前有主線任務一「熄燈」（文字冒險），以及康登一區的十個晚上：招募任何人、夜間行動、駭入小遊戲。玩過第一季的話，會自動讀取第一季的結局。網址加上 `?seed=任意文字` 可以重現同一批路人。
+**Season 2 "Curfew" gameplay prototype**: open `s2.html`, or follow the link on the Season 1 title screen. It has main mission 1, "Lights Out" (a text adventure), and ten nights in Camden: recruit anyone, night operations, a hacking mini-game. If you finished Season 1, its ending carries over. Add `?seed=anything` to replay the same people.
 
 ## 特色 Features
 

@@ -264,3 +264,8 @@ body.desync #game { animation: desync 0.9s steps(1); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* 標題畫面：切換到另一季 */
+.season-link { margin: -14px 0 18px; font-size: 14px; }
+.season-link a { color: var(--sys); text-decoration: none; letter-spacing: 0.08em; border-bottom: 1px dashed rgba(108, 214, 226, 0.5); }
+.season-link a:hover { color: #fff; border-bottom-color: #fff; }

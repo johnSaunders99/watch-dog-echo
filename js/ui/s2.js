@@ -9,8 +9,8 @@
   const N = E.night;
   const data = () => E.s2.people;
   const stages = () => E.s2.ops.stages;
-  // 第 2 版存檔：加入外圍網路、分頭行動和限時行動。第 1 版的原型存檔不相容，直接開新的一輪。
-  const slot = E.save.slot('watchdogs-echo.s2.proto', 2);
+  // 第 3 版存檔：加入主線任務一和第一季的世界。舊版的原型存檔不相容，直接開新的一輪。
+  const slot = E.save.slot('watchdogs-echo.s2.proto', 3);
   const LANG_KEY = 'watchdogs-echo.s2.lang';
 
   let s = null;
@@ -21,6 +21,8 @@
   let hack = null;       // 手動駭入：{ stage: 'choose' | 'play' | 'solved' | 'timeout', aid, who, spec, pz, spins, deadline }
   let hackTimer = null;
   let cineTimer = null;
+  let storySeen = 0;     // 主線任務已經播過的輸出行數
+  let worldOpen = false; // 正在問玩家第一季的結局
 
   const who = (id) => N.person(s, id);
   const nm = (id) => P(E.people.name(who(id)));
@@ -121,21 +123,122 @@
       + `<div class="op-reward">${rewardText(e.reward)}</div></${tag}>`;
   }
 
+  // ===== 主線任務：文字冒險 =====
+  const chipText = (cmd) => t('verb.' + cmd[0]) + (cmd[1] ? ' ' + t('ent.' + cmd[1]) : '') + (cmd[2] ? ' · ' + t('topic.' + cmd[2]) : '');
+
+  function storyLine(e, order) {
+    if (e.c === 'pause') return '';
+    const anim = order >= 0 ? ` new" style="animation-delay:${Math.min(order, 12) * 0.16}s` : '';
+    if (e.c === 'input') return `<div class="sl c-input${anim}">&gt; ${esc(e.cmd ? chipText(e.cmd) : e.raw)}</div>`;
+    const who = e.c === 'prof' && e.who ? `<span class="sl-face">${face(e.who)}</span>` : '';
+    return `<div class="sl c-${e.c}${anim}">${who}<span>${T(e.k, e.v)}</span></div>`;
+  }
+
+  function renderStory() {
+    const st = s.story;
+    const scene = E.scenes[st.scene];
+    const parts = t(scene.location).split('//').map((x) => x.trim());
+    const lvl = st.exposure >= 60 ? 'hot' : st.exposure >= 30 ? 'warm' : 'cool';
+    const first = storySeen;
+    let h = `<section class="op-head story-head"><div class="op-art">${E.art.byKey(scene.art)}<div class="op-overlay">`
+      + `<div class="story-loc">${esc(parts[0] || '')}</div><div class="op-title">${esc(parts[1] || '')}</div><div class="story-sub">${esc(parts.slice(2).join(' · '))}</div></div></div>`
+      + `<div class="alert alert-${lvl}"><div class="alert-top"><span>${T('s2.story.alert')}</span><b>${st.exposure}</b></div><div class="alert-bar"><i style="width:${st.exposure}%"></i></div></div></section>`;
+    h += `<section class="panel story"><div class="story-log" id="story-log">${s.storyLog.map((e, i) => storyLine(e, i >= first ? i - first : -1)).join('')}</div>`
+      + `<div class="story-chips">${E.engine.suggestions(st).map((c) => `<button class="chip" data-act="storyChip" data-cmd="${esc(JSON.stringify(c))}">${esc(chipText(c))}</button>`).join('')}</div>`
+      + `<form id="story-form" class="story-form" autocomplete="off"><span>&gt;</span><input id="story-cmd" type="text" spellcheck="false" placeholder="${T('s2.story.placeholder')}" aria-label="Command"><button type="submit" class="primary">${T('s2.story.send')}</button></form>`
+      + `<div class="bar-actions"><button class="ghost" data-act="skipStory">${T('s2.story.skip')}</button></div></section>`;
+    return h;
+  }
+
+  // 打字輸入：語言切換在這裡處理，其他交給第一季的場景引擎。
+  function storyInput(text) {
+    const cmd = E.parser.parse(text, E.scenes[s.story.scene], s.story);
+    if (!cmd) return;
+    if (cmd.verb === 'lang') {
+      const r = (cmd.rest || '').trim().toLowerCase();
+      const code = Object.keys(E.langAliases).find((c) => E.langAliases[c].includes(r));
+      s.storyLog.push({ c: 'input', raw: text.trim() }, code ? { c: 'sys', k: 'lang.switched' } : { c: 'err', k: 'lang.unknown' });
+      if (code) setLang(code);
+    } else if (cmd.verb !== 'restart') {
+      N.storyCommand(s, cmd, { c: 'input', raw: text.trim() });
+    }
+    afterStory();
+  }
+
+  function afterStory() {
+    if (s.phase === 'start') {
+      picks = {};
+      window.scrollTo(0, 0);
+    }
+    commit();
+  }
+
+  // 新出現的劇情行：標題跳出全螢幕卡，其他依類型播放音效。
+  function storyFeedback() {
+    if (!s.storyLog) return;
+    const fresh = s.storyLog.slice(storySeen);
+    storySeen = s.storyLog.length;
+    const title = fresh.find((e) => e.c === 'title');
+    if (title) {
+      cine('title', `<div class="cine-title">${T(title.k, title.v)}</div>`, 2400);
+      E.fx.sfx.play('title');
+    } else if (fresh.some((e) => e.c === 'warn')) E.fx.sfx.play('alarm');
+    else if (fresh.some((e) => e.c === 'prof')) E.fx.sfx.play('prof');
+    else if (fresh.some((e) => e.c === 'cost')) E.fx.sfx.play('hack');
+    else if (fresh.length) E.fx.sfx.play('blip');
+    const log = $('story-log');
+    if (log) log.scrollTop = log.scrollHeight;
+  }
+
+  // ===== 倫敦地圖：第二季原型只開放康登，其他區之後才會解鎖 =====
+  const MAP = {
+    camden: { d: 'M296 34 L414 26 L462 80 L440 142 L332 152 L282 104 Z', c: [372, 88] },
+    soho: { d: 'M318 166 L430 160 L452 206 L404 236 L332 234 L304 200 Z', c: [378, 200] },
+    westminster: { d: 'M196 196 L298 200 L322 240 L300 274 L214 280 L176 238 Z', c: [250, 240] },
+    rotherhithe: { d: 'M424 318 L556 304 L598 346 L560 386 L446 390 L404 356 Z', c: [500, 350] },
+    isle_of_dogs: { d: 'M636 262 L690 256 L712 306 L686 346 L644 334 L626 298 Z', c: [668, 302] },
+  };
+  const RIVER = 'M0 300 C100 292 160 312 230 300 C300 288 340 262 410 268 C480 274 520 300 590 290 C620 286 618 240 668 236 C724 232 744 296 724 340 C704 384 640 372 618 330 C600 300 660 286 720 292 C760 296 780 300 800 300';
+  function renderMap() {
+    const D = data().districts;
+    let g = `<path d="${RIVER}" fill="none" stroke="#17324d" stroke-width="26" stroke-linecap="round"/><path d="${RIVER}" fill="none" stroke="#25507a" stroke-width="2" opacity="0.6"/>`;
+    for (const [id, m] of Object.entries(MAP)) {
+      const name = P(D[id].name);
+      if (id === 'camden') {
+        const a = 0.18 + s.support / 100 * 0.6;
+        g += `<path d="${m.d}" fill="rgba(255,46,136,${a.toFixed(2)})" stroke="#ff2e88" stroke-width="2.5"/>`
+          + `<text x="${m.c[0]}" y="${m.c[1] - 8}" class="map-name live">${name}</text>`
+          + `<text x="${m.c[0]}" y="${m.c[1] + 14}" class="map-sub">${T('s2.ui.support')} ${s.support}%</text>`
+          + Array.from({ length: s.towers }, (_, i) => `<path d="M${m.c[0] - 34 + i * 20} ${m.c[1] + 42} l6 -16 l6 16 Z" fill="#ffd23f"/>`).join('')
+          + `<circle cx="${m.c[0] + 50}" cy="${m.c[1] + 34}" r="5" fill="#6cd6e2"/><text x="${m.c[0] + 60}" y="${m.c[1] + 38}" class="map-pin">${T('s2.map.here')}</text>`;
+      } else {
+        g += `<path d="${m.d}" fill="#121722" stroke="#2c3446" stroke-width="2" stroke-dasharray="6 5"/>`
+          + `<text x="${m.c[0]}" y="${m.c[1] - 4}" class="map-name">${name}</text><text x="${m.c[0]}" y="${m.c[1] + 16}" class="map-sub">${T('s2.map.locked')}</text>`;
+      }
+    }
+    return `<section class="map"><svg viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${g}</svg>`
+      + `<div class="banner-txt"><div class="banner-night">${T('s2.ui.nightOf', { n: s.night, max: N.MAX_NIGHTS })}</div><div class="banner-loc">${P(D.camden.name)}</div></div></section>`;
+  }
+
   // ===== 各階段 =====
   function renderStart() {
     const chosen = ids();
-    return `<section class="panel">${bagleyBox()}<h2>${T('s2.start.title')}</h2><p class="hint">${T('s2.start.hint')}</p>`
-      + `<div class="grid-people">${s.volunteers.map((id) => personCard(id, { full: true, act: 'vol', selected: !!picks[id] })).join('')}</div>`
-      + `<div class="bar-actions"><span class="hint">${T('s2.start.picked', { n: chosen.length })}</span>`
-      + `<button class="primary" data-act="begin"${chosen.length === 2 ? '' : ' disabled'}>${T('s2.start.go')}</button></div></section>`;
+    const hero = s.hero;
+    const need = hero ? 1 : 2;
+    const cards = s.volunteers.map((id) => (id === hero
+      ? personCard(id, { full: true, selected: true, cls: 'is-hero', badge: `<em class="hero">${T('s2.start.you')}</em>` })
+      : personCard(id, { full: true, act: 'vol', selected: !!picks[id] })));
+    return `<section class="panel">${bagleyBox()}<h2>${T(hero ? 's2.start.title2' : 's2.start.title')}</h2><p class="hint">${T(hero ? 's2.start.hint2' : 's2.start.hint')}</p>`
+      + `<div class="grid-people">${cards.join('')}</div>`
+      + `<div class="bar-actions"><span class="hint">${T('s2.start.picked', { n: chosen.length + (hero ? 1 : 0) })}</span>`
+      + `<button class="primary" data-act="begin"${chosen.length === need ? '' : ' disabled'}>${T('s2.start.go')}</button></div></section>`;
   }
 
   function renderDay() {
     const ops = N.ops(s);
     const street = N.street(s);
     const owed = Object.keys(s.owed);
-    let h = `<section class="banner">${E.art.byKey('basement')}<div class="banner-txt"><div class="banner-night">${T('s2.ui.nightOf', { n: s.night, max: N.MAX_NIGHTS })}</div>`
-      + `<div class="banner-loc">${P(data().districts.camden.name)}</div></div></section>`;
+    let h = renderMap();
     if (s.tonight) {
       h += `<section class="counter counter-${s.tonight.type}"><b>${T('s2.counter.' + s.tonight.type + '.title')}</b><p>${T('s2.counter.' + s.tonight.type)}</p>`
         + (s.tonight.type === 'raid' ? `<p class="warn">${T('s2.day.raidHint')}</p>` : '') + `</section>`;
@@ -438,6 +541,8 @@
     $('m-heat').style.width = s.heat + '%';
     $('m-heat-v').textContent = s.heat;
     $('m-towers').textContent = s.towers + '/4';
+    $('m-world').textContent = t('s2.world.chip', { ending: { t: 's2.world.' + s.world } });
+    $('m-world').title = t('s2.world.' + s.world + '.d');
     $('s2-beds').textContent = t('s2.ui.beds', { n: E.roster.housed(s.roster).length, max: s.roster.capacity });
     renderTeam();
 
@@ -448,8 +553,13 @@
     const main = $('s2-main');
     const phase = s.phase === 'event' || s.phase === 'react' ? 'op' : s.phase;
     main.dataset.phase = phase;
-    main.innerHTML = { start: renderStart, day: renderDay, squad: renderSquad, op: renderOp, result: renderResult, end: renderEnd }[phase]();
+    main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, squad: renderSquad, op: renderOp, result: renderResult, end: renderEnd }[phase]();
     renderModal();
+    if (phase === 'story') {
+      const log2 = $('story-log');
+      if (log2) log2.scrollTop = log2.scrollHeight;
+      if (!window.matchMedia('(pointer: coarse)').matches && !hack && !profileId) $('story-cmd').focus();
+    }
   }
 
   // 新出現的紀錄決定音效和畫面閃一下。
@@ -488,6 +598,7 @@
     slot.write(s);
     render();
     feedback();
+    storyFeedback();
   }
 
   // ===== 操作 =====
@@ -500,8 +611,19 @@
   };
 
   const actions = {
-    vol(d) { toggle(d.id, 2, false); },
+    // 有主角時只要再挑一個人：點另一個人就直接換掉。
+    vol(d) {
+      if (d.id === s.hero) return;
+      if (s.hero) picks = picks[d.id] ? {} : { [d.id]: 'main' };
+      else toggle(d.id, 2, false);
+    },
     begin() { if (N.pickVolunteers(s, ids())) { picks = {}; window.scrollTo(0, 0); } },
+    storyChip(d) {
+      const c = JSON.parse(d.cmd);
+      N.storyCommand(s, { verb: c[0], target: c[1] || null, topic: c[2] || null, rest: '', raw: '' }, { c: 'input', cmd: c });
+      if (s.phase === 'start') { picks = {}; window.scrollTo(0, 0); }
+    },
+    skipStory() { if (window.confirm(t('s2.story.skipConfirm'))) { N.skipStory(s); picks = {}; window.scrollTo(0, 0); } },
     scan(d) { N.scan(s, d.id); E.fx.sfx.play('prof'); },
     recruit(d) { N.recruitOwed(s, d.id); },
     op(d) { if (N.pickOp(s, d.key)) picks = {}; window.scrollTo(0, 0); },
@@ -559,6 +681,7 @@
 
   function onClick(ev) {
     const el = ev.target.closest('[data-act]');
+    if (el && el.dataset.act === 'world') return startRun(el.dataset.w, false);
     if (!el || el.disabled || !s) return;
     E.fx.sfx.unlock();
     if (el.dataset.act === 'tile') return turnTile(Number(el.dataset.i));
@@ -586,24 +709,46 @@
     lsSet(LANG_KEY, code);
     applyStatic();
     if (s && !$('s2-game').hidden) render();
+    if (worldOpen) worldPicker();
   }
 
-  function show() {
+  // fresh 為 true 時（新的一輪），主線任務的開場文字會一行一行出現。
+  function show(fresh) {
     $('s2-title').hidden = true;
     $('s2-game').hidden = false;
     seen = s.log.length;
+    storySeen = fresh ? 0 : (s.storyLog || []).length;
     render();
+    if (fresh) storyFeedback();
   }
 
+  // 新的一輪：讀得到第一季的結局就直接用，讀不到就讓 Bagley 問。
   function newRun() {
+    const found = E.save.v1Ending();
+    if (found) startRun(found, true);
+    else worldPicker();
+  }
+
+  function worldPicker() {
+    worldOpen = true;
+    const el = $('s2-modal');
+    el.hidden = false;
+    el.innerHTML = `<div class="modal-card world"><div class="modal-face">${E.art.avatar('bagley')}</div><h3>${T('s2.world.title')}</h3><p>${T('s2.world.ask')}</p><div class="modal-actions stack">`
+      + N.WORLDS.map((w) => `<button data-act="world" data-w="${w}"><b>${T('s2.world.' + w)}</b><small>${T('s2.world.' + w + '.d')}</small></button>`).join('')
+      + `<button class="primary" data-act="world" data-w="stay">${T('s2.world.none')}</button></div></div>`;
+  }
+
+  function startRun(world, found) {
+    worldOpen = false;
     const fromUrl = new URLSearchParams(location.search).get('seed');
-    s = N.create(fromUrl || Date.now().toString(36));
+    s = N.create(fromUrl || Date.now().toString(36), { world });
+    if (found && s.storyLog) s.storyLog.unshift({ c: 'sys', k: 's2.world.found', v: { ending: { t: 's2.world.' + world } } });
     picks = {};
     profileId = null;
     retiring = null;
     hack = null;
     slot.write(s);
-    show();
+    show(true);
   }
 
   function init() {
@@ -617,6 +762,12 @@
       const lang = ev.target.closest('[data-lang]');
       if (lang) return setLang(lang.dataset.lang);
       onClick(ev);
+    });
+    document.addEventListener('submit', (ev) => {
+      if (ev.target.id !== 'story-form') return;
+      ev.preventDefault();
+      const text = $('story-cmd').value;
+      if (text.trim() && s && s.phase === 'story') { E.fx.sfx.unlock(); storyInput(text); }
     });
     document.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape' && profileId) { profileId = null; renderModal(); }

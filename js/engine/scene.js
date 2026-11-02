@@ -95,8 +95,9 @@
         }
       } else if (verb === 'switch') {
         this.switchActor(cmd, s, scene, say);
-      } else if (verb === 'hack' && s.actor !== 'echo' && !scene.memory) {
+      } else if (verb === 'hack' && s.actor !== 'echo' && !scene.memory && !scene.anyoneHacks) {
         // 只有 Echo 會駭客技術；人類同伴得切換回 Echo 才能駭入。
+        // 第二季的場景標了 anyoneHacks：主角是人類，用手機加上 Bagley 的幫忙駭入。
         say('dim', 'actor.nohack', { who: { t: 'name.' + s.actor } });
       } else if (!target) {
         if (cmd.rest) say('err', 'err.noTarget', { target: cmd.rest });

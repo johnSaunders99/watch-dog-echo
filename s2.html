@@ -24,6 +24,7 @@
         <button type="button" id="s2-start" class="primary" data-i18n="s2.ui.start"></button>
         <button type="button" id="s2-continue" data-i18n="s2.ui.continue" hidden></button>
       </div>
+      <p class="season-link"><a href="index.html" data-i18n="s2.ui.season1"></a></p>
       <p class="disclaimer" data-i18n="s2.ui.disclaimer"></p>
     </div>
   </section>
@@ -37,6 +38,7 @@
         <div class="s2-meter support"><span class="label" data-i18n="s2.ui.support"></span><span class="bar"><i id="m-support"></i></span><b id="m-support-v"></b></div>
         <div class="s2-meter heat"><span class="label" data-i18n="s2.ui.heat"></span><span class="bar"><i id="m-heat"></i></span><b id="m-heat-v"></b></div>
         <div class="s2-meter towers"><span class="label" data-i18n="s2.ui.towers"></span><b id="m-towers"></b></div>
+        <div class="s2-meter world"><span id="m-world" class="world-chip"></span></div>
       </div>
       <div class="s2-tools">
         <button type="button" id="s2-sound" class="icon-btn"></button>
@@ -70,6 +72,9 @@
   <div id="cine" class="cine" aria-live="polite"></div>
 
   <script src="js/engine/i18n.js"></script>
+  <script src="js/engine/state.js"></script>
+  <script src="js/engine/parser.js"></script>
+  <script src="js/engine/scene.js"></script>
   <script src="js/engine/save.js"></script>
   <script src="js/engine/rng.js"></script>
   <script src="js/engine/people.js"></script>
@@ -80,6 +85,9 @@
   <script src="content-s2/people.js"></script>
   <script src="content-s2/ops.js"></script>
   <script src="content-s2/locales.js"></script>
+  <script src="content/commands.js"></script>
+  <script src="content-s2/story-locales.js"></script>
+  <script src="content-s2/scenes/m1-lights-out.js"></script>
   <script src="js/ui/art.js"></script>
   <script src="js/ui/fx.js"></script>
   <script src="js/ui/faces.js"></script>

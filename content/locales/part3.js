@@ -72,6 +72,7 @@ ECHO.i18n.register('zh-Hant', {
   'end.wf.3': '一週後，第一批大規模部署開源引擎的，不是記者，也不是普通人，而是三個國家的軍隊。',
   'end.wf.4': '再一週後，一位議員二十年前的醜聞被翻了出來。',
   'end.rc.6': '一週後，守夜人第二代上線。這一次，它有兩套重建引擎。',
+  'ui.season2': "第二季：宵禁（玩法原型）→",
 });
 
 ECHO.i18n.register('zh-Hans', {
@@ -140,6 +141,7 @@ ECHO.i18n.register('zh-Hans', {
   'end.wf.3': '一周后，第一批大规模部署开源引擎的，不是记者，也不是普通人，而是三个国家的军队。',
   'end.wf.4': '再过一周，一位议员二十年前的丑闻被翻了出来。',
   'end.rc.6': '一周后，守夜人第二代上线。这一次，它有两套重建引擎。',
+  'ui.season2': "第二季：宵禁（玩法原型）→",
 });
 
 ECHO.i18n.register('en', {
@@ -208,4 +210,5 @@ ECHO.i18n.register('en', {
   'end.wf.3': 'A week later, the first large-scale deployments of the open engine weren\'t by journalists, or ordinary people. They were by three national militaries.',
   'end.wf.4': "A week after that, an MP's twenty-year-old scandal was dug up.",
   'end.rc.6': 'A week later, Nightwatch Mark II comes online. This time, it has two reconstruction engines.',
+  'ui.season2': "Season 2: CURFEW (prototype) →",
 });

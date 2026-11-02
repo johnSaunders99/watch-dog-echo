@@ -304,6 +304,10 @@ ECHO.i18n.register('zh-Hant', {
   's2.log.hackSolved': "{name}親手接通了訊號。",
   's2.log.hackFailed': "{name}沒能及時接通訊號。",
   's2.bagley.wanted': "有人的威脅評分超過 80 了，白天走在街上都可能被攔下。考慮讓那個人避避風頭。",
+  's2.log.echoHint': "Echo 傳來一行字：第一關還有另一條路。",
+  's2.ui.season1': "← 第一季：殘響",
+  's2.map.locked': "尚未開放",
+  's2.map.here': "安全屋",
 });
 
 ECHO.i18n.register('zh-Hans', {
@@ -610,6 +614,10 @@ ECHO.i18n.register('zh-Hans', {
   's2.log.hackSolved': "{name}亲手接通了信号。",
   's2.log.hackFailed': "{name}没能及时接通信号。",
   's2.bagley.wanted': "有人的威胁评分超过 80 了，白天走在街上都可能被拦下。考虑让那个人避避风头。",
+  's2.log.echoHint': "Echo 传来一行字：第一关还有另一条路。",
+  's2.ui.season1': "← 第一季：残响",
+  's2.map.locked': "尚未开放",
+  's2.map.here': "安全屋",
 });
 
 ECHO.i18n.register('en', {
@@ -916,4 +924,8 @@ ECHO.i18n.register('en', {
   's2.log.hackSolved': "{name} connects the signal by hand.",
   's2.log.hackFailed': "{name} does not connect the signal in time.",
   's2.bagley.wanted': "Someone on the team has a threat score over 80, and could be stopped in broad daylight. Consider sending that person to lie low.",
+  's2.log.echoHint': "Echo sends one line: there is another way through the first stage.",
+  's2.ui.season1': "← Season 1: ECHO",
+  's2.map.locked': "Locked",
+  's2.map.here': "Safe house",
 });
