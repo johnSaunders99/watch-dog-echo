@@ -64,7 +64,9 @@
   }
 
   // 三語姓名：{ en, tc, sc }。
+  // 第一季的老朋友有固定的名字（fixedName）。
   function name(p) {
+    if (p.fixedName) return p.fixedName;
     const h = data().heritages[p.heritage];
     const g = h.given[p.given];
     const f = h.family[p.family];
@@ -82,8 +84,8 @@
   const flawOf = (p) => (p.flaw ? byId(data().flaws, p.flaw) : data().noFlaw);
   const quirksOf = (p) => p.quirks.map((id) => byId(data().quirks, id));
   const perkOf = (p) => data().perks[occupationOf(p).perk];
-  // common 普通、uncommon 少見、rare 稀有
-  const tierOf = (p) => (p.rare ? 'rare' : occupationOf(p).tier || 'common');
+  // common 普通、uncommon 少見、rare 稀有、special 第一季的老朋友
+  const tierOf = (p) => (p.special ? 'special' : p.rare ? 'rare' : occupationOf(p).tier || 'common');
 
   // 麻煩的句子：把 {name} 換成各語言的姓名。
   function problemText(p) {

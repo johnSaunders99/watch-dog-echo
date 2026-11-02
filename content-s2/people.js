@@ -367,5 +367,24 @@
   };
   for (const k in networkFx) perks[k].network = networkFx[k];
 
-  S2.people = { heritages, districts, perks, occupations, rares, traits, flaws, noFlaw, quirks, relations, scars, combos, secrets, problems };
+  // 第一季的老朋友：完成主線任務後加入，名字和個性都是固定的。bio 取代一般路人的秘密。
+  const specials = {
+    homan: { person: {
+      fixedName: n('Chan Ho-man', '陳浩文', '陈浩文'), heritage: 'hongkong', given: 0, family: 0, age: 41, occupation: 'courier',
+      traits: ['driver', 'nimble'], flaw: null, quirks: ['cantonese', 'mahjong'], skills: { hack: 0, physical: 2, social: 3 }, threat: 45,
+      bio: n('Still delivering. Still keeps a photo of Hiu-ching on the handlebars. Knows every back door in Chinatown.', '還在送外賣，車把上還貼著曉晴的照片。唐人街的每一扇後門都認得他。', '还在送外卖，车把上还贴着晓晴的照片。唐人街的每一扇后门都认得他。'),
+    } },
+    maya: { person: {
+      fixedName: n('Maya Okafor', '瑪雅・奧卡福', '玛雅·奥卡福'), heritage: 'west_african', given: 0, family: 0, age: 29, occupation: 'programmer',
+      traits: ['calm', 'memory'], flaw: 'record', quirks: ['night_shift', 'gamer'], skills: { hack: 3, physical: 1, social: 1 }, threat: 70,
+      bio: n('The DedSec hacker who broke Echo out. Spent the last year hiding in plain sight on the Isle of Dogs.', '當年把 Echo 救出來的 DedSec 駭客。這一年都躲在狗島，就在獅心防務的眼皮底下。', '当年把 Echo 救出来的 DedSec 黑客。这一年都躲在狗岛，就在狮心防务的眼皮底下。'),
+    } },
+    eileen: { person: {
+      fixedName: n('Eileen Walsh', '艾琳・沃什', '艾琳·沃什'), heritage: 'irish', given: 0, family: 0, age: 74, occupation: 'teacher',
+      traits: ['careful', 'memory'], flaw: null, quirks: ['tea', 'knitting'], skills: { hack: 1, physical: 1, social: 2 }, threat: 5,
+      bio: n('Her grandmother dug the tunnels under Rotherhithe. Eileen has the notebook, and opinions about everything.', '她的祖母挖過羅瑟希德底下的隧道。筆記本在艾琳手上，意見也是。', '她的祖母挖过罗瑟希德底下的隧道。笔记本在艾琳手上，意见也是。'),
+    } },
+  };
+
+  S2.people = { heritages, districts, perks, occupations, rares, traits, flaws, noFlaw, quirks, relations, scars, combos, secrets, problems, specials };
 })(window.ECHO = window.ECHO || {});

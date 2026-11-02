@@ -9,8 +9,8 @@
   const N = E.night;
   const data = () => E.s2.people;
   const stages = () => E.s2.ops.stages;
-  // 第 3 版存檔：加入主線任務一和第一季的世界。舊版的原型存檔不相容，直接開新的一輪。
-  const slot = E.save.slot('watchdogs-echo.s2.proto', 3);
+  // 第 4 版存檔：整個戰役（五個行政區、主線任務一到八）。舊版的原型存檔不相容，直接開新的一輪。
+  const slot = E.save.slot('watchdogs-echo.s2.proto', 4);
   const LANG_KEY = 'watchdogs-echo.s2.lang';
 
   let s = null;
@@ -61,6 +61,8 @@
       + `<em class="cat cat-${job.category}">${T('s2.p.cat.' + job.category)}</em><em>${T('s2.p.age', { n: p.age })}</em>`
       + `<em class="threat${threat >= N.WANTED ? ' wanted' : threat >= 50 ? ' high' : ''}">${T('s2.p.threat', { n: threat })}</em>`
       + (m && m.wins ? `<em>${T('s2.p.wins', { n: m.wins })}</em>` : '')
+      + (m && m.critical ? `<em class="threat wanted">${T('s2.p.critical')}</em>` : '')
+      + (m && m.hunted ? `<em class="threat high">${T('s2.p.hunted')}</em>` : '')
       + `</span></div></header>`;
     h += skills(p);
     if (!opt.full) return h + (opt.footer || '') + '</article>';
@@ -85,7 +87,7 @@
     if (m && m.scars && m.scars.length) {
       h += `<div class="p-row scars"><label>${T('s2.p.scars')}</label><div>${m.scars.map((k) => `<span class="q"><b>${P(data().scars[k].name)}</b><small>${P(data().scars[k].desc)}</small></span>`).join('')}</div></div>`;
     }
-    h += `<p class="p-secret"><label>${T('s2.p.secret')}</label>${P(data().secrets[p.secret])}</p>`;
+    h += `<p class="p-secret"><label>${T('s2.p.secret')}</label>${P(p.bio || data().secrets[p.secret])}</p>`;
     if (!m) h += `<p class="p-problem"><label>${T('s2.p.problem')}</label>${P(E.people.problemText(p))}</p>`;
     return h + (opt.footer || '') + '</article>';
   }
@@ -180,14 +182,28 @@
     setTimeout(() => E.fx.sfx.play('ending'), 3600);
   }
 
+  // 斷電：倫敦地圖上的五個區，從康登開始一區一區暗下來，最後天上出現星星。
+  function mapout() {
+    const stars = Array.from({ length: 40 }, (_, i) => `<i style="left:${(i * 37) % 100}%;top:${(i * 53) % 60}%;--d:${(4 + (i % 7) * 0.3).toFixed(1)}s"></i>`).join('');
+    cine('mapout', `<div class="cine-map">${mapSvg({ dark: true })}</div><div class="cine-stars">${stars}</div><div class="cine-cap c2">${T('m7.out.2')}</div>`, 9000);
+    E.fx.sfx.play('loss');
+    [1.1, 1.8, 2.5, 3.2].forEach((sec) => setTimeout(() => E.fx.sfx.play('click'), sec * 1000));
+    setTimeout(() => E.fx.sfx.play('ending'), 4200);
+  }
+
   // 新出現的劇情行：標題跳出全螢幕卡，其他依類型播放音效。
   function storyFeedback() {
     if (!s.storyLog) return;
     const fresh = s.storyLog.slice(storySeen);
     storySeen = s.storyLog.length;
     const title = fresh.find((e) => e.c === 'title');
+    const moment = fresh.find((e) => e.c === 'moment');
     if (fresh.some((e) => e.c === 'blackout')) blackout();
-    else if (title) {
+    else if (fresh.some((e) => e.c === 'mapout')) mapout();
+    else if (moment) {
+      cine('moment', `<div class="cine-moment">${T(moment.k, moment.v)}</div>`, 3200);
+      E.fx.sfx.play('cameo');
+    } else if (title) {
       cine('title', `<div class="cine-title">${T(title.k, title.v)}</div>`, 2400);
       E.fx.sfx.play('title');
     } else if (fresh.some((e) => e.c === 'warn')) E.fx.sfx.play('alarm');
@@ -207,25 +223,52 @@
     isle_of_dogs: { d: 'M636 262 L690 256 L712 306 L686 346 L644 334 L626 298 Z', c: [668, 302] },
   };
   const RIVER = 'M0 300 C100 292 160 312 230 300 C300 288 340 262 410 268 C480 274 520 300 590 290 C620 286 618 240 668 236 C724 232 744 296 724 340 C704 384 640 372 618 330 C600 300 660 286 720 292 C760 296 780 300 800 300';
-  function renderMap() {
+  // 倫敦地圖：解放過的區是青色，現在這一區依民心變粉紅，換區時可以選的區會亮起來，其他的鎖著。
+  // dark 為真時是斷電演出用的版本：每一區都帶著 --d，由 CSS 一區一區關掉。
+  function mapSvg(opt = {}) {
     const D = data().districts;
     let g = `<path d="${RIVER}" fill="none" stroke="#17324d" stroke-width="26" stroke-linecap="round"/><path d="${RIVER}" fill="none" stroke="#25507a" stroke-width="2" opacity="0.6"/>`;
-    for (const [id, m] of Object.entries(MAP)) {
+    N.ORDER.forEach((id, i) => {
+      const m = MAP[id];
       const name = P(D[id].name);
-      if (id === 'camden') {
+      const free = s.liberated.includes(id);
+      const here = id === s.district && s.phase !== 'travel';
+      const next = s.phase === 'travel' && (s.travel || []).includes(id);
+      const d = ` style="--d:${(0.4 + i * 0.7).toFixed(1)}s"`;
+      if (opt.dark) {
+        g += `<path class="map-out" d="${m.d}"${d} fill="#ffd23f" fill-opacity="0.55" stroke="#ffd23f" stroke-width="2"/><text x="${m.c[0]}" y="${m.c[1] + 4}" class="map-name live">${name}</text>`;
+      } else if (here) {
         const a = 0.18 + s.support / 100 * 0.6;
         g += `<path d="${m.d}" fill="rgba(255,46,136,${a.toFixed(2)})" stroke="#ff2e88" stroke-width="2.5"/>`
           + `<text x="${m.c[0]}" y="${m.c[1] - 8}" class="map-name live">${name}</text>`
           + `<text x="${m.c[0]}" y="${m.c[1] + 14}" class="map-sub">${T('s2.ui.support')} ${s.support}%</text>`
-          + Array.from({ length: s.towers }, (_, i) => `<path d="M${m.c[0] - 34 + i * 20} ${m.c[1] + 42} l6 -16 l6 16 Z" fill="#ffd23f"/>`).join('')
+          + Array.from({ length: s.towers }, (_, k) => `<path d="M${m.c[0] - 34 + k * 20} ${m.c[1] + 42} l6 -16 l6 16 Z" fill="#ffd23f"/>`).join('')
           + `<circle cx="${m.c[0] + 50}" cy="${m.c[1] + 34}" r="5" fill="#6cd6e2"/><text x="${m.c[0] + 60}" y="${m.c[1] + 38}" class="map-pin">${T('s2.map.here')}</text>`;
+      } else if (free) {
+        g += `<path d="${m.d}" fill="rgba(108,214,226,0.35)" stroke="#6cd6e2" stroke-width="2"/>`
+          + `<text x="${m.c[0]}" y="${m.c[1] - 4}" class="map-name live">${name}</text><text x="${m.c[0]}" y="${m.c[1] + 16}" class="map-sub free">${T('s2.map.free')}</text>`;
       } else {
-        g += `<path d="${m.d}" fill="#121722" stroke="#2c3446" stroke-width="2" stroke-dasharray="6 5"/>`
-          + `<text x="${m.c[0]}" y="${m.c[1] - 4}" class="map-name">${name}</text><text x="${m.c[0]}" y="${m.c[1] + 16}" class="map-sub">${T('s2.map.locked')}</text>`;
+        g += `<path d="${m.d}" fill="${next ? 'rgba(255,210,63,0.16)' : '#121722'}" stroke="${next ? '#ffd23f' : '#2c3446'}" stroke-width="2" stroke-dasharray="6 5"/>`
+          + `<text x="${m.c[0]}" y="${m.c[1] - 4}" class="map-name${next ? ' live' : ''}">${name}</text><text x="${m.c[0]}" y="${m.c[1] + 16}" class="map-sub">${T(next ? 's2.map.next' : 's2.map.locked')}</text>`;
       }
-    }
-    return `<section class="map"><svg viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${g}</svg>`
-      + `<div class="banner-txt"><div class="banner-night">${T('s2.ui.nightOf', { n: s.night, max: N.MAX_NIGHTS })}</div><div class="banner-loc">${P(D.camden.name)}</div></div></section>`;
+    });
+    return `<svg viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${g}</svg>`;
+  }
+  function renderMap() {
+    const D = data().districts;
+    return `<section class="map">${mapSvg()}`
+      + `<div class="banner-txt"><div class="banner-night">${T('s2.ui.nightOf', { n: s.dnight, max: N.nightsIn(s) })}</div><div class="banner-loc">${P(D[s.district].name)}</div></div></section>`;
+  }
+
+  // 換區：解放了一區，從剩下的區裡選下一個。
+  function renderTravel() {
+    const D = data().districts;
+    const PERK = { soho: 'supply', isle_of_dogs: 'insider', rotherhithe: 'tunnels' };
+    return `<section class="map">${mapSvg()}</section>`
+      + `<section class="panel"><h2>${T('s2.travel.title', { district: { l: D[s.district].name } })}</h2><p class="hint">${T('s2.travel.hint')}</p><div class="ops">`
+      + s.travel.map((d) => `<button class="op-card travel" data-act="travel" data-d="${d}"><div class="op-main"><div><div class="op-name">${P(D[d].name)}</div>`
+        + `<div class="op-desc">${T('s2.dist.' + d + '.d')}</div></div></div><div class="op-reward">${T('s2.perk.' + PERK[d])}</div></button>`).join('')
+      + `</div></section>`;
   }
 
   // ===== 各階段 =====
@@ -251,7 +294,10 @@
       h += `<section class="counter counter-${s.tonight.type}"><b>${T('s2.counter.' + s.tonight.type + '.title')}</b><p>${T('s2.counter.' + s.tonight.type)}</p>`
         + (s.tonight.type === 'raid' ? `<p class="warn">${T('s2.day.raidHint')}</p>` : '') + `</section>`;
     } else h += bagleyBox();
-    h += `<section class="panel"><h2>${T('s2.day.ops')}</h2><p class="hint">${T('s2.day.opsHint')}</p><div class="ops">${ops.map((e) => opCard(e)).join('')}</div>`
+    // 解放的條件：西敏要先有民心才能斷電；其他區民心高了卻還沒打主線任務，提醒一下。
+    const main = N.mainNow(s);
+    const rule = s.district === 'westminster' ? (s.mains.m7 !== 'done' && !main ? 's2.ui.m7need' : '') : (s.support >= 60 && main ? 's2.ui.mainNeeded' : '');
+    h += `<section class="panel"><h2>${T('s2.day.ops')}</h2><p class="hint">${T('s2.day.opsHint')}</p>${rule ? `<p class="hint warn">${T(rule)}</p>` : ''}<div class="ops">${ops.map((e) => opCard(e)).join('')}</div>`
       + `<div class="bar-actions"><button data-act="rest">${T('s2.day.rest')}</button></div></section>`;
     if (owed.length) {
       h += `<section class="panel"><h2>${T('s2.day.owed')}</h2><p class="hint">${T('s2.day.owedHint')}</p><div class="grid-people">${owed.map((id) => personCard(id, {
@@ -377,12 +423,16 @@
 
   function renderEnd() {
     const k = s.ended;
+    const D = data().districts;
     const faces = (list) => (list.length ? list.map((id) => `<span class="end-face">${face(id)}<small>${nm(id)}</small></span>`).join('') : `<span class="hint">${T('s2.end.none')}</span>`);
     return `<section class="panel endcard end-${k}"><div class="end-label">${T('s2.end.card')}</div><h2>${T('s2.end.' + k + '.title')}</h2><p class="end-text">${T('s2.end.' + k + '.text')}</p>`
-      + `<div class="end-stats"><span>${T('s2.end.nights', { n: Math.min(s.night, N.MAX_NIGHTS) })}</span><span>${T('s2.end.ops', { n: s.stats.ops, w: s.stats.wins })}</span><span>${T('s2.ui.support')} ${s.support}%</span></div>`
+      + (s.endLines || []).map((e) => `<p class="end-epi">${T(e.k, e.v)}</p>`).join('')
+      + `<div class="end-stats"><span>${T('s2.end.nights', { n: s.night })}</span><span>${T('s2.end.ops', { n: s.stats.ops, w: s.stats.wins })}</span>`
+      + `<span>${T('s2.end.order')}：${s.liberated.map((d) => P(D[d].name)).join(' → ') || T('s2.end.none')}</span></div>`
       + `<div class="end-row"><label>${T('s2.end.recruited')}</label><div class="end-faces">${faces(s.stats.recruited)}</div></div>`
       + (s.stats.retired.length ? `<div class="end-row"><label>${T('s2.p.status.retired')}</label><div class="end-faces">${faces(s.stats.retired)}</div></div>` : '')
       + `<div class="end-row"><label>${T('s2.end.lost')}</label><div class="end-faces">${faces(s.stats.lost)}</div></div>`
+      + ((s.stats.dead || []).length ? `<div class="end-row"><label>${T('s2.end.dead')}</label><div class="end-faces">${faces(s.stats.dead)}</div></div>` : '')
       + `<p class="hint">${T('s2.end.note')}</p><div class="bar-actions"><button class="primary" data-act="again">${T('s2.end.again')}</button></div></section>`;
   }
 
@@ -479,9 +529,14 @@
       hints.push(T('s2.act.homeHint'));
     }
     if (m.status === 'network') out.push(btn('callBack', 's2.act.callBack', {}, E.roster.canRecruit(s.roster)) + (E.roster.canRecruit(s.roster) ? '' : `<span class="hint">${T('s2.act.noBed')}</span>`));
-    if (['active', 'injured', 'network'].includes(m.status)) {
+    if (m.critical) {
+      out.push(btn('clinic', 's2.ui.clinic', {}, true, 'gold'));
+      hints.push(T('s2.ui.criticalHint'));
+    } else if (['active', 'injured', 'network'].includes(m.status)) {
       out.push(btn('lowkey', 's2.act.lowkey', { n: N.LOW_NIGHTS }));
       hints.push(T('s2.act.lowkeyHint', { n: N.LOW_NIGHTS }));
+    }
+    if (['active', 'injured', 'network'].includes(m.status)) {
       out.push(btn('retire', 's2.act.retire', {}, N.canRetire(s, id), 'gold'));
       if (!N.canRetire(s, id)) hints.push(T('s2.act.retireNeed', { n: N.RETIRE_WINS }));
     }
@@ -526,7 +581,7 @@
     const row = (m) => {
       const id = m.person.id;
       let st = T('s2.p.status.' + m.status);
-      if (m.status === 'injured') st += ' · ' + m.injuredFor;
+      if (m.status === 'injured') st += ' · ' + m.injuredFor + (m.critical ? ' · ' + T('s2.p.critical') : '');
       if (m.status === 'away') st += ' · ' + m.awayFor;
       if (m.status === 'arrested') st += ' · ' + T('s2.day.left', { n: E.roster.TRANSFER_AFTER - (s.night - m.since) });
       const threat = m.threat || 0;
@@ -538,12 +593,12 @@
     const ms = s.roster.members;
     $('s2-team').innerHTML = group(T('s2.ui.core'), ms.filter((m) => ['active', 'injured', 'away', 'arrested'].includes(m.status)))
       + group(T('s2.ui.network'), ms.filter((m) => m.status === 'network'))
-      + group(T('s2.ui.gone'), ms.filter((m) => m.status === 'retired' || m.status === 'lost'));
+      + group(T('s2.ui.gone'), ms.filter((m) => ['retired', 'lost', 'dead'].includes(m.status)));
   }
 
   // ===== 整個畫面 =====
   function render() {
-    $('m-night').textContent = t('s2.ui.nightOf', { n: Math.min(s.night, N.MAX_NIGHTS), max: N.MAX_NIGHTS });
+    $('m-night').textContent = E.i18n.pick(data().districts[s.district].name) + ' · ' + t('s2.ui.nightOf', { n: Math.min(s.dnight, N.nightsIn(s)), max: N.nightsIn(s) });
     $('m-support').style.width = s.support + '%';
     $('m-support-v').textContent = s.support + '%';
     $('m-heat').style.width = s.heat + '%';
@@ -561,7 +616,7 @@
     const main = $('s2-main');
     const phase = s.phase === 'event' || s.phase === 'react' ? 'op' : s.phase;
     main.dataset.phase = phase;
-    main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, squad: renderSquad, op: renderOp, result: renderResult, end: renderEnd }[phase]();
+    main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, result: renderResult, end: renderEnd }[phase]();
     renderModal();
     if (phase === 'story') {
       const log2 = $('story-log');
@@ -639,6 +694,8 @@
       window.scrollTo(0, 0);
     },
     scan(d) { N.scan(s, d.id); E.fx.sfx.play('prof'); },
+    travel(d) { if (N.travel(s, d.d)) window.scrollTo(0, 0); },
+    clinic(d) { N.clinic(s, d.id); },
     recruit(d) { N.recruitOwed(s, d.id); },
     // 主線任務一定要主角帶隊：主角能出門的話，先幫玩家選好。
     op(d) {
@@ -686,6 +743,11 @@
       if (s.phase === 'end') {
         cine('ending', `<div class="cine-title">${T('s2.end.' + s.ended + '.title')}</div>`, 3600);
         E.fx.sfx.play('ending');
+      } else if (s.phase === 'travel' || (s.phase === 'story' && s.storyId === 'm6')) {
+        const freed = s.liberated[s.liberated.length - 1];
+        cine('ending', `<div class="cine-title">${T('s2.log.liberated', { district: { l: data().districts[freed].name } })}</div>`, 3200);
+        E.fx.sfx.play('ending');
+        storySeen = s.storyLog ? s.storyLog.length : 0; // 解放的全螢幕卡優先，劇情的標題卡就不跳了
       } else if (s.tonight) {
         cine('desync', `<div class="cine-desync" data-text="${T('s2.counter.' + s.tonight.type + '.title')}">${T('s2.counter.' + s.tonight.type + '.title')}</div>`, 1800);
       }

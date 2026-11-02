@@ -407,6 +407,21 @@
     m2: { kind: 'main', stages: ['fence', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 20 },
       name: n('Main mission 2: Curfew Night', '主線任務二：宵禁之夜', '主线任务二：宵禁之夜'),
       desc: n('The first time we move against the curfew head-on. Take down the first tower in Camden. You have to lead it yourself.', '第一次在宵禁裡正面行動，拆掉康登的第一座監控塔。你必須親自帶隊。', '第一次在宵禁里正面行动，拆掉卡姆登的第一座监控塔。你必须亲自带队。') },
+    m3: { kind: 'main', stages: ['shopfront', 'holding_yard', 'cells', 'getaway'], reward: { support: 25 },
+      name: n('Main mission 3: High Threat', '主線任務三：高威脅', '主线任务三：高威胁'),
+      desc: n('A delivery rider scored 91 was taken off Gerrard Street tonight. Get them out, and find out where the number came from.', '一個威脅評分 91 的外送員，今晚在爵祿街被帶走了。把人救出來，查清楚這個分數是怎麼來的。', '一个威胁评分 91 的外卖骑手，今晚在爵禄街被带走了。把人救出来，查清楚这个分数是怎么来的。') },
+    m4: { kind: 'main', stages: ['side_door', 'lobby', 'terminal', 'getaway'], reward: { support: 25 },
+      name: n('Main mission 4: Inside Man', '主線任務四：內應', '主线任务四：内应'),
+      desc: n("Dr Hale says he can walk us into Stillwater. Inside is a piece of Lionheart's List.", '黑爾博士說，他能帶我們走進靜域。裡面有獅心防務「名單」的一部分。', '黑尔博士说，他能带我们走进静域。里面有狮心防务“名单”的一部分。') },
+    m5: { kind: 'main', stages: ['canal', 'tunnel', 'terminal', 'getaway'], reward: { support: 25 },
+      name: n('Main mission 5: The Tunnels', '主線任務五：隧道', '主线任务五：隧道'),
+      desc: n("The drone hive sits on top of the old tunnels. Eileen Walsh still has her grandmother's notebook.", '無人機巢蓋在舊隧道的正上方。艾琳・沃什手上還有她祖母的筆記本。', '无人机巢盖在旧隧道的正上方。艾琳·沃什手上还有她祖母的笔记本。') },
+    m7: { kind: 'main', stages: ['side_door', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 30 },
+      name: n('Main mission 7: Blackout', '主線任務七：斷電', '主线任务七：断电'),
+      desc: n('Switch off London, one district at a time, and open the way to Whitehall.', '把倫敦一區一區關掉，打開通往白廳的路。', '把伦敦一区一区关掉，打开通往白厅的路。') },
+    m8: { kind: 'main', stages: ['side_door', 'cells', 'terminal', 'back_door'], reward: { support: 0 },
+      name: n('Main mission 8: Airspace Control', '主線任務八：空域控制中心', '主线任务八：空域控制中心'),
+      desc: n('Under Whitehall, every Nightwatch drone in London answers to one room. Tonight we walk in.', '白廳底下，全倫敦的守夜人無人機都聽命於一個房間。今晚，我們走進去。', '白厅底下，全伦敦的守夜人无人机都听命于一个房间。今晚，我们走进去。') },
   };
   // 招募任務：依路人的麻煩（problems 的 mission）決定關卡。
   const recruit = {
@@ -425,6 +440,8 @@
 
   // 由道具、稀有人物、特質和默契組合帶來的解法。引擎會在符合條件的關卡加上它們。
   const special = {
+    tunnel: { id: 'tunnel', name: n('Out through the tunnels', '走隧道撤離', '走隧道撤离'), tags: [], sure: true, exposure: 0,
+      ok: n('{name} lifts a grate. The old tunnels from Rotherhithe go everywhere, and no drone follows.', '{name}掀開一塊鐵柵。從羅瑟希德延伸出來的舊隧道四通八達，沒有無人機跟得進來。', '{name}掀开一块铁栅。从罗瑟希德延伸出来的旧隧道四通八达，没有无人机跟得进来。') },
     network_cab: { id: 'network_cab', name: n('Call the cab from the network', '叫外圍的計程車來接', '叫外围的出租车来接'), tags: [], sure: true, exposure: 1,
       ok: n('A cab from the network is waiting round the corner. {name} gets everyone in.', '外圍的計程車已經在轉角等著了，{name}讓大家上車。', '外围的出租车已经在转角等着了，{name}让大家上车。') },
     keycard: { id: 'keycard', name: n('Swipe the stolen keycard', '刷偷來的門卡', '刷偷来的门卡'), tags: ['door'], sure: true, exposure: 1,
