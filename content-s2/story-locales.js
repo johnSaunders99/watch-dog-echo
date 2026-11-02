@@ -7,7 +7,7 @@ ECHO.s2.storyHelp = ['s2.help.1', 's2.help.2', 's2.help.3', 's2.help.4', 's2.hel
 
 ECHO.i18n.register('zh-Hant', {
   'verb.look': '查看', 'verb.scan': '掃描', 'verb.hack': '駭入', 'verb.read': '讀取', 'verb.recall': '重建',
-  'verb.go': '前往', 'verb.talk': '交談', 'verb.take': '拿', 'verb.switch': '切換', 'verb.jump': '跳',
+  'verb.go': '前往', 'verb.talk': '交談', 'verb.take': '拿', 'verb.switch': '切換', 'verb.jump': '翻越',
   'verb.choose': '選擇', 'verb.attack': '攻擊', 'verb.wait': '等待', 'verb.items': '物品', 'verb.help': '說明',
   'verb.lang': '語言', 'verb.restart': '重新開始',
   'err.unknown': '看不懂「{input}」。',
@@ -53,7 +53,7 @@ ECHO.i18n.register('zh-Hant', {
   's2.help.3': '掃描 [目標]　　用 Profiler 叫出資料',
   's2.help.4': '駭入 [目標]　　用手機駭入設備，會用掉頻寬、增加警戒',
   's2.help.5': '讀取／交談 [對象]　讀訊息、跟人說話；可以加上話題，例如「問 Bagley 為什麼是我」',
-  's2.help.6': '前往、拿、等待、攻擊 [目標]',
+  's2.help.6': '前往、拿、翻越、等待、攻擊 [目標]',
   's2.help.7': '也可以直接點下方的建議。輸入「語言 en」或「語言 简中」可以切換語言。',
 
   's2.story.placeholder': '輸入指令，或點下方的建議……',
@@ -187,7 +187,7 @@ ECHO.i18n.register('zh-Hant', {
 
 ECHO.i18n.register('zh-Hans', {
   'verb.look': '查看', 'verb.scan': '扫描', 'verb.hack': '入侵', 'verb.read': '读取', 'verb.recall': '重建',
-  'verb.go': '前往', 'verb.talk': '交谈', 'verb.take': '拿', 'verb.switch': '切换', 'verb.jump': '跳',
+  'verb.go': '前往', 'verb.talk': '交谈', 'verb.take': '拿', 'verb.switch': '切换', 'verb.jump': '翻越',
   'verb.choose': '选择', 'verb.attack': '攻击', 'verb.wait': '等待', 'verb.items': '物品', 'verb.help': '说明',
   'verb.lang': '语言', 'verb.restart': '重新开始',
   'err.unknown': '看不懂“{input}”。',
@@ -233,7 +233,7 @@ ECHO.i18n.register('zh-Hans', {
   's2.help.3': '扫描 [目标]　　用 Profiler 调出资料',
   's2.help.4': '入侵 [目标]　　用手机入侵设备，会用掉带宽、增加警戒',
   's2.help.5': '读取／交谈 [对象]　读消息、跟人说话；可以加上话题，例如“问 Bagley 为什么是我”',
-  's2.help.6': '前往、拿、等待、攻击 [目标]',
+  's2.help.6': '前往、拿、翻越、等待、攻击 [目标]',
   's2.help.7': '也可以直接点下方的建议。输入“语言 en”或“语言 繁中”可以切换语言。',
 
   's2.story.placeholder': '输入指令，或点下方的建议……',
@@ -367,7 +367,7 @@ ECHO.i18n.register('zh-Hans', {
 
 ECHO.i18n.register('en', {
   'verb.look': 'look', 'verb.scan': 'scan', 'verb.hack': 'hack', 'verb.read': 'read', 'verb.recall': 'recall',
-  'verb.go': 'go', 'verb.talk': 'talk', 'verb.take': 'take', 'verb.switch': 'switch to', 'verb.jump': 'jump',
+  'verb.go': 'go', 'verb.talk': 'talk', 'verb.take': 'take', 'verb.switch': 'switch to', 'verb.jump': 'climb',
   'verb.choose': 'choose', 'verb.attack': 'attack', 'verb.wait': 'wait', 'verb.items': 'items', 'verb.help': 'help',
   'verb.lang': 'lang', 'verb.restart': 'restart',
   'err.unknown': 'Not sure what "{input}" means.',
@@ -413,7 +413,7 @@ ECHO.i18n.register('en', {
   's2.help.3': 'scan [target]     Pull up a Profiler record',
   's2.help.4': 'hack [target]     Hack a device with your phone. Uses bandwidth, raises alert',
   's2.help.5': 'read / talk [who]   Read a message or talk to someone; add a topic, e.g. "ask Bagley why me"',
-  's2.help.6': 'go, take, wait, attack [target]',
+  's2.help.6': 'go, take, climb, wait, attack [target]',
   's2.help.7': 'You can also tap the suggestions below. Type "lang 繁中" or "lang 简中" to switch language.',
 
   's2.story.placeholder': 'Type a command, or tap a suggestion below…',

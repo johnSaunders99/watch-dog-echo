@@ -260,5 +260,6 @@
   });
 
   E.s2 = E.s2 || {};
-  E.s2.storyStart = 's2.m1.laundrette';
+  E.s2.missions = E.s2.missions || {};
+  E.s2.missions.m1 = { start: 's2.m1.laundrette' };
 })(window.ECHO = window.ECHO || {});

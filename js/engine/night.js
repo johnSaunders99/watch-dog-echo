@@ -4,6 +4,7 @@
 // 警戒累積到 30、60 會讓所有動作變難，到 100 就有人被捕。
 // 行動有三種形態：一般的直線關卡、限時（只有幾步可以用）、分頭（主力和佯攻兩條線同時進行）。
 // 獅心防務會反擊：突襲安全屋、全城停電、宵禁提前。
+// 主線任務用文字冒險的方式插進來：開場的任務一，以及第二晚起的第一座塔（任務二）。
 // 所有狀態都在一個可以直接存檔的物件裡；亂數由（世界種子, 第幾步）決定，同一串操作永遠得到同樣的結果。
 // 這裡不放任何台詞：文字都在 content-s2/ 和語言檔裡。
 (function (E) {
@@ -129,9 +130,12 @@
     s.world = WORLDS.includes(opts.world) ? opts.world : 'stay';
     if (s.world === 'seal') s.heat = 15;
     // 主角是第一個自願者（一定是駭客）。主線任務一「熄燈」用文字冒險的方式玩，結束後才挑第二個人。
+    // skipStory 是給測試用的：整輪都不插入主線任務，第一座塔也當成一般行動。
     s.hero = s.volunteers[0];
-    if (opts.skipStory || !E.engine || !E.s2.storyStart) startPick(s);
-    else beginStory(s);
+    s.noStory = !!opts.skipStory || !E.engine || !E.s2.missions;
+    s.m2 = null;
+    if (s.noStory) startPick(s);
+    else beginStory(s, 'm1');
     return s;
   }
 
@@ -139,42 +143,124 @@
 
   // ===== 主線任務（文字冒險） =====
   // 文字冒險沿用第一季的場景引擎，狀態另外放在 s.story，輸出放在 s.storyLog。
-  function beginStory(s) {
+  // 每個任務在 E.s2.missions 登記起點；打完時場景會設定 flags[任務 + 'done']。
+  // 打完之後先停在劇情畫面，讓玩家讀完最後幾行，按下繼續（storyFinish）才結算。
+  const MAIN2_NIGHT = 2; // 主線任務二從第二晚開始出現
+  function beginStory(s, id, flags, exposure) {
     const st = E.state.create();
-    st.scene = E.s2.storyStart;
+    st.scene = E.s2.missions[id].start;
     st.actor = 'player';
-    st.exposure = 0;
-    st.flags.world = s.world;
+    st.exposure = exposure || 0;
+    Object.assign(st.flags, { world: s.world, night: s.night }, flags);
     s.story = st;
+    s.storyId = id;
+    s.storyDone = false;
     const p = person(s, s.hero);
-    s.storyLog = [{ c: 'prof', k: 's2.hero.intro', who: s.hero, v: { name: nameOf(s, s.hero), job: { l: E.people.occupationOf(p).name }, age: p.age, n: p.threat } }]
+    s.storyLog = [{ c: 'prof', k: 's2.hero.intro', who: s.hero, v: { name: nameOf(s, s.hero), job: { l: E.people.occupationOf(p).name }, age: p.age, n: member(s, s.hero) ? member(s, s.hero).threat : p.threat } }]
       .concat(E.engine.enter(st));
     s.phase = 'story';
   }
 
   // 執行一個文字冒險指令。cmd 是 E.parser.parse 的結果；回傳新增的輸出行。
   function storyCommand(s, cmd, input) {
-    if (s.phase !== 'story' || !cmd) return [];
+    if (s.phase !== 'story' || s.storyDone || !cmd) return [];
+    const id = s.storyId || 'm1';
     const out = [input || { c: 'input', raw: cmd.raw }].concat(E.engine.exec(cmd, s.story));
+    if (s.story.flags[id + 'done']) s.storyDone = true;
+    else if (id === 'm2' && s.story.exposure >= 100) {
+      // 警戒滿了：撤退，塔留到下一晚再拆。
+      out.push({ c: 'warn', k: 'm2.abort.1' }, { c: 'bagley', k: 'm2.abort.2' });
+      s.storyDone = 'abort';
+    }
     s.storyLog.push(...out);
     if (s.storyLog.length > 400) s.storyLog.splice(0, s.storyLog.length - 400);
-    if (s.story.flags.m1done) finishStory(s);
     return out;
   }
 
+  function storyFinish(s) {
+    if (s.phase !== 'story' || !s.storyDone) return false;
+    if ((s.storyId || 'm1') === 'm1') finishM1(s);
+    else finishM2(s, s.storyDone === 'abort');
+    return true;
+  }
+
   // 任務一的結果帶進夜間循環：被看到臉，主角的威脅評分上升；警戒越高，起始熱度越高。
-  function finishStory(s, skipped) {
+  function finishM1(s, skipped) {
     if (!skipped) {
       const f = s.story.flags;
       s.heroBonus = (f.spotted ? 20 : 0) + (f.kicked ? 3 : 0);
       s.heat = clamp(s.heat + Math.round((s.story.exposure || 0) / 5), 0, 60);
     }
+    s.storyDone = false;
     startPick(s);
   }
 
+  // 跳過任務一就直接挑人；跳過任務二，這座塔改用一般行動的方式拆，這一輪不會再出現主線任務二。
   function skipStory(s) {
     if (s.phase !== 'story') return false;
-    finishStory(s, true);
+    if ((s.storyId || 'm1') === 'm1') {
+      finishM1(s, true);
+      return true;
+    }
+    s.m2 = 'skipped';
+    s.story = null;
+    s.storyLog = null;
+    s.storyId = null;
+    s.phase = 'op';
+    startStages(s);
+    return true;
+  }
+
+  // 主線任務二「宵禁之夜」：第一座塔。主角還在（沒有永久離隊）就會出現，而且一定要主角帶隊。
+  function mainPending(s) {
+    const hero = member(s, s.hero);
+    return !s.noStory && !s.m2 && s.towers > 0 && !!hero && !['lost', 'retired'].includes(hero.status);
+  }
+
+  function joinNames(list) {
+    const out = {};
+    for (const l of LANGS) {
+      const ns = list.map((x) => x[l]);
+      out[l] = l === 'en' ? (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns.join('')) : ns.join('、');
+    }
+    return { l: out };
+  }
+
+  // 任務二用文字冒險的方式進行：隊友的類別和專長決定每一關有哪些額外解法。
+  // 劇情裡的警戒從這次行動的起始警戒開始算，打完直接當成行動的警戒結算。
+  function beginM2(s) {
+    const team = membersOf(s).filter((id) => id !== s.hero)
+      .map((id) => ({ id, cat: categoryOf(s, id), perk: perkId(s, id), name: nameOf(s, id) }));
+    const shelter = person(s, DISTRICT + '-' + (HELPERS + s.helperCount++));
+    beginStory(s, 'm2', {
+      team, names: joinNames(team.map((m) => m.name.l)), shelterId: shelter.id, shelterName: nameOf(s, shelter.id),
+    }, s.op.alert);
+  }
+
+  // 熄掉整條街：民心多 10、熱度多 5。只關攝影機：獅心防務以為是故障，熱度少 5。
+  function finishM2(s, aborted) {
+    const f = s.story.flags;
+    s.op.alert = clamp(s.story.exposure, 0, 100);
+    s.story = null;
+    s.storyLog = null;
+    s.storyId = null;
+    s.storyDone = false;
+    s.phase = 'op';
+    if (aborted) {
+      say(s, 'bad', 's2.log.m2.abort');
+      return finish(s, 'retreat');
+    }
+    s.m2 = 'done';
+    s.op.reward = { support: (s.op.reward.support || 0) + (f.lightsOut ? 10 : 0) };
+    say(s, f.lightsOut ? 'gain' : 'ok', f.lightsOut ? 's2.log.m2.dark' : 's2.log.m2.quiet');
+    if (f.shelter) {
+      s.owed[f.shelterId] = 'helper';
+      say(s, 'gain', 's2.log.m2.shelter', { name: f.shelterName });
+    }
+    finish(s, 'win');
+    const extra = f.lightsOut ? 5 : -5;
+    s.heat = clamp(s.heat + extra, 0, 100);
+    s.result.heat += extra;
     return true;
   }
 
@@ -276,7 +362,9 @@
   function ops(s) {
     if (tonight(s, 'raid')) return [Object.assign({ key: 'raid', op: 'raid' }, info(s, { op: 'raid' }))];
     const list = [];
-    if (s.towers > 0) list.push({ key: 'tower', op: 'tower' });
+    // 主線任務二還沒打的話，第一座塔就是主線任務；第一晚先不開放。
+    if (mainPending(s)) { if (s.night >= MAIN2_NIGHT) list.push({ key: 'tower', op: 'tower', story: 'm2' }); }
+    else if (s.towers > 0) list.push({ key: 'tower', op: 'tower' });
     list.push({ key: 'broadcast', op: 'broadcast' });
     if (s.expands < MAX_EXPANDS) list.push({ key: 'expand', op: 'expand' });
     for (const m of s.roster.members) {
@@ -288,7 +376,7 @@
 
   function info(s, e) {
     const C = content();
-    const def = e.op === 'recruit' ? C.recruitOp : C.ops[e.op];
+    const def = e.op === 'recruit' ? C.recruitOp : e.story ? C.main[e.story] : C.ops[e.op];
     let stages = e.op === 'recruit' ? C.recruit[people().problems.find((p) => p.id === person(s, e.target).problem).mission]
       : def.split ? def.lanes.main : def.stages;
     const names = e.target ? { name: E.people.name(person(s, e.target)) } : {};
@@ -305,6 +393,7 @@
       timer: def.timer || null,
       reward: def.reward,
       family: family ? family.other : null,
+      story: e.story || null,
     };
   }
 
@@ -329,6 +418,8 @@
     if (!ids.every((id) => member(s, id) && ['active', 'network'].includes(member(s, id).status))) return { ok: false, reason: 's2.squad.unavailable' };
     if (ids.filter((id) => member(s, id).status === 'network').length > 1) return { ok: false, reason: 's2.squad.oneNetwork' };
     if (e && e.split && !ids.some((id) => (lanes[id] || 'main') === 'main')) return { ok: false, reason: 's2.squad.needMain' };
+    if (e && e.story && !ids.includes(s.hero)) return { ok: false, reason: 's2.squad.needHero' };
+    if (e && e.story && ids.length < 2) return { ok: false, reason: 's2.squad.needTwo' };
     for (const a of ids) for (const b of ids) {
       if (a < b && related(s, a, b, 'rival')) return { ok: false, reason: 's2.squad.rival', a, b };
     }
@@ -381,20 +472,30 @@
       say(s, 'warn', 's2.log.calledIn', { name: nameOf(s, id) });
     }
     if (e.family) say(s, 'gain', 's2.log.familyHelp', { name: nameOf(s, e.family), target: nameOf(s, e.target) });
+    if (e.story) {
+      beginM2(s);
+      return true;
+    }
+    startStages(s);
+    return true;
+  }
+
+  // 走一般關卡：外圍情報、Echo 的提示、會怯場的人，然後進第一關。
+  function startStages(s) {
+    const first = content().stages[s.op.lanes.main.stages[0]];
     const gossip = networkWith(s, 'gossip');
-    if (gossip && content().stages[e.stages[0]].hidden) {
+    if (gossip && first.hidden) {
       s.op.revealed['main:0'] = true;
       say(s, 'gain', 's2.log.gossip', { name: nameOf(s, gossip) });
-    } else if (s.world === 'stay' && content().stages[e.stages[0]].hidden) {
+    } else if (s.world === 'stay' && first.hidden) {
       // 第一季「留下」的世界：Echo 會先看穿第一關的另一條路。
       s.op.revealed['main:0'] = true;
       say(s, 'card', 's2.log.echoHint');
     }
-    for (const id of ids) {
+    for (const id of s.op.squad) {
       if (flawOf(s, id).event === 'freeze' && rand(s).chance(0.5)) s.queue.push({ type: 'freeze', who: id, choices: ['out', 'go'] });
     }
     for (const lane of lanes(s)) enterStage(s, lane);
-    return true;
   }
 
   // 每進入一關，檢查這條線上的人的弱點和小習慣會不會出包。
@@ -968,7 +1069,8 @@
       return true;
     }
     const held = s.roster.members.find((m) => m.status === 'arrested');
-    if (held) say(s, 'bagley', 's2.bagley.held', { name: nameOf(s, held.person.id), n: E.roster.TRANSFER_AFTER - (s.night - held.since) });
+    if (s.night === MAIN2_NIGHT && mainPending(s)) say(s, 'bagley', 's2.bagley.m2');
+    else if (held) say(s, 'bagley', 's2.bagley.held', { name: nameOf(s, held.person.id), n: E.roster.TRANSFER_AFTER - (s.night - held.since) });
     else if (E.roster.active(s.roster).some((m) => m.threat >= WANTED)) say(s, 'bagley', 's2.bagley.wanted');
     else if (s.heat >= 40) say(s, 'bagley', 's2.bagley.heat');
     else say(s, 'bagley', 's2.bagley.d' + r.int(1, 5));
@@ -988,7 +1090,7 @@
     ops, pickOp, cancel, picked, squadCheck, startAlert, combosFor, launch, rest,
     stage, options, combos, cards, useCard, act, react, answer, retreat, nextDay,
     networkWith, puzzleSpec, hackable,
-    WORLDS, storyCommand, skipStory,
+    WORLDS, MAIN2_NIGHT, storyCommand, storyFinish, skipStory, mainPending,
     members: (s) => (s.op ? membersOf(s) : []),
     laneOf: (s, id) => (s.op ? laneOf(s, id) : 'main'),
     able: (s, id) => !!s.op && able(s, id),

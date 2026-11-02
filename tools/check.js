@@ -60,7 +60,7 @@ const unresolved = (text) => text.includes('⟦') || /\{\w+\}/.test(text);
 // ===== 1. 三語文本：每個頁面三種語言的 key 一樣多，用到的 key 都有定義 =====
 section('三語文本');
 // 動作的 id（id: 'mem.plan'）和進度查詢（s.fired['...']）不是文字 key。
-const KEY = /(?<!id: |fired\[)['"]((?:ui|hud|loc|err|items|lang|help|fx|scan|boot|room|recall|ev|message|desk|note|graffiti|laptop|photo|camera|van|radio|maya|attack|desync|mem|mem1|mem2|mem3|cw|ch3|fin|end|wait|talk|switch|actor|co|cameo|chip|s2|m1)\.[\w.]+)['"]/g;
+const KEY = /(?<!id: |fired\[)['"]((?:ui|hud|loc|err|items|lang|help|fx|scan|boot|room|recall|ev|message|desk|note|graffiti|laptop|photo|camera|van|radio|maya|attack|desync|mem|mem1|mem2|mem3|cw|ch3|fin|end|wait|talk|switch|actor|co|cameo|chip|s2|m1|m2)\.[\w.]+)['"]/g;
 // topics 為 true 時，對話話題也要有顯示用的 key（第二季的建議按鈕會顯示話題名稱）。
 function checkTexts(label, page, htmlText, sources, families = {}, topics = false) {
   const { E: PE, tables } = page;
@@ -98,7 +98,7 @@ const families = {
   's2.op.alert.': ['0', '30', '60'],
   's2.squad.lane.': ['main', 'decoy'],
   's2.counter.': ['raid', 'blackout', 'early', 'raid.title', 'blackout.title', 'early.title'],
-  's2.day.kind.': ['district', 'rescue', 'recruit', 'base', 'defense'],
+  's2.day.kind.': ['district', 'rescue', 'recruit', 'base', 'defense', 'main'],
   's2.res.': ['win', 'fail', 'retreat', 'rest'],
   's2.fail.': ['hack', 'physical', 'social', 'hands', 'other'],
   's2.bagley.d': ['1', '2', '3', '4', '5'],
@@ -109,6 +109,13 @@ const families = {
   's2.world.': ['stay', 'seal', 'wildfire', 'recaptured', 'stay.d', 'seal.d', 'wildfire.d', 'recaptured.d'],
   'm1.screen.': ['stay', 'seal', 'wildfire', 'recaptured', 'stay.b', 'seal.b', 'wildfire.b', 'recaptured.b'],
   'm1.b.clock.': ['1', '2'],
+  'm2.brief.': ['hacker', 'physical', 'social', 'specialist'],
+  'm2.twist.': ['stay', 'seal', 'wildfire', 'recaptured', 'stay.b', 'seal.b', 'wildfire.b', 'recaptured.b'],
+  'm2.e.car.': ['1', '2'],
+  'm2.fence.': ['pass', 'pick', 'keys', 'talk', 'climb'],
+  'm2.yard.': ['takeover', 'loop', 'busk', 'throw', 'call'],
+  'm2.box.': ['legacy', 'open'],
+  'm2.street.': ['cab', 'teacher', 'jam', 'lead', 'chat'],
 };
 checkTexts('S1', S1, html, ['js/main.js', 'js/ui/terminal.js', ...scripts.filter((f) => !f.includes('locales'))]);
 // 第二季借用第一季的指令別名（content/commands.js），但每個場景都有自己的說明，用不到第一季的預設說明。
@@ -516,6 +523,8 @@ section('主線任務一');
         for (const c of E.engine.suggestions(s.story || {})) if (c[1] && !E.scenes[s.story.scene].entities[c[1]]) fail(`m1: suggestion targets missing ${c[1]}`);
       }
       const x = EXPECT[lang];
+      // 打完之後停在劇情畫面，按下繼續才進入挑人。
+      if (!s.storyDone || s.phase !== 'story' || !N.storyFinish(s)) fail(`m1 ${lang}/${world}: the story did not wait for continue`);
       if (s.phase !== 'start') { fail(`m1 ${lang}/${world}: still in ${s.story.scene} after the route`); continue; }
       if (s.story.exposure !== x.exposure || !!s.story.flags.spotted !== x.spotted || (s.heroBonus || 0) !== x.bonus) {
         fail(`m1 ${lang}/${world}: exposure ${s.story.exposure}, spotted ${s.story.flags.spotted}, bonus ${s.heroBonus}`);
@@ -532,6 +541,99 @@ section('主線任務一');
   const skipped = N.create('m1-skip');
   if (!N.skipStory(skipped) || skipped.phase !== 'start') fail('m1: skipping the story failed');
   console.log(`3 routes × ${N.WORLDS.length} worlds, clean / spotted / burst paths, hero pick`);
+}
+
+// ===== 7d. 主線任務二「宵禁之夜」：第二晚的第一座塔，用打字打完 =====
+section('主線任務二');
+{
+  const N = E.night;
+  // 開一輪、跳過任務一、挑一個隊友、第一晚休息。第一晚不能拆塔，第二晚第一座塔就是主線任務。
+  function night2(seed, world, pick) {
+    const s = N.create(seed, { world });
+    N.skipStory(s);
+    N.storyFinish(s);
+    N.pickVolunteers(s, [s.volunteers[pick]]);
+    if (N.ops(s).some((e) => e.key === 'tower')) fail(`m2 ${seed}: the first tower is open on night 1`);
+    N.rest(s);
+    for (const m of s.roster.members) m.threat = 0; // 不要讓檢查站把主角抓走
+    N.nextDay(s);
+    return s;
+  }
+  // zh-Hant：身體類隊友翻圍欄、丟磚頭引開無人機，熄掉整條街，躲進路人家裡。
+  // zh-Hans：社交類隊友跟警衛聊開，躲在集裝箱後面等探照燈，只關攝影機，駭掉巡邏車。
+  // en：第四個自願者（隨機類別），什麼都自己駭，直接衝過空地，在大街上拖到被巡邏車照到。
+  const ROUTES = {
+    'zh-Hant': { pick: 1, cmds: ['跟隊友說話', '掃描監控塔', '看招牌', '前往工地', '翻越圍欄', '跟隊友說話', '前往塔', '駭入控制箱', '駭入整條街的路燈', '前往開著的門', '跟 Bagley 說話'] },
+    'zh-Hans': { pick: 2, cmds: ['看海报', '前往工地', '扫描警卫', '跟警卫说话', '躲到集装箱后面', '等待', '前往塔', '入侵控制箱', '入侵摄像头', '入侵巡逻车', '看窗外', '跟 Bagley 说话'] },
+    en: { pick: 3, cmds: ['help', 'go site', 'hack card reader', 'go tower', 'hack control box', 'hack every streetlight', 'look', 'scan patrol car', 'wait', 'talk bagley'] },
+  };
+  const EXPECT = {
+    'zh-Hant': { support: 30, lights: true, shelter: true, guard: false, chased: false },
+    'zh-Hans': { support: 20, lights: false, shelter: false, guard: true, chased: false },
+    en: { support: 30, lights: true, shelter: false, guard: false, chased: true },
+  };
+  for (const world of N.WORLDS) {
+    for (const lang of LANGS) {
+      E.i18n.set(lang);
+      const r = ROUTES[lang];
+      const s = night2('m2-' + world + '-' + lang, world, r.pick);
+      const tower = N.ops(s).find((e) => e.key === 'tower');
+      if (!tower || tower.story !== 'm2' || tower.kind !== 'main') { fail(`m2 ${lang}/${world}: no main mission on night 2`); continue; }
+      if (!s.log.some((e) => e.k === 's2.bagley.m2')) fail(`m2 ${lang}/${world}: Bagley never announced the main mission`);
+      N.pickOp(s, 'tower');
+      const other = s.roster.members.find((m) => m.person.id !== s.hero).person.id;
+      if (N.squadCheck(s, [other]).reason !== 's2.squad.needHero') fail(`m2 ${lang}: a squad without the hero was allowed`);
+      if (N.squadCheck(s, [s.hero]).reason !== 's2.squad.needTwo') fail(`m2 ${lang}: the hero alone was allowed`);
+      const support = s.support;
+      if (!N.launch(s, [s.hero, other]) || s.phase !== 'story' || s.storyId !== 'm2') { fail(`m2 ${lang}/${world}: did not start the story`); continue; }
+      for (const text of r.cmds) {
+        if (s.phase !== 'story' || s.storyDone) break;
+        N.storyCommand(s, E.parser.parse(text, E.scenes[s.story.scene], s.story), { c: 'input', raw: text });
+        for (const c of E.engine.suggestions(s.story)) {
+          if (c[1] && !E.engine.visibleEntities(E.scenes[s.story.scene], s.story).includes(c[1])) fail(`m2: ${s.story.scene} suggests a hidden or missing ${c[1]}`);
+        }
+      }
+      const x = EXPECT[lang];
+      if (s.storyDone !== true) { fail(`m2 ${lang}/${world}: stuck in ${s.story.scene}`); continue; }
+      const f = s.story.flags;
+      if (!!f.lightsOut !== x.lights || !!f.shelter !== x.shelter || !!f.guardFriend !== x.guard || !!f.chased !== x.chased) {
+        fail(`m2 ${lang}/${world}: flags ${JSON.stringify({ lights: f.lightsOut, shelter: f.shelter, guard: f.guardFriend, chased: f.chased })}`);
+      }
+      const text = render(s.storyLog).join('\n');
+      if (unresolved(text)) fail(`m2 ${lang}/${world}: unresolved ${(text.match(/⟦[^⟧]+⟧|\{\w+\}/g) || []).join(' ')}`);
+      if (!s.storyLog.some((e) => e.k === 'm2.twist.' + world)) fail(`m2 ${lang}/${world}: the tower never showed the ${world} reveal`);
+      if (show === 'm2-' + lang && world === 'stay') console.log(text);
+      const shelter = f.shelterId;
+      if (!N.storyFinish(s) || s.phase !== 'result' || s.result.outcome !== 'win') { fail(`m2 ${lang}/${world}: did not finish as a win`); continue; }
+      if (s.towers !== 3 || s.support - support !== x.support || s.m2 !== 'done') fail(`m2 ${lang}/${world}: towers ${s.towers}, support +${s.support - support}, m2 ${s.m2}`);
+      if (!!s.owed[shelter] !== x.shelter) fail(`m2 ${lang}/${world}: shelter recruit ${!!s.owed[shelter]}`);
+      if (unresolved(render(s.log).join('\n'))) fail(`m2 ${lang}/${world}: unresolved text in the night log`);
+      N.nextDay(s);
+      const later = N.ops(s).find((e) => e.key === 'tower');
+      if (s.phase === 'day' && !s.tonight && (!later || later.story)) fail(`m2 ${lang}/${world}: the next tower should be a normal operation`);
+    }
+  }
+
+  // 警戒滿了就撤退：塔還在，下一晚可以再打。
+  const hot = night2('m2-abort', 'stay', 1);
+  N.pickOp(hot, 'tower');
+  N.launch(hot, [hot.hero, hot.roster.members.find((m) => m.person.id !== hot.hero).person.id]);
+  hot.story.exposure = 98;
+  for (const text of ['go site', 'wait', 'wait', 'wait']) N.storyCommand(hot, E.parser.parse(text, E.scenes[hot.story.scene], hot.story), { c: 'input', raw: text });
+  if (hot.storyDone !== 'abort' || !N.storyFinish(hot) || hot.result.outcome !== 'retreat' || hot.towers !== 4 || hot.m2) fail('m2: a full alert did not abort the mission cleanly');
+
+  // 跳過劇情：改用一般關卡拆這座塔，之後也不會再出現主線任務二。
+  const skip = night2('m2-skip', 'seal', 2);
+  N.pickOp(skip, 'tower');
+  N.launch(skip, [skip.hero, skip.roster.members.find((m) => m.person.id !== skip.hero).person.id]);
+  if (!N.skipStory(skip) || !['op', 'event'].includes(skip.phase) || !skip.op || skip.op.lanes.main.stages[0] !== 'fence' || skip.m2 !== 'skipped') fail('m2: skipping did not fall back to the normal operation');
+
+  // 主角永久離隊的話，第一座塔就是一般行動。
+  const gone = night2('m2-gone', 'wildfire', 1);
+  E.roster.get(gone.roster, gone.hero).status = 'lost';
+  const t2 = N.ops(gone).find((e) => e.key === 'tower');
+  if (!t2 || t2.story) fail('m2: without the hero the first tower should be a normal operation');
+  console.log(`3 routes × ${N.WORLDS.length} worlds, lights out / quiet / chased, abort, skip, no hero`);
 }
 
 // ===== 8. 存檔 =====

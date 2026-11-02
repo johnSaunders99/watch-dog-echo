@@ -137,14 +137,19 @@
   function renderStory() {
     const st = s.story;
     const scene = E.scenes[st.scene];
+    const art = typeof scene.art === 'function' ? scene.art(st) : scene.art;
     const parts = t(scene.location).split('//').map((x) => x.trim());
     const lvl = st.exposure >= 60 ? 'hot' : st.exposure >= 30 ? 'warm' : 'cool';
     const first = storySeen;
-    let h = `<section class="op-head story-head"><div class="op-art">${E.art.byKey(scene.art)}<div class="op-overlay">`
+    let h = `<section class="op-head story-head"><div class="op-art">${E.art.byKey(art)}<div class="op-overlay">`
       + `<div class="story-loc">${esc(parts[0] || '')}</div><div class="op-title">${esc(parts[1] || '')}</div><div class="story-sub">${esc(parts.slice(2).join(' · '))}</div></div></div>`
-      + `<div class="alert alert-${lvl}"><div class="alert-top"><span>${T('s2.story.alert')}</span><b>${st.exposure}</b></div><div class="alert-bar"><i style="width:${st.exposure}%"></i></div></div></section>`;
-    h += `<section class="panel story"><div class="story-log" id="story-log">${s.storyLog.map((e, i) => storyLine(e, i >= first ? i - first : -1)).join('')}</div>`
-      + `<div class="story-chips">${E.engine.suggestions(st).map((c) => `<button class="chip" data-act="storyChip" data-cmd="${esc(JSON.stringify(c))}">${esc(chipText(c))}</button>`).join('')}</div>`
+      + `<div class="alert alert-${lvl}"><div class="alert-top"><span>${T('s2.story.alert')}</span><b>${st.exposure}</b>`
+      + `<em>${T('s2.op.bandwidth')} <b class="pips">${'▮'.repeat(st.bandwidth)}<u>${'▮'.repeat(Math.max(0, st.bandwidthMax - st.bandwidth))}</u></b></em></div>`
+      + `<div class="alert-bar"><i style="width:${st.exposure}%"></i></div></div></section>`;
+    h += `<section class="panel story"><div class="story-log" id="story-log">${s.storyLog.map((e, i) => storyLine(e, i >= first ? i - first : -1)).join('')}</div>`;
+    // 打完了：先讓玩家讀完最後幾行，按下繼續才結算。
+    if (s.storyDone) return h + `<div class="bar-actions"><button class="primary" id="story-end" data-act="storyEnd">${T('s2.story.end')} →</button></div></section>`;
+    h += `<div class="story-chips">${E.engine.suggestions(st).map((c) => `<button class="chip" data-act="storyChip" data-cmd="${esc(JSON.stringify(c))}">${esc(chipText(c))}</button>`).join('')}</div>`
       + `<form id="story-form" class="story-form" autocomplete="off"><span>&gt;</span><input id="story-cmd" type="text" spellcheck="false" placeholder="${T('s2.story.placeholder')}" aria-label="Command"><button type="submit" class="primary">${T('s2.story.send')}</button></form>`
       + `<div class="bar-actions"><button class="ghost" data-act="skipStory">${T('s2.story.skip')}</button></div></section>`;
     return h;
@@ -162,15 +167,17 @@
     } else if (cmd.verb !== 'restart') {
       N.storyCommand(s, cmd, { c: 'input', raw: text.trim() });
     }
-    afterStory();
+    commit();
   }
 
-  function afterStory() {
-    if (s.phase === 'start') {
-      picks = {};
-      window.scrollTo(0, 0);
-    }
-    commit();
+  // 熄燈：全螢幕播放康登大街，路燈從塔那頭一盞一盞熄掉，接著住家的窗一扇一扇亮起來。
+  function blackout() {
+    // 全螢幕時整張畫都要看得到（直式手機也是），所以改成不裁切。
+    cine('blackout', `<div class="cine-street">${E.art.byKey('highstreet').replace('xMidYMid slice', 'xMidYMid meet')}</div>`
+      + `<div class="cine-cap c1">${T('m2.out.2')}</div><div class="cine-cap c2">${T('m2.out.6')}</div>`, 9000);
+    E.fx.sfx.play('loss');
+    [1.05, 1.5, 1.95, 2.4].forEach((sec) => setTimeout(() => E.fx.sfx.play('click'), sec * 1000));
+    setTimeout(() => E.fx.sfx.play('ending'), 3600);
   }
 
   // 新出現的劇情行：標題跳出全螢幕卡，其他依類型播放音效。
@@ -179,7 +186,8 @@
     const fresh = s.storyLog.slice(storySeen);
     storySeen = s.storyLog.length;
     const title = fresh.find((e) => e.c === 'title');
-    if (title) {
+    if (fresh.some((e) => e.c === 'blackout')) blackout();
+    else if (title) {
       cine('title', `<div class="cine-title">${T(title.k, title.v)}</div>`, 2400);
       E.fx.sfx.play('title');
     } else if (fresh.some((e) => e.c === 'warn')) E.fx.sfx.play('alarm');
@@ -558,7 +566,8 @@
     if (phase === 'story') {
       const log2 = $('story-log');
       if (log2) log2.scrollTop = log2.scrollHeight;
-      if (!window.matchMedia('(pointer: coarse)').matches && !hack && !profileId) $('story-cmd').focus();
+      const input = $('story-cmd') || $('story-end');
+      if (input && !window.matchMedia('(pointer: coarse)').matches && !hack && !profileId) input.focus();
     }
   }
 
@@ -621,18 +630,33 @@
     storyChip(d) {
       const c = JSON.parse(d.cmd);
       N.storyCommand(s, { verb: c[0], target: c[1] || null, topic: c[2] || null, rest: '', raw: '' }, { c: 'input', cmd: c });
-      if (s.phase === 'start') { picks = {}; window.scrollTo(0, 0); }
     },
-    skipStory() { if (window.confirm(t('s2.story.skipConfirm'))) { N.skipStory(s); picks = {}; window.scrollTo(0, 0); } },
+    storyEnd() { if (N.storyFinish(s)) { picks = {}; window.scrollTo(0, 0); } },
+    skipStory() {
+      if (!window.confirm(t(s.storyId === 'm2' ? 's2.story.skipConfirm2' : 's2.story.skipConfirm'))) return;
+      N.skipStory(s);
+      picks = {};
+      window.scrollTo(0, 0);
+    },
     scan(d) { N.scan(s, d.id); E.fx.sfx.play('prof'); },
     recruit(d) { N.recruitOwed(s, d.id); },
-    op(d) { if (N.pickOp(s, d.key)) picks = {}; window.scrollTo(0, 0); },
+    // 主線任務一定要主角帶隊：主角能出門的話，先幫玩家選好。
+    op(d) {
+      if (N.pickOp(s, d.key)) {
+        picks = {};
+        const hero = E.roster.get(s.roster, s.hero);
+        if (N.picked(s).story && hero && ['active', 'network'].includes(hero.status)) picks[s.hero] = 'main';
+      }
+      window.scrollTo(0, 0);
+    },
     squad(d) { const e = N.picked(s); toggle(d.id, e.split ? N.MAX_SPLIT : N.MAX_SQUAD, e.split); },
     back() { N.cancel(s); picks = {}; },
     go() {
       if (!N.launch(s, ids(), picks)) return;
       picks = {};
       window.scrollTo(0, 0);
+      // 主線任務：換成文字冒險，開場的標題卡由劇情自己播。
+      if (s.phase === 'story') { storySeen = 0; return; }
       cine('title', `<div class="cine-title">${P(s.op ? s.op.name : s.result.name)}</div>`, 1600);
       E.fx.sfx.play('title');
     },

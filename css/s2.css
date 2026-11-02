@@ -442,3 +442,32 @@ body.alarm::after { content: ""; position: fixed; inset: 0; z-index: 30; pointer
 .sl.c-loc:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
 .map .banner-txt { top: 14px; left: 18px; bottom: auto; }
 .map .banner-loc { font-size: 24px; }
+
+/* ===== 主線任務二：主線行動卡、劇情頻寬、熄燈演出 ===== */
+.op-card.kind-main { border-color: rgba(255, 46, 136, 0.75) !important; box-shadow: 0 0 0 1px rgba(255, 46, 136, 0.25), 0 0 24px rgba(255, 46, 136, 0.18); }
+.op-card.kind-main .kind { color: var(--accent); }
+.story-head .alert-top em { margin-left: auto; }
+.story-head .pips { font-weight: 400; letter-spacing: 1px; color: var(--sys); font-family: var(--mono); font-size: 13px; }
+.story-head .pips u { text-decoration: none; opacity: 0.2; }
+.sl.c-blackout { justify-content: center; margin: 10px 0; font-family: var(--mono); letter-spacing: 0.3em; color: var(--warn); }
+
+.cine.blackout { display: block; padding: 0; background: #000; }
+.cine-street { position: absolute; inset: 0; }
+.cine-street svg { display: block; width: 100%; height: 100%; }
+.cine.blackout .hs-glow, .cine.blackout .hs-cone, .cine.blackout .hs-eye, .cine.blackout .hs-neon { animation: hs-off 0.2s steps(2, end) var(--d) forwards; }
+.cine.blackout .hs-bulb { animation: hs-bulb 0.2s steps(2, end) var(--d) forwards; }
+.cine.blackout .hs-home.wake { animation: hs-home 0.8s ease var(--d) forwards; }
+.cine.blackout .hs-drone { animation: hs-drone 4s ease-in-out 2.4s infinite alternate; }
+@keyframes hs-off { to { opacity: 0; } }
+@keyframes hs-bulb { to { fill: #2a3350; } }
+@keyframes hs-home { to { fill: #ffb347; opacity: 0.9; } }
+@keyframes hs-drone { to { transform: translate(40px, -12px); } }
+.cine-cap { position: absolute; left: 50%; bottom: 7%; width: min(92%, 34em); transform: translateX(-50%); padding: 10px 16px; font-size: clamp(16px, 2.3vw, 22px); line-height: 1.6; color: #fff; text-align: center; text-shadow: 0 2px 14px #000, 0 0 4px #000; opacity: 0; }
+.cine-cap.c1 { animation: cap-flash 3.4s ease 0.3s both; }
+.cine-cap.c2 { color: #d9f4f7; font-weight: 700; animation: cap-in 1.2s ease 5.6s both; }
+@keyframes cap-flash { 0% { opacity: 0; } 15%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cap-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .cine.blackout .hs-glow, .cine.blackout .hs-cone, .cine.blackout .hs-eye, .cine.blackout .hs-neon, .cine.blackout .hs-bulb, .cine.blackout .hs-home.wake { animation-duration: 0.01s; }
+  .cine.blackout .hs-drone { animation: none; }
+}

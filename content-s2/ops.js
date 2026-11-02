@@ -401,6 +401,13 @@
       name: n('Lionheart are at the door', '獅心防務攻進來了', '狮心防务攻进来了'),
       desc: n('Hold the door, wipe the data, get out. Six moves before they are through. Stay in, and someone gets taken.', '堵門、銷毀資料、撤離。六步之內不完成，門就會被撞開。不應戰的話，一定有人被帶走。', '堵门、销毁数据、撤离。六步之内不完成，门就会被撞开。不应战的话，一定有人被带走。') },
   };
+  // 主線任務：用文字冒險的方式進行（content-s2/scenes/），這裡只放行動卡上的名稱和說明。
+  // stages 只是給行動卡顯示的關卡預覽；跳過劇情時，就改用這幾關照一般行動進行。
+  const main = {
+    m2: { kind: 'main', stages: ['fence', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 20 },
+      name: n('Main mission 2: Curfew Night', '主線任務二：宵禁之夜', '主线任务二：宵禁之夜'),
+      desc: n('The first time we move against the curfew head-on. Take down the first tower in Camden. You have to lead it yourself.', '第一次在宵禁裡正面行動，拆掉康登的第一座監控塔。你必須親自帶隊。', '第一次在宵禁里正面行动，拆掉卡姆登的第一座监控塔。你必须亲自带队。') },
+  };
   // 招募任務：依路人的麻煩（problems 的 mission）決定關卡。
   const recruit = {
     rescue: ['holding_yard', 'cells', 'getaway'],
@@ -436,5 +443,5 @@
       ok: n('While the guard laughs at a joke, {name} lifts the card and opens the door.', '守衛還在笑隊友講的笑話，{name}已經摸走門卡，把門打開了。', '守卫还在笑队友讲的笑话，{name}已经摸走门卡，把门打开了。') },
   };
 
-  S2.ops = { stages, ops, recruit, recruitOp, special };
+  S2.ops = { stages, ops, main, recruit, recruitOp, special };
 })(window.ECHO = window.ECHO || {});
