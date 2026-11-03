@@ -290,7 +290,78 @@
       <rect x="0" y="380" width="800" height="70" fill="#050608"/>
       ${person(620, 420, 0.95, { hair: 'afro', color: C.ink, glow: true })}`,
       glow('st-lamp', C.lamp) + phoneglowDef),
+
+    // 第二季：康登大街的宵禁夜。路燈、店面招牌、樓上住家的窗，街尾是監控塔。
+    highstreet: () => highstreet(false),
+    // 熄燈之後：路燈和招牌全暗，住家的窗一扇一扇亮起來。
+    'highstreet-dark': () => highstreet(true),
+
+    // 第二季：工地空地。貨櫃、鋼架監控塔、塔底的控制箱、帶著探照燈繞圈的無人機。
+    // 劇情畫面的插畫是寬螢幕裁切（只看得到 y 75–375），所以塔頂和控制箱都放在這個範圍裡。
+    site: () => svg('site', `
+      <rect width="800" height="450" fill="url(#si-sky)"/>
+      <path d="M0 220 L70 206 L120 216 L190 190 L260 208 L330 184 L380 200 L520 192 L600 210 L680 186 L800 202 V280 H0 Z" fill="${C.navy}"/>
+      <rect x="0" y="252" width="800" height="40" fill="${C.slate}"/>${Array.from({ length: 40 }, (_, i) => `<line x1="${i * 20}" y1="252" x2="${i * 20}" y2="292" stroke="${C.ink}" stroke-width="2" opacity="0.6"/>`).join('')}
+      <path d="M0 252 H800" stroke="${C.fog}" stroke-width="2" stroke-dasharray="3 5"/>
+      <rect x="0" y="360" width="800" height="90" fill="#121722"/>
+      <g stroke="${C.steel}" stroke-width="5" fill="none"><path d="M392 360 L430 100 L468 360"/>${[0, 1, 2, 3, 4, 5].map((i) => { const y = 130 + i * 38, w = 4 + i * 5.2; return `<path d="M${430 - w} ${y} L${430 + w + 5} ${y + 38} M${430 + w} ${y} L${430 - w - 5} ${y + 38}"/>`; }).join('')}</g>
+      <rect x="404" y="112" width="52" height="9" fill="${C.steel}"/>${cctv(404, 122, false)}${cctv(456, 122, true)}
+      <circle cx="430" cy="96" r="42" fill="url(#si-red)"/><circle cx="430" cy="96" r="7" fill="${C.red}"/>
+      <rect x="410" y="322" width="44" height="38" fill="${C.fog}"/><rect x="418" y="330" width="20" height="12" fill="${C.cyan}" opacity="0.7" class="screen"/><path d="M454 356 Q520 366 800 364" stroke="${C.ink}" stroke-width="6" fill="none"/>
+      ${[[30, 290, '#5a2a1e'], [150, 290, '#6b3322'], [70, 234, '#4c2318']].map(([x, y, c]) => `<rect x="${x}" y="${y}" width="140" height="70" fill="${c}"/>${Array.from({ length: 9 }, (_, i) => `<line x1="${x + 10 + i * 15}" y1="${y + 6}" x2="${x + 10 + i * 15}" y2="${y + 64}" stroke="${C.ink}" stroke-width="3" opacity="0.4"/>`).join('')}`).join('')}
+      ${[0, 1, 2, 3, 4].map((i) => `<line x1="${560 + i * 6}" y1="${358 - i * 4}" x2="${720 + i * 4}" y2="${342 - i * 5}" stroke="#6b5a4a" stroke-width="4"/>`).join('')}
+      <path class="site-beam" d="M626 148 L540 362 L712 362 Z" fill="${C.yellow}" opacity="0.13"/>
+      <g transform="translate(626 140)"><rect x="-22" y="-6" width="44" height="12" rx="4" fill="${C.ink}"/><line x1="-36" y1="-10" x2="-12" y2="-10" stroke="${C.fog}" stroke-width="3"/><line x1="12" y1="-10" x2="36" y2="-10" stroke="${C.fog}" stroke-width="3"/><circle cx="0" cy="8" r="4" fill="${C.yellow}"/><circle cx="16" cy="0" r="2" fill="${C.red}" class="blink"/></g>
+      ${person(318, 362, 0.8, { hood: true, color: C.ink })}${person(354, 364, 0.75, { cap: true, color: '#1a1f2e' })}`,
+      sky('si', '#060912', '#161d33') + glow('si-red', C.red)),
   };
+
+  // 康登大街。dark 為真時是熄燈之後的樣子。
+  // 每盞燈、每扇窗都帶著 --d（延遲秒數），全螢幕演出時用 CSS 讓路燈從塔那頭一盞一盞熄掉，再讓住家一扇一扇亮起來。
+  function highstreet(dark) {
+    const r = rng(486);
+    const houses = [[0, 130, 120, '#2a1c2e'], [130, 140, 96, '#1c2a3a'], [270, 120, 130, '#2e2418'], [390, 130, 104, '#1f2c24'], [520, 140, 124, '#2b1f24']];
+    const neon = [C.pink, C.cyan, C.yellow, C.green, C.pink];
+    const out = (i) => (0.6 + (4 - i) * 0.45).toFixed(2); // 第 i 盞路燈（由左往右）熄掉的時間
+    let g = `<rect width="800" height="450" fill="url(#hs-sky)"/>`
+      + `<path d="M0 200 L80 186 L150 196 L240 170 L330 188 L420 160 L520 182 L600 166 L700 190 L800 176 V300 H0 Z" fill="${C.navy}" opacity="0.8"/>`;
+    // 街尾的塔
+    g += `<g stroke="${C.steel}" stroke-width="3" fill="none"><path d="M692 330 L712 112 L732 330"/>${[0, 1, 2, 3, 4].map((i) => { const y = 140 + i * 38, w = 3 + i * 3.6; return `<path d="M${712 - w} ${y} L${712 + w + 4} ${y + 38} M${712 + w} ${y} L${712 - w - 4} ${y + 38}"/>`; }).join('')}</g>`
+      + (dark ? `<circle cx="712" cy="108" r="5" fill="#3a1a22"/>` : `<circle class="hs-eye" style="--d:0.3s" cx="712" cy="108" r="34" fill="url(#hs-red)"/><circle class="hs-eye" style="--d:0.3s" cx="712" cy="108" r="5" fill="${C.red}"/>`);
+    // 一排店面，樓上是住家
+    houses.forEach(([x, w, top, col], i) => {
+      g += `<rect x="${x}" y="${top}" width="${w}" height="${380 - top}" fill="${col}"/><rect x="${x}" y="${top}" width="${w}" height="6" fill="${C.ink}" opacity="0.5"/>`;
+      for (let row = 0; row < 2; row++) {
+        for (let c = 0; c < 3; c++) {
+          const wx = Math.round(x + 16 + c * ((w - 54) / 2)), wy = top + 26 + row * 64;
+          // 同一個亂數決定：平常亮不亮（15%）、熄燈之後會不會亮起來（80%）。
+          const roll = r();
+          const on = roll < (dark ? 0.8 : 0.15);
+          const d = (3.4 + r() * 2.4).toFixed(2);
+          g += `<rect class="hs-home${roll < 0.8 ? ' wake' : ''}" style="--d:${d}s" x="${wx}" y="${wy}" width="22" height="34" fill="${on ? C.lamp : C.steel}" opacity="${on ? 0.85 : 0.55}"/>`;
+        }
+      }
+      g += `<rect x="${x + 6}" y="300" width="${w - 12}" height="72" fill="${C.ink}" opacity="0.85"/>`
+        + `<rect x="${x + 14}" y="308" width="${w - 28}" height="56" fill="${dark ? C.slate : '#26304a'}" opacity="0.7"/>`
+        + `<rect class="hs-neon" style="--d:${out(i)}s" x="${x + 10}" y="284" width="${w - 20}" height="14" rx="3" fill="${dark ? C.slate : neon[i]}" opacity="${dark ? 0.5 : 0.85}"/>`;
+    });
+    // 康登的大靴子招牌
+    g += `<path d="M168 236 L168 196 L196 196 L196 230 Q228 232 236 250 L236 262 L160 262 Q156 248 168 236 Z" fill="${C.gold}" opacity="${dark ? 0.35 : 0.9}"/>`;
+    // 街尾的工地圍欄、人行道、馬路
+    g += `<rect x="660" y="318" width="140" height="62" fill="${C.slate}"/>${[0, 1, 2, 3, 4, 5, 6].map((i) => `<line x1="${668 + i * 20}" y1="318" x2="${668 + i * 20}" y2="380" stroke="${C.ink}" stroke-width="2"/>`).join('')}`
+      + `<rect x="0" y="372" width="800" height="22" fill="#2a3046"/><rect x="0" y="394" width="800" height="56" fill="#0a0d16"/>`
+      + `<path d="M0 424 H800" stroke="${C.fog}" stroke-width="3" stroke-dasharray="26 22" opacity="0.6"/>`;
+    // 路燈：從靠近塔的那一盞開始熄
+    [60, 200, 340, 480, 620].forEach((x, i) => {
+      const d = `--d:${out(i)}s`;
+      g += `<line x1="${x}" y1="392" x2="${x}" y2="238" stroke="${C.ink}" stroke-width="5"/><path d="M${x} 240 Q${x} 228 ${x + 20} 230" stroke="${C.ink}" stroke-width="4" fill="none"/>`
+        + `<rect class="hs-bulb" style="${d}" x="${x + 12}" y="228" width="18" height="7" rx="2" fill="${dark ? C.steel : '#fff1c9'}"/>`
+        + (dark ? '' : `<path class="hs-cone" style="${d}" d="M${x + 14} 236 L${x - 40} 392 L${x + 76} 392 L${x + 28} 236 Z" fill="${C.lamp}" opacity="0.16"/><circle class="hs-glow" style="${d}" cx="${x + 21}" cy="236" r="62" fill="url(#hs-lamp)"/>`);
+    });
+    // 天上的無人機
+    g += [[110, 96], [430, 84], [590, 118]].map(([x, y]) => `<g class="hs-drone"><rect x="${x - 10}" y="${y - 3}" width="20" height="6" rx="2" fill="${C.ink}"/><circle cx="${x}" cy="${y + 5}" r="2.5" fill="${C.red}"/></g>`).join('');
+    return svg(dark ? 'highstreet-dark' : 'highstreet', g, sky('hs', '#060a16', '#18203a') + glow('hs-lamp', C.lamp) + glow('hs-red', C.red));
+  }
 
   // 場景 id → 插畫。現實和記憶共用同一張（記憶模式會被 CSS 轉成藍白重建畫面）。
   const sceneArt = {
@@ -344,6 +415,10 @@
     scene(sceneId) {
       const key = sceneArt[sceneId] || 'basement';
       return { key, svg: scenes[key]() };
+    },
+    // 第二季直接用插畫名稱取圖，例如 'alley'、'tunnels'。
+    byKey(key) {
+      return (scenes[key] || scenes.basement)();
     },
     avatar(id) {
       return (avatars[id] || avatars.crowd)();

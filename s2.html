@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>宵禁 CURFEW</title>
+  <link rel="stylesheet" href="css/terminal.css">
+  <link rel="stylesheet" href="css/s2.css">
+</head>
+<body class="s2">
+  <!-- 標題畫面 -->
+  <section id="s2-title" class="title-screen">
+    <div class="title-art" id="s2-title-art" aria-hidden="true"></div>
+    <div class="title-box">
+      <div class="glitch" data-text="CURFEW">CURFEW</div>
+      <h1 data-i18n="s2.ui.title"></h1>
+      <p class="subtitle" data-i18n="s2.ui.subtitle"></p>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="zh-Hant">繁中</button>
+        <button type="button" data-lang="zh-Hans">简中</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <div class="title-actions">
+        <button type="button" id="s2-start" class="primary" data-i18n="s2.ui.start"></button>
+        <button type="button" id="s2-continue" data-i18n="s2.ui.continue" hidden></button>
+      </div>
+      <p class="season-link"><a href="index.html" data-i18n="s2.ui.season1"></a></p>
+      <p class="disclaimer" data-i18n="s2.ui.disclaimer"></p>
+    </div>
+  </section>
+
+  <div id="s2-game" hidden>
+    <!-- 頂端：夜晚、民心、熱度、監控塔 -->
+    <header class="s2-top">
+      <div class="s2-brand"><b>CURFEW</b><span data-i18n="s2.ui.title"></span></div>
+      <div class="s2-meters">
+        <div class="s2-meter"><span id="m-night"></span></div>
+        <div class="s2-meter support"><span class="label" data-i18n="s2.ui.support"></span><span class="bar"><i id="m-support"></i></span><b id="m-support-v"></b></div>
+        <div class="s2-meter heat"><span class="label" data-i18n="s2.ui.heat"></span><span class="bar"><i id="m-heat"></i></span><b id="m-heat-v"></b></div>
+        <div class="s2-meter towers"><span class="label" data-i18n="s2.ui.towers"></span><b id="m-towers"></b></div>
+        <div class="s2-meter world"><span id="m-world" class="world-chip"></span></div>
+      </div>
+      <div class="s2-tools">
+        <button type="button" id="s2-sound" class="icon-btn"></button>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang="zh-Hant">繁</button>
+          <button type="button" data-lang="zh-Hans">简</button>
+          <button type="button" data-lang="en">EN</button>
+        </div>
+        <button type="button" id="s2-new" data-i18n="s2.ui.newRun"></button>
+      </div>
+    </header>
+
+    <div class="s2-layout">
+      <main id="s2-main"></main>
+      <aside id="s2-side">
+        <section class="side-block">
+          <h3><span data-i18n="s2.ui.team"></span><small id="s2-beds"></small></h3>
+          <div id="s2-team"></div>
+        </section>
+        <section class="side-block log-block">
+          <h3 data-i18n="s2.ui.log"></h3>
+          <div id="s2-log"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 事件、反應和人物檔案的對話框 -->
+  <div id="s2-modal" class="s2-modal" hidden></div>
+  <!-- 全螢幕演出 -->
+  <div id="cine" class="cine" aria-live="polite"></div>
+
+  <script src="js/engine/i18n.js"></script>
+  <script src="js/engine/state.js"></script>
+  <script src="js/engine/parser.js"></script>
+  <script src="js/engine/scene.js"></script>
+  <script src="js/engine/save.js"></script>
+  <script src="js/engine/rng.js"></script>
+  <script src="js/engine/people.js"></script>
+  <script src="js/engine/roster.js"></script>
+  <script src="js/engine/mission.js"></script>
+  <script src="js/engine/night.js"></script>
+  <script src="js/engine/puzzle.js"></script>
+  <script src="js/engine/tactics.js"></script>
+  <script src="content-s2/people.js"></script>
+  <script src="content-s2/ops.js"></script>
+  <script src="content-s2/maps.js"></script>
+  <script src="content-s2/locales.js"></script>
+  <script src="content-s2/campaign-locales.js"></script>
+  <script src="content-s2/tactics-locales.js"></script>
+  <script src="content-s2/cards-locales.js"></script>
+  <script src="content/commands.js"></script>
+  <script src="content-s2/story-locales.js"></script>
+  <script src="content-s2/scenes/common.js"></script>
+  <script src="content-s2/scenes/m1-lights-out.js"></script>
+  <script src="content-s2/m2-locales.js"></script>
+  <script src="content-s2/scenes/m2-curfew-night.js"></script>
+  <script src="content-s2/m3-locales.js"></script>
+  <script src="content-s2/scenes/m3-high-threat.js"></script>
+  <script src="content-s2/m4-locales.js"></script>
+  <script src="content-s2/scenes/m4-inside-man.js"></script>
+  <script src="content-s2/m5-locales.js"></script>
+  <script src="content-s2/scenes/m5-tunnels.js"></script>
+  <script src="content-s2/m6-locales.js"></script>
+  <script src="content-s2/scenes/m6-meeting.js"></script>
+  <script src="content-s2/m7-locales.js"></script>
+  <script src="content-s2/scenes/m7-blackout.js"></script>
+  <script src="content-s2/m8-locales.js"></script>
+  <script src="content-s2/scenes/m8-airspace.js"></script>
+  <script src="js/ui/art.js"></script>
+  <script src="js/ui/fx.js"></script>
+  <script src="js/ui/faces.js"></script>
+  <script src="js/ui/tactics.js"></script>
+  <script src="js/ui/s2.js"></script>
+</body>
+</html>

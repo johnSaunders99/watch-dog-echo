@@ -24,6 +24,9 @@ You are ECHO, an AI built to reconstruct anyone's past from their data. The DedS
 - 進度自動儲存在瀏覽器裡。Progress saves automatically in your browser.
 - 遊玩時間約 40–60 分鐘，共 4 個結局。About 40–60 minutes, 4 endings.
 
+**第二季《宵禁》測試版**：打開 `s2.html`，或從第一季的標題畫面點進去。在武裝無人機宵禁下的倫敦重建 DedSec：五個行政區（康登開始、西敏結束，中間三區的順序自己決定），八個用文字冒險進行的主線任務，招募街上的任何人；夜間行動可以快速結算，也可以在俯視的戰術地圖上親自指揮（駭客遠端開門、身體類翻牆制伏、社交類引開守衛、專長各有一手，特質和弱點都會影響走法），隊員會受傷、被捕，重傷沒人照顧也可能過世。結局有五種，依盟友、名單的處理方式和第一季的結局而不同。玩過第一季的話，會自動讀取第一季的結局。網址加上 `?seed=任意文字` 可以重現同一批路人。
+**Season 2 "Curfew" beta**: open `s2.html`, or follow the link on the Season 1 title screen. Rebuild DedSec in a London under armed-drone curfew: five districts (Camden first, Westminster last, the middle three in any order), eight main missions played as text adventures, and anyone on the street can be recruited. Night operations can be quick-resolved or played on a top-down tactical map, where hackers open doors from range, physical types climb and take guards down, social types talk guards away, specialists use their trade, and traits and flaws change how everyone moves. Your people get hurt, get arrested, and without care a serious wound can be fatal. Five endings, shaped by your ally, what you do with the List, and how Season 1 ended. If you finished Season 1, its ending carries over. Add `?seed=anything` to replay the same people.
+
 ## 特色 Features
 
 - **同步率 Sync**：在記憶中，要照當事人的個性行動。違背他，記憶就會崩塌。每段記憶的規則都不同。Act as the person whose memory you are in; break character and the memory collapses.
@@ -62,6 +65,13 @@ You are ECHO, an AI built to reconstruct anyone's past from their data. The DedS
 網址後面加 `?jump=` 可以直接跳到某一章，例如 `index.html?jump=finale`。Append `?jump=` to start from a chapter, e.g. `index.html?jump=finale`.
 可用 Available: `memory1` `chinatown` `memory2` `chapter3` `memory3` `finale` `choice`
 
+自動測試只需要 Node.js，不用安裝任何套件。它會檢查三語文本是否齊全、把四個結局各打一遍，並測試第二季的引擎。每次推送到 GitHub 也會自動執行。
+The automated check needs only Node.js and no packages. It checks that all three languages are complete, plays through all four endings and tests the Season 2 engine. It also runs on every push to GitHub.
+
+```bash
+node tools/check.js
+```
+
 ## 專案結構 Project structure
 
 ```text
@@ -74,7 +84,11 @@ content/commands.js    三語指令別名 command aliases
 content/scenes/        每個章節一個檔案 one file per chapter
 content/locales/       三語文本 story text in three languages
 content/dev-routes.js  章節跳轉路線 chapter-jump routes
+content-s2/            第二季《宵禁》資料（製作中）Season 2 "Curfew" data (in progress)
+tools/check.js         自動測試 automated check
 ```
+
+想參與翻譯、名字表或路人秘密，請看 [CONTRIBUTING.md](CONTRIBUTING.md)。Want to help with translations, name tables or passer-by secrets? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 內容檔用 `.js` 而不是 `.json`，因為瀏覽器不允許從本機檔案讀取 JSON，這樣才能直接雙擊 `index.html` 遊玩。
 Content files are `.js` rather than `.json` so the game runs straight from the file system.
