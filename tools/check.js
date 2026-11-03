@@ -160,6 +160,7 @@ const families = {
   'tac.log.obj.': ['box', 'terminal', 'antenna', 'prisoner', 'files', 'person'],
   'tac.log.spotted.': ['guard', 'cam', 'drone'],
   'tac.log.unlock.': ['lockpick', 'master_keys', 'site_pass', 'building_access'],
+  'tac.guide.': ['you', 'guard', 'cam', 'drone', 'door', 'fence', 'hide', 'dark', 'exit', 'objective', 'vision', 'route', 'badge', 'you.d', 'guard.d', 'cam.d', 'drone.d', 'door.d', 'fence.d', 'hide.d', 'dark.d', 'exit.d', 'objective.d', 'vision.d', 'route.d', 'badge.d'],
   'tac.leg.': ['wall', 'dark', 'fence', 'door', 'hide', 'exit', 'guard', 'cam', 'drone', 'vision', 'wall.d', 'dark.d', 'fence.d', 'door.d', 'hide.d', 'exit.d', 'guard.d', 'cam.d', 'drone.d', 'vision.d'],
 };
 checkTexts('S1', S1, html, ['js/main.js', 'js/ui/terminal.js', ...scripts.filter((f) => !f.includes('locales'))]);
@@ -457,7 +458,7 @@ section('夜間行動');
       if (guard > 20000) { fail(`${seed}: run never ended (stuck in ${s.phase})`); break; }
       for (const m of s.roster.members) seenStatus.add(m.status);
       if (s.phase === 'day') {
-        N.street(s).forEach((id) => N.scan(s, id));
+        N.street(s).forEach((id) => { N.scan(s, id); N.keep(s, id); });
         Object.keys(s.owed).forEach((id) => N.recruitOwed(s, id));
         let retiredToday = false;
         for (const m of s.roster.members.slice()) {
@@ -897,6 +898,18 @@ section('戰術地圖');
     if (phys && (!cap(phys).climb || !cap(phys).takedown)) fail('tac: a physical member cannot climb or take down');
   }
 
+  // 撤回：沒有被看到、沒有擲骰的移動可以撤回，撤回之後跟動作前一模一樣。
+  {
+    const { s, ids } = squadFor('undo', [job('builder')]);
+    N.pickOp(s, 'tower');
+    N.launch(s, ids, {}, 'tac');
+    const before = JSON.stringify(s.op) + s.log.length;
+    const k = Object.keys(N.tacReach(s, ids[1])).find((x) => !N.tacRisky(s, ids[1]).includes(x));
+    const [x, y] = k.split(',').map(Number);
+    if (!N.tacMove(s, ids[1], x, y) || !s.op.tac.undo) fail('tac: a safe move could not be undone');
+    else if (!N.tacUndo(s) || JSON.stringify(s.op) + s.log.length !== before) fail('tac: undo did not restore the map');
+  }
+
   // 2. 沒有敵人的時候，每張圖都打得完：開門、翻牆、完成目標、帶被救的人出去、撤離。
   function ghost(s) {
     const t = s.op.tac;
@@ -970,6 +983,175 @@ section('戰術地圖');
       if (unresolved(render(s.log).join('\n'))) fail(`${label}: unresolved text in the log`);
     }
   }
+  // 2b. 招式卡、稀有人物的王牌、小習慣、守衛犬：每一張卡在地圖上真的有用。
+  {
+    const launchTac = (seed, tests, op = 'tower') => {
+      const r = squadFor(seed, tests);
+      N.pickOp(r.s, op);
+      N.launch(r.s, r.ids.slice(0, 3), {}, 'tac');
+      if (r.s.phase !== 'tac') fail(`${seed}: did not start a tactical map`);
+      return r;
+    };
+    const has = (s, id, ab) => N.tacAbilities(s, id).find((a) => a.id === ab);
+    // 叫人：多一個人上場，叫來的人不能撤回，平安撤離後可以免費招募。
+    {
+      const { s, ids } = launchTac('card-summon', [(p) => p.traits.includes('connected')]);
+      const id = ids[1];
+      const a = has(s, id, 'summon');
+      if (!a) fail('tac: someone who knows everyone has no summon card');
+      else {
+        N.tacUse(s, id, 'summon', a.targets[0][0], a.targets[0][1]);
+        const h = s.op.tac.units.find((u) => u.helper);
+        if (!h || !s.op.temp.includes(h.id)) fail('tac: summon did not bring anyone in');
+        else {
+          if (s.op.tac.undo) fail('tac: a summon can be undone (free recruit)');
+          if (has(s, id, 'summon')) fail('tac: summon can be used twice');
+          if (N.tacCards(s, h.id).some((c) => c.ab === 'summon')) fail('tac: a summoned helper can summon again');
+          const out = ghost(s);
+          if (out === 'win' && s.owed[h.id] !== 'helper') fail('tac: a summoned helper who got out cannot be recruited');
+        }
+      }
+    }
+    // 順手牽羊：從背後摸走門卡，全隊都能安靜開門；毛線針也能開門（兩個行動點）。
+    {
+      const { s, ids } = launchTac('card-lift', [(p) => p.traits.includes('nimble') && p.flaw !== 'clumsy', (p) => p.quirks.includes('knitting') && !['lockpick', 'master_keys', 'site_pass', 'building_access'].includes(E.people.occupationOf(p).perk)]);
+      const t = s.op.tac;
+      const [, nimble, knit] = ids;
+      const u = t.units.find((x) => x.id === nimble);
+      const g = t.foes.find((f) => f.kind === 'guard');
+      // 把守衛放在這個人旁邊，背對著
+      g.x = u.x + 1; g.y = u.y; g.face = [1, 0]; g.state = 'patrol';
+      const a = has(s, nimble, 'lift');
+      if (!a) fail('tac: nimble hands cannot lift a keycard from behind');
+      else {
+        N.tacUse(s, nimble, 'lift', g.x, g.y);
+        if (!t.keycard) fail('tac: lifting did not give the team a keycard');
+        if (!ids.slice(0, 3).every((id) => N.tacCaps(s, id).unlock)) fail('tac: the keycard does not let everyone open doors');
+      }
+      t.keycard = false;
+      if (!N.tacCaps(s, knit).needles) fail('tac: knitting needles do not pick locks');
+    }
+    // 守衛犬：藏身處也聞得到；愛狗的人不會被叫，還能摸摸頭讓狗安靜；怕狗的人遠一格就被聞到。
+    {
+      const { s, ids } = launchTac('card-dog', [(p) => p.quirks.includes('dogs_love') && !p.quirks.includes('dogs_fear'), (p) => p.quirks.includes('dogs_fear') && !p.quirks.includes('dogs_love')]);
+      const t = s.op.tac;
+      const [hero, lover, scared] = ids;
+      const dog = { id: 'k9', kind: 'dog', x: 8, y: 4, face: [1, 0], route: [[8, 4]], ri: 0, state: 'patrol', timer: 0, target: null, down: false };
+      t.foes = [dog];
+      t.spawns = [];
+      const put = (id, x, y) => { const u = t.units.find((v) => v.id === id); u.x = x; u.y = y; };
+      // 怕狗的人躲在兩格外的藏身處（10,4）：狗照樣聞得到。
+      put(hero, 1, 5); put(lover, 1, 7); put(scared, 10, 4);
+      N.tacEnd(s);
+      if (s.phase === 'tac' && dog.state !== 'alert') fail('tac: a dog did not smell someone in a hiding spot');
+      // 愛狗的人站在狗旁邊：狗不叫。
+      dog.state = 'patrol'; dog.target = null; t.seen = {};
+      put(scared, 1, 6); put(lover, 8, 5);
+      N.tacEnd(s);
+      if (s.phase === 'tac' && dog.state === 'alert') fail('tac: a dog barked at a dog person');
+      if (s.phase === 'tac') {
+        if (!has(s, lover, 'pet')) fail('tac: a dog person cannot pat a dog');
+        else {
+          N.tacUse(s, lover, 'pet', 8, 4);
+          if (!dog.friend) fail('tac: patting a dog does not quiet it');
+        }
+      }
+    }
+    // 稀有人物：信鴿遠端完成目標、地下電台讓全區守衛分心、COBOL 遠端駭目標、跑酷翻牆不花行動點。
+    {
+      const { s, ids } = launchTac('card-rare', [job('pigeon'), job('radio')]);
+      const t = s.op.tac;
+      const [, pigeon, radio] = ids;
+      const a = has(s, pigeon, 'pigeon');
+      if (!a) fail('tac: the pigeon keeper has no pigeon');
+      else {
+        N.tacUse(s, pigeon, 'pigeon', a.targets[0][0], a.targets[0][1]);
+        if (TT.objsLeft(t)) fail('tac: the pigeon did not complete the objective');
+      }
+      if (!has(s, radio, 'radio')) fail('tac: the pirate radio host cannot go on air');
+      else {
+        N.tacUse(s, radio, 'radio', t.units.find((u) => u.id === radio).x, t.units.find((u) => u.id === radio).y);
+        if (t.foes.some((f) => f.kind === 'guard' && !f.down && f.state !== 'distracted')) fail('tac: the radio show did not distract every guard');
+      }
+    }
+    {
+      const { s, ids } = launchTac('card-cobol', [job('cobol'), job('parkour')]);
+      const [, cobol, runner] = ids;
+      if (!N.tacCaps(s, cobol).remote) fail('tac: the COBOL engineer cannot hack objectives remotely');
+      const c = N.tacCaps(s, runner);
+      if (c.climbCost !== 0 || c.move < 5) fail('tac: the free-runner does not vault for free or move further');
+    }
+    // 樂天：打氣讓兩格內的隊友多一個行動點；謹慎：留後路（腳下變藏身處）。出發時三個人都擠在出發點旁邊。
+    {
+      const { s, ids } = launchTac('card-boost', [(p) => p.traits.includes('cheerful'), (p) => p.traits.includes('careful') && !p.traits.includes('cheerful')]);
+      const t = s.op.tac;
+      const [, cheer, careful] = ids;
+      const at = (id) => t.units.find((u) => u.id === id);
+      const total = () => t.units.reduce((n, u) => n + u.ap, 0);
+      const a = has(s, cheer, 'boost');
+      if (!a) fail('tac: a cheerful member cannot give a pep talk');
+      else {
+        const before = total();
+        N.tacUse(s, cheer, 'boost', at(cheer).x, at(cheer).y);
+        if (total() <= before) fail('tac: a pep talk did not give anyone an extra action point');
+      }
+      const cv = has(s, careful, 'cover');
+      if (cv) {
+        N.tacUse(s, careful, 'cover', at(careful).x, at(careful).y);
+        if (TT.tile(t, at(careful).x, at(careful).y) !== 'H') fail('tac: the back-up plan did not make a hiding spot');
+      }
+    }
+  }
+
+  // 街上的人：掃描只是看檔案，保留（最多三個人）才會出現招募任務；保留的人不會離開，沒保留的人會換掉。
+  {
+    const s = N.create('keep', { skipStory: true });
+    N.pickVolunteers(s, s.volunteers.slice(0, 2));
+    const st = N.street(s);
+    st.forEach((id) => N.scan(s, id));
+    if (N.ops(s).some((e) => e.op === 'recruit')) fail('street: scanning alone adds recruit missions');
+    if (N.keep(s, st[0]) !== true || !N.ops(s).some((e) => e.target === st[0])) fail('street: keeping someone does not add their recruit mission');
+    st.slice(1).forEach((id) => N.keep(s, id));
+    if (st.filter((id) => N.kept(s, id)).length !== N.MAX_KEEP) fail('street: the number of people kept is not capped');
+    const gone = st.find((id) => !N.kept(s, id) && id !== s.featured);
+    s.dnight += 3;
+    if (!N.street(s).includes(st[0])) fail('street: a kept person left the street');
+    if (N.street(s).includes(gone)) fail('street: someone who was not kept stayed on the street');
+    N.keep(s, st[0], false);
+    if (N.street(s).includes(st[0])) fail('street: letting someone go did not send them on');
+  }
+  // 死對頭可以同隊（只是會扣分），組隊畫面顯示「死對頭同隊」。
+  {
+    const s = N.create('feud', { skipStory: true });
+    N.pickVolunteers(s, s.volunteers.slice(0, 2));
+    const [a, b] = N.street(s);
+    s.relations[a] = [{ other: b, type: 'rival' }];
+    s.relations[b] = [{ other: a, type: 'rival' }];
+    for (const id of [a, b]) { s.owed[id] = 'helper'; N.recruitOwed(s, id); E.roster.get(s.roster, id).status = 'active'; }
+    N.pickOp(s, N.ops(s).find((e) => e.op === 'broadcast').key);
+    if (!N.squadCheck(s, [a, b]).ok) fail('squad: rivals still cannot go out together');
+    if (!N.combosFor(s, [a, b]).includes('feud')) fail('squad: rivals on one team do not show as bad blood');
+    N.cancel(s);
+  }
+  // 弱點約六成五、嚴重的弱點比較少見；球迷比其他小習慣少。
+  {
+    const n = 4000;
+    let flaw = 0, fans = 0, severe = 0, mild = 0;
+    for (let i = 0; i < n; i++) {
+      const p = E.people.generate('rate', 'soho', i);
+      if (p.flaw) flaw++;
+      if (p.flaw === 'record') severe++;
+      if (p.flaw === 'allergic') mild++;
+      if (p.quirks.some((q) => q === 'man_utd' || q === 'liverpool')) fans++;
+    }
+    if (Math.abs(flaw / n - 0.65) > 0.04) fail(`people: ${Math.round(flaw / n * 100)}% have a flaw (expected about 65%)`);
+    if (severe >= mild) fail('people: severe flaws are not rarer than mild ones');
+    if (fans / n > 0.16) fail(`people: ${Math.round(fans / n * 100)}% are football fans (too many derbies)`);
+    for (const f of E.s2.people.flaws) if (![1, 2, 3].includes(f.level)) fail(`people: flaw ${f.id} has no severity level`);
+    for (const x of E.s2.people.flaws.concat(E.s2.people.quirks)) if (!x.tac) fail(`people: ${x.id} has no map effect text`);
+    for (const tr of E.s2.people.traits) if (!tr.card.tac) fail(`people: trait ${tr.id} has no map effect text`);
+    for (const k in E.s2.people.perks) if (!E.s2.people.perks[k].tac) fail(`people: perk ${k} has no map effect text`);
+  }
   // 招募任務和主線任務（跳過劇情時）也有地圖。
   for (const m of new Set(Object.values(E.s2.opMaps.recruit).concat(Object.values(E.s2.opMaps.main)).map((x) => x.map))) if (!E.s2.maps[m]) fail(`tac: missing map ${m}`);
   for (const m of Object.keys(E.s2.maps)) if (!TT.reachable(TT.build({ map: m, ids: ['camden-1000'], rank: 4 }))) fail(`tac: ${m} has an unreachable objective or exit`);
@@ -982,7 +1164,7 @@ section('戰術地圖');
     for (const id of N.street(s).slice(0, 3)) { s.owed[id] = 'helper'; N.recruitOwed(s, id); }
     s.dnight = 2;
     if (i % 3) s.mains.m2 = 'done';
-    N.street(s).forEach((id) => N.scan(s, id));
+    N.street(s).forEach((id) => { N.scan(s, id); N.keep(s, id); });
     if (i % 4 === 0) E.roster.arrest(s.roster, s.roster.members[1].person.id, s.night);
     if (i % 7 === 0) s.tonight = { type: 'raid' };
     s.roster.members.forEach((m) => { m.threat = 0; });

@@ -24,7 +24,6 @@
   let storySeen = 0;     // 主線任務已經播過的輸出行數
   let worldOpen = false; // 正在問玩家第一季的結局
   const teamOpen = {};   // 側欄每一組有沒有展開（玩家自己點過才記下來）
-  let tacLegend = false; // 戰術地圖的圖例有沒有打開
 
   const who = (id) => N.person(s, id);
   const nm = (id) => P(E.people.name(who(id)));
@@ -32,6 +31,7 @@
   const pct = (risk) => Math.round((1 - risk) * 100);
   const nameVar = (id) => ({ l: E.people.name(who(id)) });
   const ids = () => Object.keys(picks);
+  const BAD_COMBOS = ['derby', 'feud']; // 扣分的默契組合
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 無法存的話就算了 */ } }
@@ -44,8 +44,10 @@
 
   function miniCard(card, sub, attrs = '') {
     return `<div class="mini kind-${card.kind}"${attrs}><div class="mini-top"><b>${P(card.name)}</b><em>${T('s2.op.kind.' + card.kind)}</em></div>`
-      + (sub ? `<small>${esc(sub)}</small>` : '') + `<p>${P(card.desc)}</p></div>`;
+      + (sub ? `<small>${esc(sub)}</small>` : '') + `<p>${P(card.desc)}</p>` + tacLine(card.tac) + `</div>`;
   }
+  // 戰術地圖上的效果（「地圖」那一行）。
+  const tacLine = (fx) => (fx ? `<p class="p-tac"><i>${T('s2.p.tacFx')}</i>${P(fx)}</p>` : '');
 
   // 人物檔案卡。full 為 false 時只顯示頭像、職業和能力（還沒掃描的路人）。
   function personCard(id, opt = {}) {
@@ -72,12 +74,15 @@
     const perk = E.people.perkOf(p);
     const flaw = E.people.flawOf(p);
     h += `<div class="p-perk"><label>${T('s2.p.perk')}</label><b>${P(perk.name)}</b><span>${P(perk.desc)}</span>`
+      + (perk.tac ? `<span class="p-net p-tac"><label>${T('s2.p.tacFx')}</label>${P(perk.tac)}</span>` : '')
       + `<span class="p-net"><label>${T('s2.p.networkFx')}</label>${perk.network ? P(perk.network) : T('s2.p.networkNone')}</span></div>`;
     h += `<div class="p-traits">${E.people.traitsOf(p).map((tr) => miniCard(tr.card, E.i18n.pick(tr.name))).join('')}`
       + (m && m.inherited ? miniCard(data().traits.find((x) => x.id === m.inherited.trait).card, t('s2.p.inherited', { name: nameVar(m.inherited.from) })) : '')
       + `</div>`;
-    h += `<div class="p-row flaw"><label>${T('s2.p.flaw')}</label><div><b>${P(flaw.name)}</b><span>${P(flaw.desc)}</span></div></div>`;
-    h += `<div class="p-row"><label>${T('s2.p.quirks')}</label><div>${E.people.quirksOf(p).map((q) => `<span class="q"><b>${P(q.name)}</b><small>${P(q.desc)}</small></span>`).join('')}</div></div>`;
+    h += `<div class="p-row flaw"><label>${T('s2.p.flaw')}</label><div><b>${P(flaw.name)}</b>`
+      + (flaw.level ? `<em class="lvl lvl-${flaw.level}">${T('s2.p.level.' + flaw.level)}</em>` : '')
+      + `<span>${P(flaw.desc)}</span>${tacLine(flaw.tac)}</div></div>`;
+    h += `<div class="p-row"><label>${T('s2.p.quirks')}</label><div>${E.people.quirksOf(p).map((q) => `<span class="q"><b>${P(q.name)}</b><small>${P(q.desc)}</small>${q.tac ? `<small class="p-tac"><i>${T('s2.p.tacFx')}</i>${P(q.tac)}</small>` : ''}</span>`).join('')}</div></div>`;
     const rels = N.relationsOf(s, id);
     if (rels.length) {
       h += `<div class="p-row rels"><label>${T('s2.p.relations')}</label><div>${rels.map((r) => {
@@ -307,9 +312,19 @@
         footer: `<div class="p-foot"><button class="primary" data-act="recruit" data-id="${id}">${T('s2.day.recruit')}</button></div>`,
       })).join('')}</div></section>`;
     }
-    h += `<section class="panel"><h2>${T('s2.day.street')}</h2><p class="hint">${T('s2.day.streetHint')}</p><div class="grid-people">${street.map((id) => (s.scanned[id]
-      ? personCard(id, { full: true, cls: 'scanned' })
-      : personCard(id, { cls: 'unscanned', footer: `<div class="p-foot"><button data-act="scan" data-id="${id}">${T('s2.day.scan')}</button></div>` }))).join('')}</div></section>`;
+    const keptN = street.filter((id) => N.kept(s, id)).length;
+    h += `<section class="panel"><h2>${T('s2.day.street')} <span class="chip">${T('s2.day.keepCount', { n: keptN, max: N.MAX_KEEP })}</span></h2><p class="hint">${T('s2.day.streetHint')}</p><div class="grid-people">${street.map((id) => {
+      if (!s.scanned[id]) return personCard(id, { cls: 'unscanned', footer: `<div class="p-foot"><button data-act="scan" data-id="${id}">${T('s2.day.scan')}</button></div>` });
+      if (N.kept(s, id)) {
+        return personCard(id, { full: true, cls: 'scanned kept', badge: `<em class="kept">${T('s2.day.kept')}</em>`,
+          footer: `<div class="p-foot"><button class="ghost" data-act="unkeep" data-id="${id}">${T('s2.day.unkeep')}</button></div>` });
+      }
+      const last = N.leavesAfter(s, id);
+      const full = keptN >= N.MAX_KEEP;
+      return personCard(id, { full: true, cls: 'scanned',
+        footer: `<div class="p-foot"><small class="${last <= s.dnight ? 'warn' : ''}">${T(last <= s.dnight ? 's2.day.leaving' : 's2.day.staying')}</small>`
+          + `<button class="primary" data-act="keep" data-id="${id}"${full ? ' disabled' : ''}>${full ? T('s2.day.keepFull', { n: N.MAX_KEEP }) : T('s2.day.keep')}</button></div>` });
+    }).join('')}</div></section>`;
     return h;
   }
 
@@ -332,7 +347,7 @@
     }).join('')}</div>`;
     h += `<div class="bar-actions"><div class="squad-info">`
       + (chosen.length ? `<span class="chip">${T('s2.squad.startAlert', { n: N.startAlert(s, chosen) })}</span>` : '')
-      + combos.map((c) => { const def = data().combos.find((x) => x.id === c); return `<span class="chip combo${c === 'derby' ? ' bad' : ''}" title="${P(def.desc)}">${T('s2.squad.combos')}：${P(def.name)}</span>`; }).join('')
+      + combos.map((c) => { const def = data().combos.find((x) => x.id === c); return `<span class="chip combo${BAD_COMBOS.includes(c) ? ' bad' : ''}" title="${P(def.desc)}">${T('s2.squad.combos')}：${P(def.name)}</span>`; }).join('')
       + (reason ? `<span class="warn">${esc(reason)}</span>` : '')
       + `</div><button data-act="back">${T('s2.squad.back')}</button>`
       + (tac ? `<button data-act="go"${check.ok ? '' : ' disabled'}>${T('s2.squad.goQuick')}</button><button class="primary" data-act="goTac"${check.ok ? '' : ' disabled'}>${T('s2.squad.goTac')}</button>`
@@ -390,7 +405,7 @@
       + (split ? `<span class="chip combo">${T('s2.op.screen', { n: op.screen })}</span>` : '')
       + (s.tonight && s.tonight.type !== 'raid' ? `<span class="chip bad">${T('s2.counter.' + s.tonight.type + '.title')}</span>` : '')
       + (op.keycard ? `<span class="chip good">${T('s2.op.keycard')}</span>` : '')
-      + combos.map((c) => { const def = data().combos.find((x) => x.id === c); return `<span class="chip combo${c === 'derby' ? ' bad' : ''}" title="${P(def.desc)}">${P(def.name)}</span>`; }).join('')
+      + combos.map((c) => { const def = data().combos.find((x) => x.id === c); return `<span class="chip combo${BAD_COMBOS.includes(c) ? ' bad' : ''}" title="${P(def.desc)}">${P(def.name)}</span>`; }).join('')
       + `</div>`;
     h += `<div class="squad-strip">${N.members(s).map((id) => {
       const flags = [];
@@ -629,7 +644,7 @@
     const main = $('s2-main');
     const phase = s.phase === 'event' ? 'op' : s.phase === 'react' ? (s.op && s.op.mode === 'tac' ? 'tac' : 'op') : s.phase;
     main.dataset.phase = phase;
-    const renderTac = () => E.tacUI.render(s, { alertStatus, legend: tacLegend });
+    const renderTac = () => E.tacUI.render(s, { alertStatus });
     main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, tac: renderTac, result: renderResult, end: renderEnd }[phase]();
     renderModal();
     if (phase === 'story') {
@@ -708,6 +723,8 @@
       window.scrollTo(0, 0);
     },
     scan(d) { N.scan(s, d.id); E.fx.sfx.play('prof'); },
+    keep(d) { N.keep(s, d.id, true); },
+    unkeep(d) { N.keep(s, d.id, false); },
     travel(d) { if (N.travel(s, d.d)) window.scrollTo(0, 0); },
     clinic(d) { N.clinic(s, d.id); },
     recruit(d) { N.recruitOwed(s, d.id); },
@@ -740,12 +757,16 @@
       cine('title', `<div class="cine-title">${P(s.op.name)}</div>`, 1400);
       E.fx.sfx.play('title');
     },
+    // 戰術地圖的操作都交給 js/ui/tactics.js。
     tacSel(d) { E.tacUI.click(s, d); },
     tacTile(d) { E.tacUI.click(s, d); },
-    tacAb(d) { E.tacUI.click(s, d); },
-    tacCancel(d) { E.tacUI.click(s, d); },
+    tacPick(d) { E.tacUI.click(s, d); },
+    tacClose(d) { E.tacUI.click(s, d); },
     tacEnd(d) { E.tacUI.click(s, d); },
-    tacLegend() { tacLegend = !tacLegend; },
+    tacUndo(d) { E.tacUI.click(s, d); },
+    tacGuide(d) { E.tacUI.click(s, d); },
+    tacGuideOk(d) { E.tacUI.click(s, d); },
+    tacCard(d) { E.tacUI.click(s, d); },
     do(d) {
       if (s.phase !== 'op') return;
       const opt = N.options(s, N.laneOf(s, d.who)).find((o) => o.approach.id === d.a);
@@ -803,12 +824,16 @@
     const before = s.phase;
     actions[el.dataset.act](el.dataset);
     if (!KEEP_PROFILE.includes(el.dataset.act)) profileId = null;
-    // 行動結束時跳出結果卡。
+    resultCard(before);
+    commit();
+  }
+
+  // 行動結束時跳出結果卡。
+  function resultCard(before) {
     if (before !== 'result' && s.phase === 'result' && s.result.outcome !== 'rest') {
       const ok = s.result.outcome === 'win';
       cine(ok ? 'title' : 'desync', ok ? `<div class="cine-title">${T('s2.res.win')}</div>` : `<div class="cine-desync" data-text="${T('s2.res.' + s.result.outcome)}">${T('s2.res.' + s.result.outcome)}</div>`, 1500);
     }
-    commit();
   }
 
   // ===== 開始、語言、音效 =====
@@ -885,6 +910,11 @@
       if (text.trim() && s && s.phase === 'story') { E.fx.sfx.unlock(); storyInput(text); }
     });
     document.addEventListener('keydown', (ev) => {
+      // 戰術地圖的快捷鍵（對話框打開的時候不算）。
+      if (s && s.phase === 'tac' && !profileId && !hack) {
+        const before = s.phase;
+        if (E.tacUI.key(s, ev)) { ev.preventDefault(); resultCard(before); commit(); return; }
+      }
       if (ev.key === 'Escape' && profileId) { profileId = null; renderModal(); }
       if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('article[data-act]')) { ev.preventDefault(); onClick(ev); }
     });

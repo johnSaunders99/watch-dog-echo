@@ -6,7 +6,9 @@
   const data = () => E.s2.people;
   const LANGS = ['en', 'tc', 'sc'];
   const RARE_CHANCE = 0.05;
-  const FLAW_CHANCE = 0.8;
+  const FLAW_CHANCE = 0.65;
+  // 弱點的出現權重：越嚴重越少見（level 見 content-s2/people.js）。
+  const FLAW_WEIGHT = { 1: 1.2, 2: 1, 3: 0.5 };
 
   // 各類職業的基礎能力：hack 駭入、physical 身體、social 社交，0–3。
   const BASE_SKILLS = {
@@ -27,11 +29,12 @@
     const occupation = r.chance(RARE_CHANCE)
       ? r.pick(d.rares)
       : r.weighted(d.occupations, (o) => (o.districts[district] || 1) * (o.tier === 'uncommon' ? 0.4 : 1));
-    const flaw = r.chance(FLAW_CHANCE) ? r.pick(d.flaws) : null;
+    const flaw = r.chance(FLAW_CHANCE) ? r.weighted(d.flaws, (f) => FLAW_WEIGHT[f.level] || 1) : null;
     const traits = r.shuffle(d.traits).slice(0, 2).map((t) => t.id);
     // 兩個小習慣不重複，也不會同時是曼聯和利物浦球迷。
-    const first = r.pick(d.quirks);
-    const second = r.pick(d.quirks.filter((q) => q.id !== first.id && q.id !== first.rival));
+    const qw = (q) => (q.weight === undefined ? 1 : q.weight);
+    const first = r.weighted(d.quirks, qw);
+    const second = r.weighted(d.quirks.filter((q) => q.id !== first.id && q.id !== first.rival), qw);
     const quirks = [first.id, second.id];
 
     const skills = Object.assign({}, BASE_SKILLS[occupation.category]);
@@ -105,7 +108,7 @@
       const r = E.rng.derive(worldSeed, district, 'rel', i);
       if (!r.chance(0.35)) continue;
       const j = r.pick(indices.filter((x) => x !== i));
-      const type = r.weighted({ family: 3, coworker: 3, ex: 2, rival: 2 });
+      const type = r.weighted({ family: 3, coworker: 3, ex: 2, rival: 1 });
       const a = district + '-' + i, b = district + '-' + j;
       if (j === undefined || count(a) >= 2 || count(b) >= 2 || (out[a] || []).some((x) => x.other === b)) continue;
       (out[a] = out[a] || []).push({ other: b, type });

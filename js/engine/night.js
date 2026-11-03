@@ -24,6 +24,7 @@
   const STREET_STEP = 3;      // 每過一晚，街上換掉三個人
   const VOLUNTEERS = 1000;    // 開場自願者的編號
   const HELPERS = 2000;       // 「叫人」叫來的路人的編號
+  const MAX_KEEP = 3;         // 街上最多保留幾個人（保留的人不會離開，今晚可以去招募）
   const BANDWIDTH = 4;
   const MAX_SQUAD = 3;
   const MAX_SPLIT = 4;        // 分頭行動最多四個人
@@ -37,6 +38,7 @@
   const DEATH_CHANCE = 0.3;   // 每個這樣的早上撐不過去的機率
   const CLINIC_HEAT = 8;      // 送去地下診所的熱度代價
   const HUNTED_CHANCE = 0.35; // 名單上的隊員每個早上被上門抓走的機率
+  const TAC_BONUS = 5;        // 親自指揮（戰術地圖）成功時多給的民心
   const LANGS = ['en', 'tc', 'sc'];
 
   // ===== 小工具 =====
@@ -449,6 +451,7 @@
     Object.assign(m, { scars: [], wins: 0, threat: person(s, id).threat });
     s.stats.recruited.push(id);
     delete s.owed[id];
+    if (s.keep) delete s.keep[id];
     say(s, 'gain', status === 'active' ? 's2.log.joined' : 's2.log.network', { name: nameOf(s, id) });
     if (s.legacy && !person(s, id).traits.includes(s.legacy.trait)) {
       m.inherited = s.legacy;
@@ -473,17 +476,40 @@
   }
 
   // ===== 白天：街上的人 =====
+  // 每過一晚換掉三個人（每個人在街上待兩晚）；稀有人物前三晚都在。保留的人不會離開，排在最前面。
+  // 掃描只是看看檔案；要保留（最多三個人），今晚的行動裡才會出現招募他們的任務。
+  const keptHere = (s) => Object.keys(s.keep || {}).filter((id) => id.startsWith(s.district + '-') && !member(s, id) && !s.owed[id]);
   function street(s) {
     const from = (s.dnight - 1) * STREET_STEP;
-    const ids = [];
-    for (let i = from; i < from + STREET_SIZE; i++) ids.push(s.district + '-' + i);
-    if (s.featured && s.dnight <= 3 && !ids.includes(s.featured)) ids.splice(2, 0, s.featured);
+    const ids = keptHere(s);
+    const add = (id) => { if (!ids.includes(id)) ids.push(id); };
+    for (let i = from; i < from + STREET_SIZE; i++) add(s.district + '-' + i);
+    if (s.featured && s.dnight <= 3) {
+      if (!ids.includes(s.featured)) ids.splice(Math.min(ids.length, keptHere(s).length + 2), 0, s.featured);
+    }
     return ids.filter((id) => !member(s, id) && !s.owed[id]);
+  }
+  // 這個人在街上待到第幾晚（保留的人一直都在：回傳 null）。
+  function leavesAfter(s, id) {
+    if (s.keep && s.keep[id]) return null;
+    if (id === s.featured) return Math.max(3, Math.floor(indexOf(id) / STREET_STEP) + 1);
+    return Math.floor(indexOf(id) / STREET_STEP) + 1;
   }
 
   function scan(s, id) {
     if (s.phase !== 'day' || s.scanned[id]) return;
     s.scanned[id] = true;
+  }
+
+  // 保留／不保留：只有掃描過、還在街上的人才能保留。
+  const kept = (s, id) => !!(s.keep && s.keep[id]);
+  function keep(s, id, on = true) {
+    if (s.phase !== 'day' || !s.scanned[id] || !street(s).includes(id)) return false;
+    s.keep = s.keep || {};
+    if (!on) { delete s.keep[id]; return true; }
+    if (kept(s, id) || keptHere(s).length >= MAX_KEEP) return false;
+    s.keep[id] = true;
+    return true;
   }
 
   function recruitOwed(s, id) {
@@ -542,7 +568,7 @@
     for (const m of s.roster.members) {
       if (m.status === 'arrested') list.push({ key: 'rescue:' + m.person.id, op: 'rescue', target: m.person.id, left: E.roster.TRANSFER_AFTER - (s.night - m.since) });
     }
-    for (const id of street(s)) if (s.scanned[id]) list.push({ key: 'recruit:' + id, op: 'recruit', target: id });
+    for (const id of street(s)) if (kept(s, id)) list.push({ key: 'recruit:' + id, op: 'recruit', target: id });
     return list.map((e) => Object.assign(e, info(s, e)));
   }
 
@@ -593,9 +619,6 @@
     if (e && e.split && !ids.some((id) => (lanes[id] || 'main') === 'main')) return { ok: false, reason: 's2.squad.needMain' };
     if (e && e.story && !ids.includes(s.hero)) return { ok: false, reason: 's2.squad.needHero' };
     if (e && e.story && ids.length < 2) return { ok: false, reason: 's2.squad.needTwo' };
-    for (const a of ids) for (const b of ids) {
-      if (a < b && related(s, a, b, 'rival')) return { ok: false, reason: 's2.squad.rival', a, b };
-    }
     return { ok: true };
   }
 
@@ -679,11 +702,19 @@
     s.phase = 'tac';
     say(s, 'op', 'tac.log.start');
     if (s.op.tac.intel) say(s, 'gain', networkWith(s, 'gossip') ? 'tac.log.intelGossip' : 'tac.log.intelEcho');
+    E.tactics.prepare(s, tacApi);
   }
 
   // 戰術地圖要用到的夜間引擎功能。
   const tacApi = {
     person, perk: perkId, category: categoryOf, traits: traitIds, name: nameOf, say, rand, addAlert,
+    rival: (s, a, b) => related(s, a, b, 'rival'),
+    // 人脈廣：叫一個路人來幫忙。行動結束時沒被抓的話，可以直接招募（見 finish）。
+    summon(s) {
+      const p = person(s, s.district + '-' + (HELPERS + s.helperCount++));
+      s.op.temp.push(p.id);
+      return p.id;
+    },
     flaw: (s, id) => flawOf(s, id).id,
     quirks: (s, id) => person(s, id).quirks,
     bw: (s) => s.op.bw,
@@ -799,6 +830,7 @@
     if (ms.some((a) => hasTrait(s, a, 'memory')) && ms.some((b) => categoryOf(s, b) === 'hacker')) out.push('photo_hack');
     if (pair((a) => hasQuirk(s, a, 'cantonese'), (b) => hasQuirk(s, b, 'cantonese'))) out.push('cantonese_pair');
     if (pair((a) => hasQuirk(s, a, 'man_utd'), (b) => hasQuirk(s, b, 'liverpool'))) out.push('derby');
+    if (ms.some((a) => ms.some((b) => a < b && related(s, a, b, 'rival')))) out.push('feud');
     return out;
   }
 
@@ -866,6 +898,7 @@
       if (o === id) continue;
       if (related(s, id, o, 'coworker')) r -= 0.1;
       if (related(s, id, o, 'ex')) r += 0.1;
+      if (related(s, id, o, 'rival')) r += 0.1; // 死對頭同隊：兩個人互相扯後腿
     }
     if (combos(s).includes('derby')) r += 0.1;
     if (s.world === 'wildfire') r += 0.05; // 燎原：連獅心防務都有重建引擎
@@ -1222,6 +1255,8 @@
           say(s, 'warn', 's2.ev.brag', { name: nameOf(s, id) });
         }
       }
+      // 親自指揮成功，民心多 5。
+      if (op.mode === 'tac') { support += TAC_BONUS; say(s, 'gain', 's2.log.tacBonus', { n: TAC_BONUS }); }
       res.support = support;
       res.heat += Math.round(op.alert / 5);
       s.support = Math.min(100, s.support + support);
@@ -1233,6 +1268,8 @@
     // 出過任務的人，威脅評分會上升；失敗的話升得更多。
     for (const id of op.squad) {
       const m = member(s, id);
+      // 戰術地圖：從頭到尾沒被看到的人，威脅評分不會上升。
+      if (op.mode === 'tac' && !op.tac.spotted[id] && !op.taken[id]) continue;
       if (m && !op.taken[id]) m.threat = Math.min(100, m.threat + 3 + Math.round(op.alert / 10) + (outcome === 'win' ? 0 : 5));
     }
     // 輕傷休一兩晚；重傷休三晚，而且沒有護理師照顧的話，接下來兩個早上都可能撐不過去。
@@ -1383,7 +1420,7 @@
     ORDER, ACT2, NIGHTS, BANDWIDTH, MAX_SQUAD, MAX_SPLIT, WANTED, RETIRE_WINS, LOW_NIGHTS, CALL_IN_HEAT,
     nightsIn: (s) => NIGHTS[s.district],
     create, person, relationsOf, traitIds, pickVolunteers,
-    street, scan, recruitOwed, sendHome, callBack, layLow, retire, canRetire,
+    MAX_KEEP, street, scan, keep, kept, leavesAfter, recruitOwed, sendHome, callBack, layLow, retire, canRetire,
     ops, pickOp, cancel, picked, squadCheck, startAlert, combosFor, launch, rest,
     stage, options, combos, cards, useCard, act, react, answer, retreat, nextDay,
     networkWith, puzzleSpec, hackable, clinic, travel, mainNow,
@@ -1396,7 +1433,9 @@
     tacRisky: (s, id) => E.tactics.risky(s, tacApi, id),
     tacAbilities: (s, id) => E.tactics.abilities(s, tacApi, id),
     tacCaps: (s, id) => E.tactics.caps(s, tacApi, id),
+    tacCards: (s, id) => E.tactics.cards(s, tacApi, id),
     tacVision: (s) => E.tactics.vision(s),
+    tacUndo: (s) => E.tactics.undo(s),
     WORLDS, MAIN_NIGHT, storyCommand, storyFinish, skipStory, mainPending,
     members: (s) => (s.op ? membersOf(s) : []),
     laneOf: (s, id) => (s.op ? laneOf(s, id) : 'main'),

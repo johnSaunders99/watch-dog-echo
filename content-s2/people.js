@@ -204,31 +204,33 @@
       card: card('active', 'cover', n('Back-up plan', '留後路', '留后路'), n("If this person's next action fails, nothing bad happens.", '這個人的下一個動作就算失敗，也沒有任何後果。', '这个人的下一个动作就算失败，也没有任何后果。')) },
   ];
 
-  // ===== 弱點：約八成的人有一個 =====
+  // ===== 弱點：約六成五的人有一個 =====
   // blocks 封鎖某類解法；exposure 每個動作多加的警戒；risk 失敗率；riskTags 特定解法的失敗率。
   // event 是任務中會發生的出包事件，由夜間行動引擎觸發。
+  // level 是嚴重程度（1 輕微、2 中等、3 嚴重），越嚴重越少見（見 js/engine/people.js 的 FLAW_WEIGHT）。
   const flaws = [
-    { id: 'acrophobia', name: n('Afraid of heights', '懼高', '恐高'), blocks: ['climb'] },
-    { id: 'loudmouth', name: n('Loudmouth', '大嘴巴', '大嘴巴'), exposure: 2, event: 'brag' },
-    { id: 'record', name: n('Has a record', '有前科', '有前科'), threat: 25, startAlert: 5 },
-    { id: 'bad_knees', name: n('Bad knees', '膝蓋不好', '膝盖不好'), blocks: ['run', 'climb'] },
-    { id: 'nervous', name: n('Nervous', '容易緊張', '容易紧张'), risk: 0.15, event: 'freeze' },
-    { id: 'no_sense', name: n('No sense of direction', '路痴', '路痴'), blocks: ['navigate'], event: 'lost' },
-    { id: 'dark', name: n('Afraid of the dark', '怕黑', '怕黑'), blocks: ['tunnel'], event: 'panic' },
-    { id: 'phone', name: n('Glued to their phone', '手機成癮', '手机成瘾'), exposure: 1, event: 'phone' },
-    { id: 'clumsy', name: n('Butterfingers', '笨手笨腳', '笨手笨脚'), riskTags: { hands: 0.2 } },
-    { id: 'honest', name: n("Can't lie", '不會說謊', '不会说谎'), blocks: ['lie'] },
-    { id: 'hothead', name: n('Short fuse', '脾氣差', '脾气差'), event: 'fight' },
-    { id: 'allergic', name: n('Allergies', '過敏', '过敏'), event: 'sneeze' },
+    { id: 'acrophobia', level: 1, name: n('Afraid of heights', '懼高', '恐高'), blocks: ['climb'] },
+    { id: 'loudmouth', level: 2, name: n('Loudmouth', '大嘴巴', '大嘴巴'), exposure: 2, event: 'brag' },
+    { id: 'record', level: 3, name: n('Has a record', '有前科', '有前科'), threat: 25, startAlert: 5 },
+    { id: 'bad_knees', level: 2, name: n('Bad knees', '膝蓋不好', '膝盖不好'), blocks: ['run', 'climb'] },
+    { id: 'nervous', level: 2, name: n('Nervous', '容易緊張', '容易紧张'), risk: 0.15, event: 'freeze' },
+    { id: 'no_sense', level: 1, name: n('No sense of direction', '路痴', '路痴'), blocks: ['navigate'], event: 'lost' },
+    { id: 'dark', level: 1, name: n('Afraid of the dark', '怕黑', '怕黑'), blocks: ['tunnel'], event: 'panic' },
+    { id: 'phone', level: 2, name: n('Glued to their phone', '手機成癮', '手机成瘾'), exposure: 1, event: 'phone' },
+    { id: 'clumsy', level: 2, name: n('Butterfingers', '笨手笨腳', '笨手笨脚'), riskTags: { hands: 0.2 } },
+    { id: 'honest', level: 1, name: n("Can't lie", '不會說謊', '不会说谎'), blocks: ['lie'] },
+    { id: 'hothead', level: 2, name: n('Short fuse', '脾氣差', '脾气差'), event: 'fight' },
+    { id: 'allergic', level: 1, name: n('Allergies', '過敏', '过敏'), event: 'sneeze' },
   ];
   const noFlaw = { id: 'none', name: n('None', '沒有', '没有') };
 
   // ===== 小習慣：每個人兩個，是個性，也接上一點機制 =====
   // risk：對帶有某個標籤的解法或關卡調整失敗率（負數是比較容易成功）。
+  // weight：出現的權重（預設 1）。兩隊球迷各只有一半，免得德比戰太常見。
   const quirks = [
     { id: 'cantonese', name: n('Speaks Cantonese', '會講粵語', '会讲粤语') },
-    { id: 'man_utd', name: n('Man United fan', '曼聯球迷', '曼联球迷'), rival: 'liverpool' },
-    { id: 'liverpool', name: n('Liverpool fan', '利物浦球迷', '利物浦球迷'), rival: 'man_utd' },
+    { id: 'man_utd', name: n('Man United fan', '曼聯球迷', '曼联球迷'), rival: 'liverpool', weight: 0.5 },
+    { id: 'liverpool', name: n('Liverpool fan', '利物浦球迷', '利物浦球迷'), rival: 'man_utd', weight: 0.5 },
     { id: 'dogs_fear', name: n('Scared of dogs', '怕狗', '怕狗'), risk: { dog: 0.3 } },
     { id: 'dogs_love', name: n('Dog person', '愛狗', '爱狗'), risk: { dog: -0.3 } },
     { id: 'mahjong', name: n('Mahjong every Saturday', '每週六打麻將', '每周六打麻将'), risk: { social: -0.1 } },
@@ -268,7 +270,9 @@
     { id: 'cantonese_pair', name: n('Cantonese whispers', '粵語密語', '粤语密语'),
       desc: n('Two Cantonese speakers: every action raises 1 less alert.', '兩個會講粵語的人：每個動作少 1 點警戒。', '两个会讲粤语的人：每个动作少 1 点警戒。') },
     { id: 'derby', name: n('Derby day', '德比戰', '德比战'),
-      desc: n('Man United fan + Liverpool fan: they argue all night. Everyone 10% more likely to fail.', '曼聯球迷＋利物浦球迷：吵了一整晚，全隊失敗率 +10%。', '曼联球迷＋利物浦球迷：吵了一整晚，全队失败率 +10%。') },
+      desc: n('Man United fan + Liverpool fan: they argue all night. Everyone 10% more likely to fail; on the map they bicker now and then.', '曼聯球迷＋利物浦球迷：吵了一整晚，全隊失敗率 +10%；在地圖上偶爾會吵起來。', '曼联球迷＋利物浦球迷：吵了一整晚，全队失败率 +10%；在地图上偶尔会吵起来。') },
+    { id: 'feud', name: n('Bad blood', '死對頭同隊', '死对头同队'),
+      desc: n('Two rivals on one team: each is 10% more likely to fail, and on the map they bicker now and then.', '兩個死對頭同隊：各自失敗率 +10%，在地圖上偶爾會吵起來。', '两个死对头同队：各自失败率 +10%，在地图上偶尔会吵起来。') },
   ];
 
   // ===== 祕密：Profiler 上的一句人生 =====
@@ -353,6 +357,86 @@
     tea: n('Just really likes tea.', '就只是很愛喝茶。', '就只是很爱喝茶。'),
   };
   for (const x of flaws.concat(quirks, [noFlaw])) x.desc = effects[x.id];
+
+  // 戰術地圖上的效果：顯示在 Profiler 上「地圖」那一行，和上面的快速結算效果分開寫。
+  const tacFx = {
+    // 專長
+    backdoor: n('Once per operation, a hack costs no bandwidth.', '每次行動一次，駭入不花頻寬。', '每次行动一次，入侵不花带宽。'),
+    network_access: n('Hacks raise no alert. Inside offices they cost no bandwidth.', '駭入不增加警戒；在辦公室裡不花頻寬。', '入侵不增加警戒；在办公室里不花带宽。'),
+    broadcast: n('Can hack, and sets up the transmitter for 1 AP.', '會駭入；架設發射器只要 1 點行動點。', '会入侵；架设发射器只要 1 点行动点。'),
+    botnet: n('Hack range +2. A jammed drone loops for 3 turns.', '駭入距離 +2；干擾的無人機重播 3 回合。', '入侵距离 +2；干扰的无人机重播 3 回合。'),
+    site_pass: n('Opens locked doors quietly (1 AP).', '安靜地打開上鎖的門（1 點）。', '安静地打开上锁的门（1 点）。'),
+    building_access: n('Opens locked doors quietly (1 AP).', '安靜地打開上鎖的門（1 點）。', '安静地打开上锁的门（1 点）。'),
+    heavy_lift: n('Forces doors and pulls down fences without a sound.', '撞門、拆圍欄都不會發出聲音。', '撞门、拆围栏都不会发出声音。'),
+    climb: n('Climbs fences.', '翻得過圍欄。', '翻得过围栏。'),
+    sprint: n('Moves 1 square further, and shakes off a guard once.', '多走一格；被追上時可以甩開一次。', '多走一格；被追上时可以甩开一次。'),
+    river_route: n('Takes a guard down even face to face.', '正面也能制伏守衛。', '正面也能制服守卫。'),
+    bail: n('Talks down guards who are already giving chase. Once per operation, steps in when a teammate is caught.', '追過來的守衛也講得聽；每次行動一次，隊友被追上時出面擋下來。', '追过来的守卫也讲得听；每次行动一次，队友被追上时出面挡下来。'),
+    press: n('Talks guards away, and sets up the transmitter for 1 AP.', '會搭話引開守衛；架設發射器只要 1 點。', '会搭话引开守卫；架设发射器只要 1 点。'),
+    gossip: n('The whole team sees the patrol routes. Conversations last a turn longer.', '全隊看得到巡邏路線；搭話多拖一回合。', '全队看得到巡逻路线；搭话多拖一回合。'),
+    smooth_talk: n('Talk range +1, conversations last 2 turns longer, and it works on guards giving chase.', '搭話距離 +1、多拖兩回合，連追過來的守衛都講得聽。', '搭话距离 +1、多拖两回合，连追过来的守卫都讲得听。'),
+    distraction: n('Talks from 4 squares away, and can draw a drone off with the crowd.', '四格外就能搭話，還能用人群把無人機引開。', '四格外就能搭话，还能用人群把无人机引开。'),
+    disguise: n('Poses as staff for 5 turns.', '偽裝成工作人員 5 回合。', '伪装成工作人员 5 回合。'),
+    heal: n('Patches up an injured teammate standing next to them.', '替旁邊受傷的隊友急救。', '替旁边受伤的队友急救。'),
+    lockpick: n('Picks locked doors quietly (1 AP).', '安靜地撬開上鎖的門（1 點）。', '安静地撬开上锁的门（1 点）。'),
+    getaway: n('Once per operation, calls the cab: the square they stand on becomes an exit.', '每次行動一次叫車：站的那一格變成撤離點。', '每次行动一次叫车：站的那一格变成撤离点。'),
+    unsuspicious: n('When spotted, nobody gives chase and the alert rises by half (until the alert reaches 60).', '被看到時沒人追，警戒只加一半（警戒 60 以前）。', '被看到时没人追，警戒只加一半（警戒 60 以前）。'),
+    take_over: n('A hacked drone is taken over for good (alert −10). A hacked camera stays off all night.', '駭進的無人機整架接管（警戒 −10）；駭掉的攝影機整晚都不會再開。', '入侵的无人机整架接管（警戒 −10）；关掉的摄像头整晚都不会再开。'),
+    pigeon_post: n('Once per operation, a pigeon completes any one objective on the map.', '每次行動一次，讓鴿子完成地圖上任何一個目標。', '每次行动一次，让鸽子完成地图上任何一个目标。'),
+    legacy: n('Hacks are free and silent, and objectives can be hacked from a distance.', '駭入不花頻寬、不增加警戒，目標也能遠端駭。', '入侵不花带宽、不增加警戒，目标也能远程入侵。'),
+    pirate_radio: n('Once per operation, every guard on the map listens to the show for 2 turns.', '每次行動一次，全區守衛聽節目聽兩回合。', '每次行动一次，全区守卫听节目听两回合。'),
+    master_keys: n('Opens any door. Guards and cameras take them for the cleaner unless right next to them.', '每扇門都開得了；守衛和攝影機只當是打掃的人，除非貼身。', '每扇门都开得了；守卫和摄像头只当是打扫的人，除非贴身。'),
+    rooftops: n('Moves 2 squares further, and vaults fences for free.', '多走兩格；翻圍欄不花行動點。', '多走两格；翻围栏不花行动点。'),
+    // 特質（招式卡）
+    calm: n('The first time anyone spots them, they stand still and are taken for a passer-by.', '第一次被看到時站著不動，被當成路人。', '第一次被看到时站着不动，被当成路人。'),
+    fast: n('Moves 1 square further, and shakes off a guard once.', '多走一格；被追上時可以甩開一次。', '多走一格；被追上时可以甩开一次。'),
+    connected: n('Card: call a local in (1 AP). They play like a teammate this operation, and can be recruited free afterwards.', '卡：叫一個路人來（1 點）。這次行動像隊友一樣操作，結束後免費招募。', '卡：叫一个路人来（1 点）。这次行动像队友一样操作，结束后免费招募。'),
+    memory: n('The team sees the patrol routes. Card: remembers a door code and opens a locked door in sight (1 AP).', '全隊看得到巡邏路線。卡：記得門禁密碼，打開看得到的一扇上鎖的門（1 點）。', '全队看得到巡逻路线。卡：记得门禁密码，打开看得到的一扇上锁的门（1 点）。'),
+    unremarkable: n('Guards and cameras have to come 1 square closer. Card: nobody looks twice, this turn and next (free).', '守衛和攝影機要再近一格才會發現。卡：這一回合和下一回合沒人多看一眼（不花行動點）。', '守卫和摄像头要再近一格才会发现。卡：这一回合和下一回合没人多看一眼（不花行动点）。'),
+    silver: n('Talk range +1, and it works on guards giving chase. Card: talk it down: alert −15, nearby chasers go back to patrol (1 AP).', '搭話距離 +1，追過來的守衛也講得聽。卡：圓過去，警戒 −15，附近追來的守衛回去巡邏（1 點）。', '搭话距离 +1，追过来的守卫也讲得听。卡：圆过去，警戒 −15，附近追来的守卫回去巡逻（1 点）。'),
+    nightowl: n('In the dark, not even a guard right next to them notices.', '站在暗處，連貼身的守衛都看不到。', '站在暗处，连贴身的守卫都看不到。'),
+    nimble: n('Climbs fences. Card: lifts a keycard off a guard from behind, and the whole team opens locked doors quietly (1 AP).', '翻得過圍欄。卡：從背後摸走守衛的門卡，全隊安靜開門（1 點）。', '翻得过围栏。卡：从背后摸走守卫的门卡，全队安静开门（1 点）。'),
+    strong: n('Takes guards down even face to face; forces doors for 1 AP. Card: tears a fence open (1 AP, noisy).', '正面也能制伏守衛，撞門只要 1 點。卡：扯開一段圍欄（1 點，會發出聲音）。', '正面也能制服守卫，撞门只要 1 点。卡：扯开一段围栏（1 点，会发出声音）。'),
+    driver: n('Card: calls the car, and the square they stand on becomes an exit (1 AP).', '卡：叫車，站的那一格變成撤離點（1 點）。', '卡：叫车，站的那一格变成撤离点（1 点）。'),
+    cheerful: n('Card: pep talk. Teammates within 2 squares get +1 AP this turn (free).', '卡：打氣，兩格內的隊友這一回合各多 1 點行動點（不花行動點）。', '卡：打气，两格内的队友这一回合各多 1 点行动点（不花行动点）。'),
+    careful: n('Never makes a noise. Card: sets up a hiding spot where they stand (1 AP).', '做什麼都不會發出聲音。卡：在腳下佈置一個藏身處（1 點）。', '做什么都不会发出声音。卡：在脚下布置一个藏身处（1 点）。'),
+    // 弱點
+    acrophobia: n("Can't climb fences.", '不能翻圍欄。', '不能翻围栏。'),
+    loudmouth: n('Every noise they make carries 2 squares further.', '發出的聲音傳得遠兩格。', '发出的声音传得远两格。'),
+    record: n('Guards and cameras recognise them from 1 square further.', '守衛和攝影機遠一格就認得出來。', '守卫和摄像头远一格就认得出来。'),
+    bad_knees: n('Moves 1 square less. Climbing costs 2 AP.', '少走一格；翻圍欄要 2 點。', '少走一格；翻围栏要 2 点。'),
+    nervous: n('−1 AP on a turn that starts with a guard within 2 squares.', '回合開始時守衛在兩格內，少 1 點行動點。', '回合开始时守卫在两格内，少 1 点行动点。'),
+    no_sense: n('On a long walk, sometimes stops a square short.', '走遠路時有時會少走一格。', '走远路时有时会少走一格。'),
+    dark: n('−1 AP on a turn that starts in the dark, unless someone calm is next to them.', '回合開始時站在暗處，少 1 點行動點，除非旁邊有冷靜的人。', '回合开始时站在暗处，少 1 点行动点，除非旁边有冷静的人。'),
+    phone: n('12% chance each turn that the phone goes off (noise).', '每回合 12% 手機會響（發出聲音）。', '每回合 12% 手机会响（发出声音）。'),
+    clumsy: n('25% chance that a climb, takedown or lift goes wrong.', '翻圍欄、制伏、偷東西有 25% 會失手。', '翻围栏、制服、偷东西有 25% 会失手。'),
+    honest: n('No disguises. Conversations end a turn sooner.', '不能偽裝；搭話少拖一回合。', '不能伪装；搭话少拖一回合。'),
+    hothead: n('Alert +5 more whenever a guard spots them.', '被守衛看到時，警戒多加 5。', '被守卫看到时，警戒多加 5。'),
+    allergic: n('10% chance each turn of a sneeze (noise).', '每回合 10% 會打噴嚏（發出聲音）。', '每回合 10% 会打喷嚏（发出声音）。'),
+    // 小習慣
+    cantonese: n('With another Cantonese speaker on the map, each time either is spotted the alert rises 3 less.', '和另一個會講粵語的人同隊，被看到時警戒少加 3。', '和另一个会讲粤语的人同队，被看到时警戒少加 3。'),
+    man_utd: n('Guards love a chat about football (+1 turn). With a Liverpool fan on the map, they bicker now and then (noise).', '守衛很愛聊球（搭話多拖一回合）；和利物浦球迷同隊，偶爾會吵起來（發出聲音）。', '守卫很爱聊球（搭话多拖一回合）；和利物浦球迷同队，偶尔会吵起来（发出声音）。'),
+    liverpool: n('Guards love a chat about football (+1 turn). With a Man United fan on the map, they bicker now and then (noise).', '守衛很愛聊球（搭話多拖一回合）；和曼聯球迷同隊，偶爾會吵起來（發出聲音）。', '守卫很爱聊球（搭话多拖一回合）；和曼联球迷同队，偶尔会吵起来（发出声音）。'),
+    dogs_fear: n('Guard dogs smell them from 1 square further. −1 AP on a turn that starts with a dog within 2 squares.', '守衛犬遠一格就聞得到；回合開始時狗在兩格內，少 1 點行動點。', '守卫犬远一格就闻得到；回合开始时狗在两格内，少 1 点行动点。'),
+    dogs_love: n('Guard dogs never bark at them, and a pat on the head (1 AP) quiets a dog for good.', '守衛犬不會對著叫；摸摸頭（1 點）就讓狗整晚安靜。', '守卫犬不会对着叫；摸摸头（1 点）就让狗整晚安静。'),
+    mahjong: n('Conversations last a turn longer.', '搭話多拖一回合。', '搭话多拖一回合。'),
+    night_shift: n('+1 AP on the first turn.', '第一回合多 1 點行動點。', '第一回合多 1 点行动点。'),
+    smoker: n('10% chance each turn of a coughing fit (noise).', '每回合 10% 會咳嗽（發出聲音）。', '每回合 10% 会咳嗽（发出声音）。'),
+    marathon: n('Moves 1 square further.', '多走一格。', '多走一格。'),
+    gamer: n('Hack range +1.', '駭入距離 +1。', '入侵距离 +1。'),
+    knitting: n('Picks a locked door with a knitting needle (2 AP, quiet).', '用毛線針撬開上鎖的門（2 點，安靜）。', '用毛线针撬开上锁的门（2 点，安静）。'),
+    birdwatcher: n('A drone has to be right on top of them to notice.', '無人機要飛到頭頂旁邊才會發現。', '无人机要飞到头顶旁边才会发现。'),
+    cyclist: n('Once the objectives are done, rides off: moves 2 squares further.', '目標都完成之後騎車走人：多走兩格。', '目标都完成之后骑车走人：多走两格。'),
+    ex_army: n('Takes guards down even face to face.', '正面也能制伏守衛。', '正面也能制服守卫。'),
+    choir: n('Can talk guards away. Talk range +1.', '會搭話引開守衛，距離 +1。', '会搭话引开守卫，距离 +1。'),
+    tea: n('Offers a guard a cuppa: keeps them busy for a turn (anyone who already talks well, a turn longer).', '請守衛喝杯茶：拖住守衛一回合（本來就會搭話的人多拖一回合）。', '请守卫喝杯茶：拖住守卫一回合（本来就会搭话的人多拖一回合）。'),
+  };
+  for (const k in tacFx) {
+    if (perks[k]) perks[k].tac = tacFx[k];
+    const tr = traits.find((x) => x.id === k);
+    if (tr) tr.card.tac = tacFx[k];
+  }
+  for (const x of flaws.concat(quirks, [noFlaw])) x.tac = tacFx[x.id];
 
   // 外圍效果：住在自己家、不佔床位的外圍成員，靠職業專長提供的被動幫助。
   const networkFx = {
