@@ -13,6 +13,47 @@
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+  // ===== 目標 =====
+  // 建議指令上面一行：現在要做的事；點「提示」展開全部目標、場景的規則和怎麼做（展開的狀態換場景也保留）。
+  let goalsOpen = false;
+  function mk(tag, cls, text) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+  function goals(s) {
+    const box = $('goals');
+    if (!box) return;
+    const list = E.engine.goals(s);
+    const items = list.filter((g) => !g.note);
+    const now = items.find((g) => !g.done && !g.opt) || items.find((g) => !g.done);
+    box.hidden = !now;
+    box.innerHTML = '';
+    if (!now) return;
+    const need = items.filter((g) => !g.opt);
+    const head = mk('div', 'goal-now');
+    head.append(mk('b', '', t('hud.goal')), mk('span', '', t(now.k, now.v)), mk('em', '', need.filter((g) => g.done).length + '/' + need.length));
+    const more = mk('details', 'goal-more');
+    more.open = goalsOpen;
+    more.addEventListener('toggle', () => { goalsOpen = more.open; });
+    more.append(mk('summary', '', t('hud.goalMore')));
+    for (const g of list.filter((x) => x.note)) more.append(mk('p', 'goal-note', t(g.k, g.v)));
+    const ul = mk('ul');
+    for (const g of items) {
+      const li = mk('li', g.done ? 'done' : g === now ? 'now' : '', (g.done ? '✓ ' : g === now ? '▸ ' : '○ ') + t(g.k, g.v));
+      if (g.opt) li.append(mk('small', '', ' ' + t('hud.goalOpt')));
+      ul.append(li);
+    }
+    more.append(ul);
+    if (now.how) {
+      const how = mk('p', 'goal-how');
+      how.append(mk('b', '', t('hud.goalHow')), document.createTextNode(t(now.how)));
+      more.append(how);
+    }
+    box.append(head, more);
+  }
+
   function cmdLabel(cmd) {
     const [verb, target, topic] = cmd;
     const custom = E.chipLabels && E.chipLabels[verb + ':' + target];
@@ -176,6 +217,7 @@
         $('hud-trace').parentElement.classList.toggle('ready', v >= meter.goal);
         $('hud-trace').parentElement.classList.toggle('alert', !!meter.danger && v < meter.goal);
       }
+      goals(s);
       bump($('hud-bleed'), s.bleed);
       if (E.fx) E.fx.party(s);
       if (s.sync !== null) {

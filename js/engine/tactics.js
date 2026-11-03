@@ -1,5 +1,5 @@
 // 第二季的戰術地圖：夜間行動的另一種玩法（俯視、回合制的潛入）。
-// 一張 13×9 的格子地圖（content-s2/maps.js）：牆、地板、暗處、圍欄、上鎖的門、藏身處、目標、撤離點。
+// 一張 15×11 的格子地圖（content-s2/maps.js）：牆、地板、暗處、圍欄、上鎖的門、藏身處、目標、撤離點。
 // 每個隊員一回合有兩個行動點：移動一次（三格左右）或用一個能力各花一點。按「結束回合」之後，守衛、攝影機、無人機才會動。
 // 能力來自這個人的類別、專長、特質、弱點和小習慣：駭客遠端駭門、攝影機和無人機（目標還是要走到旁邊）；身體類翻圍欄、制伏守衛、撞門；
 // 社交類搭話引開守衛、偽裝；專長各有一手（鎖匠撬鎖、護理師急救、司機叫車）。沒有對應的人也能硬來，只是更慢、更吵。
@@ -27,11 +27,11 @@
   const active = (f) => !f.down && !(f.off > 0) && !(f.loop > 0) && f.state !== 'distracted';
 
   // ===== 建立地圖 =====
-  // o：{ map, obj（T 格的目標種類）, ids（出發的隊員）, rank（第幾區，越後面守衛越多）, limit（限時行動的回合數）, escort（被救的人）, intel }
+  // o：{ map, obj（T 格的目標種類）, ids（出發的隊員）, rank（第幾區，越後面守衛越多）, limit（限時行動：有的話改用地圖的 turns）, escort（被救的人）, intel }
   function build(o) {
     const tpl = E.s2.maps[o.map];
     const t = {
-      map: tpl.rows.slice(), mapId: o.map, theme: tpl.theme || 'site', w: tpl.rows[0].length, h: tpl.rows.length, turn: 1, limit: o.limit || null,
+      map: tpl.rows.slice(), mapId: o.map, theme: tpl.theme || 'site', w: tpl.rows[0].length, h: tpl.rows.length, turn: 1, limit: o.limit ? tpl.turns || o.limit : null,
       keys: tpl.keys !== false, units: [], foes: [], objs: [], used: {}, seen: {}, locks: {}, spotted: {}, undo: null, intel: !!o.intel, escort: o.escort || null, spawns: [], keycard: false,
     };
     const starts = [];
@@ -61,6 +61,7 @@
       if ((g.minRank || 0) > o.rank) continue;
       const f = guard(t, 'g' + n++, g.route, g.state);
       if (g.chase) f.chase = true;
+      if (g.face) f.face = g.face.slice(); // 站崗的守衛面向哪裡
       t.foes.push(f);
     }
     for (const d of tpl.drones || []) if ((d.minRank || 0) <= o.rank) t.foes.push({ id: 'd' + n++, kind: 'drone', x: d.route[0][0], y: d.route[0][1], face: [1, 0], route: d.route, ri: 1, state: 'patrol', timer: 0, loop: 0, down: false });
@@ -183,7 +184,8 @@
     c.bike = hq('cyclist') && !objsLeft(t);
     c.move = MOVE + (has('fast') ? 1 : 0) + (hq('marathon') ? 1 : 0) + (perk === 'sprint' ? 1 : 0) + (perk === 'rooftops' ? 2 : 0) + (c.bike ? 2 : 0) - (fl === 'bad_knees' ? 1 : 0);
     c.hack = cat === 'hacker' || skills.hack >= 2 || ['take_over', 'legacy', 'backdoor', 'botnet', 'network_access', 'broadcast'].includes(perk);
-    c.hackRange = 5 + (perk === 'botnet' ? 2 : 0) + (hq('gamer') ? 1 : 0);
+    // 駭入距離四格（還要看得到）：地圖變大之後，駭客也得走進去，不能站在出發點把整張圖駭完。
+    c.hackRange = 4 + (perk === 'botnet' ? 2 : 0) + (hq('gamer') ? 1 : 0);
     c.remote = perk === 'legacy'; // 老系統全都連在一起：目標也能遠端駭
     c.climb = (cat === 'physical' || has('nimble') || ['climb', 'rooftops'].includes(perk)) && fl !== 'acrophobia';
     c.climbCost = perk === 'rooftops' ? 0 : fl === 'bad_knees' ? 2 : 1;
@@ -893,6 +895,13 @@
         f.state = 'distracted';
         f.timer = 1;
         api.say(s, 'card', 'tac.log.slip', v);
+        continue;
+      }
+      // 教學關：被追上也不算數，守衛放人，回去站崗。
+      if (t.practice) {
+        f.state = 'patrol';
+        f.target = null;
+        api.say(s, 'warn', 'tac.log.practice', v);
         continue;
       }
       const lawyer = live(t).find((o) => !o.escort && api.perk(s, o.id) === 'bail');

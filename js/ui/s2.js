@@ -23,6 +23,10 @@
   let cineTimer = null;
   let storySeen = 0;     // 主線任務已經播過的輸出行數
   let worldOpen = false; // 正在問玩家第一季的結局
+  let tut = null;        // 戰術教學關的沙盒（不存檔；有的話主畫面改畫教學，結束後回到原本的畫面）
+  let tutSeen = 0;       // 教學關已經處理過音效的紀錄行數
+  const TUT_KEY = 'watchdogs-echo.s2.tutorial'; // 'offered' 問過要不要玩教學、'done' 玩完了
+  let goalsOpen = false; // 主線任務的目標清單有沒有展開
   const teamOpen = {};   // 側欄每一組有沒有展開（玩家自己點過才記下來）
 
   const who = (id) => N.person(s, id);
@@ -158,10 +162,25 @@
     h += `<section class="panel story"><div class="story-log" id="story-log">${s.storyLog.map((e, i) => storyLine(e, i >= first ? i - first : -1)).join('')}</div>`;
     // 打完了：先讓玩家讀完最後幾行，按下繼續才結算。
     if (s.storyDone) return h + `<div class="bar-actions"><button class="primary" id="story-end" data-act="storyEnd">${T('s2.story.end')} →</button></div></section>`;
-    h += `<div class="story-chips">${E.engine.suggestions(st).map((c) => `<button class="chip" data-act="storyChip" data-cmd="${esc(JSON.stringify(c))}">${esc(chipText(c))}</button>`).join('')}</div>`
+    h += goalsHtml(st)
+      + `<div class="story-chips">${E.engine.suggestions(st).map((c) => `<button class="chip" data-act="storyChip" data-cmd="${esc(JSON.stringify(c))}">${esc(chipText(c))}</button>`).join('')}</div>`
       + `<form id="story-form" class="story-form" autocomplete="off"><span>&gt;</span><input id="story-cmd" type="text" spellcheck="false" placeholder="${T('s2.story.placeholder')}" aria-label="Command"><button type="submit" class="primary">${T('s2.story.send')}</button></form>`
       + `<div class="bar-actions"><button class="ghost" data-act="skipStory">${T('s2.story.skip')}</button></div></section>`;
     return h;
+  }
+
+  // 目標：建議指令上面一行是現在要做的事；點「提示」展開全部目標、場景的規則和怎麼做（展開的狀態會保留）。
+  function goalsHtml(st) {
+    const list = E.engine.goals(st);
+    const items = list.filter((g) => !g.note);
+    const now = items.find((g) => !g.done && !g.opt) || items.find((g) => !g.done);
+    if (!now) return '';
+    const need = items.filter((g) => !g.opt);
+    return `<div class="goals"><div class="goal-now"><b>${T('s2.story.goal')}</b><span>${T(now.k, now.v)}</span><em>${need.filter((g) => g.done).length}/${need.length}</em></div>`
+      + `<details class="goal-more" id="goal-more"${goalsOpen ? ' open' : ''}><summary>${T('s2.story.goalMore')}</summary>`
+      + list.filter((g) => g.note).map((g) => `<p class="goal-note">${T(g.k, g.v)}</p>`).join('')
+      + `<ul>${items.map((g) => `<li class="${g.done ? 'done' : g === now ? 'now' : ''}">${g.done ? '✓' : g === now ? '▸' : '○'} ${T(g.k, g.v)}${g.opt ? ` <small>${T('s2.story.goalOpt')}</small>` : ''}</li>`).join('')}</ul>`
+      + (now.how ? `<p class="goal-how"><b>${T('s2.story.goalHow')}</b>${T(now.how)}</p>` : '') + `</details></div>`;
   }
 
   // 打字輸入：語言切換在這裡處理，其他交給第一季的場景引擎。
@@ -352,8 +371,17 @@
       + `</div><button data-act="back">${T('s2.squad.back')}</button>`
       + (tac ? `<button data-act="go"${check.ok ? '' : ' disabled'}>${T('s2.squad.goQuick')}</button><button class="primary" data-act="goTac"${check.ok ? '' : ' disabled'}>${T('s2.squad.goTac')}</button>`
         : `<button class="primary" data-act="go"${check.ok ? '' : ' disabled'}>${T('s2.squad.go')}</button>`) + `</div>`
-      + (tac ? `<p class="hint small">${T('s2.squad.tacHint')}</p>` : '') + `</section>`;
+      + (tac ? `<p class="hint small">${T('s2.squad.tacHint')}</p>`
+        + `<p class="hint small tut-hint">${lsGet(TUT_KEY) === 'done' ? '' : T('tac.tut.squadHint') + ' '}<button class="ghost" data-act="tutorial">${T('tac.tut.open')} →</button></p>` : '')
+      + `</section>`;
     return h;
+  }
+
+  // 教學關打完：重點整理，再玩一次或回去。
+  function renderTutDone() {
+    return `<section class="panel result res-win tut-done"><div class="res-title">${T('tac.tut.done.title')}</div><p class="hint">${T('tac.tut.done.intro')}</p>`
+      + `<ul class="tut-tips">${E.s2.tutorial.tips.map((k) => `<li>${T('tac.tut.tip.' + k)}</li>`).join('')}</ul>`
+      + `<div class="bar-actions"><button data-act="tutorial">${T('tac.tut.again')}</button><button class="primary" data-act="tutExit">${T('tac.tut.back')}</button></div></section>`;
   }
 
   function alertStatus(a) {
@@ -638,10 +666,17 @@
     renderTeam();
 
     const log = $('s2-log');
-    log.innerHTML = s.log.slice(-150).map((e) => `<div class="ln c-${e.c}">${T(e.k, e.v)}</div>`).join('');
+    log.innerHTML = (tut || s).log.slice(-150).map((e) => `<div class="ln c-${e.c}">${T(e.k, e.v)}</div>`).join('');
     log.scrollTop = log.scrollHeight;
 
     const main = $('s2-main');
+    // 教學關：主畫面改畫教學（隊伍、頂端的數字照舊是這一輪的）。
+    if (tut) {
+      main.dataset.phase = 'tac';
+      main.innerHTML = tut.phase === 'tac' ? E.tacUI.render(tut, { alertStatus, tutorial: true }) : renderTutDone();
+      renderModal();
+      return;
+    }
     const phase = s.phase === 'event' ? 'op' : s.phase === 'react' ? (s.op && s.op.mode === 'tac' ? 'tac' : 'op') : s.phase;
     main.dataset.phase = phase;
     const renderTac = () => E.tacUI.render(s, { alertStatus });
@@ -657,8 +692,9 @@
 
   // 新出現的紀錄決定音效和畫面閃一下。
   function feedback() {
-    const fresh = s.log.slice(seen);
-    seen = s.log.length;
+    const fresh = tut ? tut.log.slice(tutSeen) : s.log.slice(seen);
+    if (tut) tutSeen = tut.log.length;
+    else seen = s.log.length;
     if (!fresh.length) return;
     const has = (fn) => fresh.some(fn);
     const main = $('s2-main');
@@ -750,6 +786,11 @@
     },
     rest() { N.rest(s); },
     goTac() {
+      // 第一次親自潛入：問一次要不要先玩教學關（組好的隊伍留著，玩完回來直接出發）。
+      if (!lsGet(TUT_KEY)) {
+        lsSet(TUT_KEY, 'offered');
+        if (window.confirm(t('tac.tut.offer'))) return startTutorial();
+      }
       if (!N.launch(s, ids(), picks, 'tac')) return;
       picks = {};
       E.tacUI.reset();
@@ -757,16 +798,19 @@
       cine('title', `<div class="cine-title">${P(s.op.name)}</div>`, 1400);
       E.fx.sfx.play('title');
     },
-    // 戰術地圖的操作都交給 js/ui/tactics.js。
-    tacSel(d) { E.tacUI.click(s, d); },
-    tacTile(d) { E.tacUI.click(s, d); },
-    tacPick(d) { E.tacUI.click(s, d); },
-    tacClose(d) { E.tacUI.click(s, d); },
-    tacEnd(d) { E.tacUI.click(s, d); },
-    tacUndo(d) { E.tacUI.click(s, d); },
-    tacGuide(d) { E.tacUI.click(s, d); },
-    tacGuideOk(d) { E.tacUI.click(s, d); },
-    tacCard(d) { E.tacUI.click(s, d); },
+    // 戰術地圖的操作都交給 js/ui/tactics.js（教學關的時候操作的是教學的沙盒）。
+    tacSel(d) { E.tacUI.click(tut || s, d); },
+    tacTile(d) { E.tacUI.click(tut || s, d); },
+    tacPick(d) { E.tacUI.click(tut || s, d); },
+    tacClose(d) { E.tacUI.click(tut || s, d); },
+    tacEnd(d) { E.tacUI.click(tut || s, d); },
+    tacUndo(d) { E.tacUI.click(tut || s, d); },
+    tacGuide(d) { E.tacUI.click(tut || s, d); },
+    tacGuideOk(d) { E.tacUI.click(tut || s, d); },
+    tacCard(d) { E.tacUI.click(tut || s, d); },
+    tutorial() { startTutorial(); },
+    tutSkip() { if (tut) N.tutorialSkip(tut); },
+    tutExit() { endTutorial(); },
     do(d) {
       if (s.phase !== 'op') return;
       const opt = N.options(s, N.laneOf(s, d.who)).find((o) => o.approach.id === d.a);
@@ -812,6 +856,24 @@
     retirePick(d) { N.retire(s, retiring, d.trait); retiring = null; },
     retireCancel() { profileId = retiring; retiring = null; },
   };
+  // ===== 戰術教學關 =====
+  // 開一份新的沙盒；結束時丟掉，回到原本的畫面（組隊畫面、或正在打的地圖）。
+  function startTutorial() {
+    tut = N.tutorial();
+    tutSeen = tut.log.length;
+    E.tacUI.reset();
+    window.scrollTo(0, 0);
+    cine('title', `<div class="cine-title">${P(tut.op.name)}</div>`, 1400);
+    E.fx.sfx.play('title');
+  }
+  function endTutorial() {
+    if (tut && tut.phase !== 'tac') lsSet(TUT_KEY, 'done');
+    tut = null;
+    seen = s.log.length;
+    E.tacUI.reset();
+    window.scrollTo(0, 0);
+  }
+
   // 這些操作只換對話框，不關掉人物檔案。
   const KEEP_PROFILE = ['profile', 'close', 'home', 'callBack', 'lowkey', 'retire', 'retirePick', 'retireCancel', 'teamToggle'];
 
@@ -822,10 +884,19 @@
     E.fx.sfx.unlock();
     if (el.dataset.act === 'tile') return turnTile(Number(el.dataset.i));
     const before = s.phase;
+    const tutBefore = tut && tut.phase;
     actions[el.dataset.act](el.dataset);
     if (!KEEP_PROFILE.includes(el.dataset.act)) profileId = null;
     resultCard(before);
+    tutCard(tutBefore);
     commit();
+  }
+
+  // 教學關打完的那一刻：跳出「教學完成」。
+  function tutCard(before) {
+    if (!tut || before !== 'tac' || tut.phase === 'tac') return;
+    cine('title', `<div class="cine-title">${T('tac.tut.done.title')}</div>`, 1800);
+    E.fx.sfx.play('ending');
   }
 
   // 行動結束時跳出結果卡。
@@ -903,6 +974,8 @@
       if (lang) return setLang(lang.dataset.lang);
       onClick(ev);
     });
+    // 目標清單展開或收起：記下來，重畫的時候照舊。
+    document.addEventListener('toggle', (ev) => { if (ev.target.id === 'goal-more') goalsOpen = ev.target.open; }, true);
     document.addEventListener('submit', (ev) => {
       if (ev.target.id !== 'story-form') return;
       ev.preventDefault();
@@ -911,9 +984,11 @@
     });
     document.addEventListener('keydown', (ev) => {
       // 戰術地圖的快捷鍵（對話框打開的時候不算）。
-      if (s && s.phase === 'tac' && !profileId && !hack) {
+      const play = tut || s;
+      if (play && play.phase === 'tac' && !profileId && !hack) {
         const before = s.phase;
-        if (E.tacUI.key(s, ev)) { ev.preventDefault(); resultCard(before); commit(); return; }
+        const tutBefore = tut && tut.phase;
+        if (E.tacUI.key(play, ev)) { ev.preventDefault(); if (tut) tutCard(tutBefore); else resultCard(before); commit(); return; }
       }
       if (ev.key === 'Escape' && profileId) { profileId = null; renderModal(); }
       if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('article[data-act]')) { ev.preventDefault(); onClick(ev); }

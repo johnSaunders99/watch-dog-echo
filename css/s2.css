@@ -629,3 +629,23 @@ body.alarm::after { content: ""; position: fixed; inset: 0; z-index: 30; pointer
 .p-foot small { margin-right: auto; font-size: 11.5px; color: var(--muted); }
 .p-foot small.warn { color: var(--warn); }
 .p-foot { align-items: center; flex-wrap: wrap; }
+
+/* ===== 戰術教學關 ===== */
+.tut-coach { display: flex; gap: 12px; align-items: flex-start; margin: 10px 0; padding: 12px 14px; border: 1px solid rgba(255, 210, 63, 0.55); border-radius: 8px; background: #15130a; animation: card-in 0.25s ease-out; }
+.tut-coach .bagley-face svg { width: 44px; height: 44px; border-radius: 6px; display: block; }
+.tut-txt { flex: 1; min-width: 0; }
+.tut-txt b { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; color: #ffd23f; }
+.tut-txt p { margin: 4px 0 0; line-height: 1.65; }
+.tut-coach > button { flex: none; align-self: center; font-size: 12px; }
+.tut-mark { fill: none; stroke: #ffd23f; stroke-width: 3; pointer-events: none; transform-box: fill-box; transform-origin: center; animation: tut-ring 1.4s ease-in-out infinite; }
+@keyframes tut-ring { 0%, 100% { opacity: 1; transform: scale(0.85); } 50% { opacity: 0.35; transform: scale(1.05); } }
+.tut-glow { box-shadow: 0 0 0 0 rgba(255, 210, 63, 0.7); animation: tut-glow 1.4s ease-out infinite; }
+@keyframes tut-glow { 0% { box-shadow: 0 0 0 0 rgba(255, 210, 63, 0.75); } 100% { box-shadow: 0 0 0 12px rgba(255, 210, 63, 0); } }
+.tut-hint button { margin-left: 4px; padding: 4px 10px; font-size: 12px; }
+.tut-tips { margin: 10px 0 4px; padding-left: 20px; line-height: 1.7; text-align: left; }
+.tut-tips li + li { margin-top: 6px; }
+@media (max-width: 560px) {
+  .tut-coach { flex-wrap: wrap; }
+  .tut-txt { flex: 1 1 calc(100% - 60px); }
+  .tut-coach > button { margin-left: 56px; }
+}

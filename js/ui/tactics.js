@@ -19,6 +19,7 @@
   let tip = null;   // 點敵人或目標時的說明：{ x, y, k, v }
   let guide = null; // 圖解有沒有打開（null：還沒決定，看這個瀏覽器有沒有看過）
   let aim = null;   // 用招式卡選目標中：能力的 id
+  let tutAt = null; // 教學關：上一次畫面時在第幾步（換步驟時幫玩家選好要動手的人）
 
   const unitsOf = (s) => s.op.tac.units;
   const liveUnits = (s) => unitsOf(s).filter((u) => !u.out && !u.taken);
@@ -29,7 +30,7 @@
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 存不了就算了 */ } }
 
-  function reset() { sel = null; pop = null; tip = null; aim = null; }
+  function reset() { sel = null; pop = null; tip = null; aim = null; tutAt = null; }
 
   // 選中的人沒有行動點了，就換下一個還能動的人。
   function autoSelect(s) {
@@ -285,7 +286,8 @@
   }
 
   // ===== 整張地圖 =====
-  function mapSvg(s) {
+  // marks：教學關要亮起來的格子。
+  function mapSvg(s, marks = []) {
     const tac = s.op.tac;
     let g = defs();
     for (let y = 0; y < tac.h; y++) {
@@ -338,6 +340,8 @@
       g += `<rect class="tac-target${aim ? ' aim' : ''}" x="${x * TS + 2}" y="${y * TS + 2}" width="${TS - 4}" height="${TS - 4}" rx="5"/>` + badge(acts[k][0].ab, x, y, acts[k].length, acts[k][0].card);
     }
     if (u && acts[u.x + ',' + u.y]) g += badge(acts[u.x + ',' + u.y][0].ab, u.x, u.y, acts[u.x + ',' + u.y].length, acts[u.x + ',' + u.y][0].card);
+    // 教學關：這一步要點的地方，一圈會呼吸的光
+    g += marks.map(([x, y]) => `<circle class="tut-mark" cx="${x * TS + TS / 2}" cy="${y * TS + TS / 2}" r="${TS * 0.62}"/>`).join('');
     // 點擊用的透明格子
     for (let y = 0; y < tac.h; y++) for (let x = 0; x < tac.w; x++) g += `<rect class="tac-hit" data-act="tacTile" data-x="${x}" data-y="${y}" x="${x * TS}" y="${y * TS}" width="${TS}" height="${TS}"/>`;
     return `<svg class="tac-map" viewBox="0 0 ${tac.w * TS} ${tac.h * TS}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
@@ -512,10 +516,31 @@
       + `</div><div class="bar-actions"><button class="primary" data-act="tacGuideOk">${T('tac.guide.ok')}</button></div></div></div>`;
   }
 
+  // ===== 教學關：Bagley 在地圖上方說這一步要做什麼 =====
+  function coachHtml(s, st) {
+    if (!st) return '';
+    const steps = E.s2.tutorial.steps;
+    const i = steps.indexOf(st);
+    const role = st.who || st.name;
+    const v = role ? { name: { l: E.people.name(N.person(s, s.tutorial.roles[role])) } } : {};
+    return `<section class="tut-coach"><div class="bagley-face">${E.art.avatar('bagley')}</div>`
+      + `<div class="tut-txt"><b>BAGLEY · ${T('tac.tut.stepOf', { i: i + 1, n: steps.length })}</b><p>${T('tac.tut.step.' + st.id, v)}</p></div>`
+      + (i < steps.length - 1 ? `<button class="ghost" data-act="tutSkip">${T('tac.tut.skip')}</button>` : '') + `</section>`;
+  }
+
   // ===== 整個畫面 =====
+  // ui.tutorial：這是教學關（s 是教學用的沙盒）。
   function render(s, ui) {
     const tac = s.op.tac;
-    if (guide === null) guide = !lsGet(GUIDE_KEY);
+    const tut = ui.tutorial ? N.tutorialStep(s) : null;
+    // 教學關不自動跳出圖解（教學本身就在教），要看再按「圖解」。
+    if (guide === null && !ui.tutorial) guide = !lsGet(GUIDE_KEY);
+    // 教學換到下一步（或剛結束回合、還沒選人）：先幫玩家選好這一步要動手的人。
+    if (tut && (tut.id !== tutAt || !sel)) {
+      tutAt = tut.id;
+      const wu = tut.who && unitsOf(s).find((x) => x.id === s.tutorial.roles[tut.who]);
+      if (wu && !wu.out && !wu.taken && wu.ap > 0) { sel = wu.id; pop = null; aim = null; }
+    }
     autoSelect(s);
     const lvl = s.op.alert >= 60 ? 'hot' : s.op.alert >= 30 ? 'warm' : 'cool';
     const left = tac.objs.filter((o) => !o.done).length;
@@ -525,7 +550,8 @@
       + `<span class="chip ${left ? '' : 'good'}">${left ? T('tac.objLeft', { n: left }) : T('tac.objDone')}</span></div>`
       + `<div class="alert alert-${lvl}"><div class="alert-top"><span>${T('s2.op.alert')}</span><b>${s.op.alert}</b><em>${T(ui.alertStatus(s.op.alert))}</em></div>`
       + `<div class="alert-bar"><i style="width:${s.op.alert}%"></i><u style="left:30%"></u><u style="left:60%"></u></div></div></section>`;
-    h += `<section class="panel tac"><div class="tac-stage">${mapSvg(s)}${popHtml(s)}${tipHtml(s)}${guide ? guideHtml(s) : ''}</div>`;
+    if (ui.tutorial) h += coachHtml(s, tut);
+    h += `<section class="panel tac"><div class="tac-stage">${mapSvg(s, tut && tut.mark ? tut.mark(tac) : [])}${popHtml(s)}${tipHtml(s)}${guide ? guideHtml(s) : ''}</div>`;
     // 地圖正下方：隊員、撤回、結束回合
     h += `<div class="tac-bar"><div class="tac-squad">${unitsOf(s).map((u, i) => {
       const off = u.out || u.taken;
@@ -534,7 +560,7 @@
         + `<span class="tm-face">${E.faces.of(N.person(s, u.id))}</span><span class="tm-txt"><b>${nm(s, u.id)}</b><small>${st}</small></span></button>`;
     }).join('')}</div><div class="tac-turn">`
       + (tac.undo ? `<button class="ghost" data-act="tacUndo" title="U">↶ ${T('tac.undo')}</button>` : '')
-      + `<button class="primary" data-act="tacEnd" title="Space">${T('tac.end')} ⏎</button></div></div>`;
+      + `<button class="primary${tut && tut.ui === 'end' ? ' tut-glow' : ''}" data-act="tacEnd" title="Space">${T('tac.end')} ⏎</button></div></div>`;
     const u = unitsOf(s).find((x) => x.id === sel);
     if (u) h += cardsHtml(s, u.id);
     h += `<p class="hint tac-hint${aim ? ' aim' : ''}">${T(aim ? 'tac.card.aim' : pop ? 'tac.pickOne' : 'tac.help')}</p>`;
@@ -543,7 +569,9 @@
         + (c.ab ? `<svg viewBox="-11 -11 22 22" class="tc-ic"><circle r="10" fill="${colorOf(c.ab)}"/>${glyph(c.ab)}</svg>` : '')
         + `${T(c.k, c.v)}${c.src ? `<small>${esc(t('tac.src', { src: c.src }))}</small>` : ''}</span>`).join('')}</div>`;
     }
-    h += `<div class="bar-actions"><button class="ghost" data-act="retreat">${T('s2.op.retreat')}</button><button class="ghost" data-act="tacGuide">${T('tac.legend')}</button></div></section>`;
+    h += `<div class="bar-actions">` + (ui.tutorial ? `<button class="ghost" data-act="tutExit">${T('tac.tut.exit')}</button>`
+      : `<button class="ghost" data-act="retreat">${T('s2.op.retreat')}</button><button class="ghost" data-act="tutorial">${T('tac.tut.open')}</button>`)
+      + `<button class="ghost" data-act="tacGuide">${T('tac.legend')}</button></div></section>`;
     return h;
   }
 

@@ -56,6 +56,16 @@ const fail = (msg) => { problems++; console.log('FAIL', msg); };
 const section = (title) => console.log(`\n## ${title}`);
 const render = (entries) => entries.filter((e) => e.c !== 'pause' && e.k).map((e) => E.i18n.t(e.k, e.v));
 const unresolved = (text) => text.includes('⟦') || /\{\w+\}/.test(text);
+// 目標清單（建議指令上面的「目標」）：打每一條路線時，每一步的目標和「怎麼做」都要翻得出來，而且一定有一項還沒完成。
+const goalScenes = new Set();
+function checkGoals(label, st) {
+  if (!st || !st.scene || !E.scenes[st.scene] || !E.scenes[st.scene].goals) return;
+  const list = E.engine.goals(st);
+  goalScenes.add(st.scene);
+  const text = list.flatMap((g) => [E.i18n.t(g.k, g.v)].concat(g.how ? [E.i18n.t(g.how)] : [])).join('\n');
+  if (unresolved(text)) fail(`${label}: unresolved goal text in ${st.scene}: ${(text.match(/⟦[^⟧]+⟧|\{\w+\}/g) || []).join(' ')}`);
+  if (!list.some((g) => !g.note && !g.done) && !st.ended) fail(`${label}: every goal in ${st.scene} is already done, so the goal line is empty`);
+}
 
 // ===== 1. 三語文本：每個頁面三種語言的 key 一樣多，用到的 key 都有定義 =====
 section('三語文本');
@@ -162,6 +172,9 @@ const families = {
   'tac.log.unlock.': ['lockpick', 'master_keys', 'site_pass', 'building_access'],
   'tac.guide.': ['you', 'guard', 'cam', 'drone', 'door', 'fence', 'hide', 'dark', 'exit', 'objective', 'vision', 'route', 'badge', 'you.d', 'guard.d', 'cam.d', 'drone.d', 'door.d', 'fence.d', 'hide.d', 'dark.d', 'exit.d', 'objective.d', 'vision.d', 'route.d', 'badge.d'],
   'tac.leg.': ['wall', 'dark', 'fence', 'door', 'hide', 'exit', 'guard', 'cam', 'drone', 'vision', 'wall.d', 'dark.d', 'fence.d', 'door.d', 'hide.d', 'exit.d', 'guard.d', 'cam.d', 'drone.d', 'vision.d'],
+  // 教學關：每一步的說明、完成之後的重點
+  'tac.tut.step.': S2.E.s2.tutorial.steps.map((x) => x.id),
+  'tac.tut.tip.': S2.E.s2.tutorial.tips,
 };
 checkTexts('S1', S1, html, ['js/main.js', 'js/ui/terminal.js', ...scripts.filter((f) => !f.includes('locales'))]);
 // 第二季借用第一季的指令別名（content/commands.js），但每個場景都有自己的說明，用不到第一季的預設說明。
@@ -238,6 +251,7 @@ for (const run of RUNS) {
     const out = E.engine.exec(cmd, s);
     if (out.some((e) => e.k === 'desync.1')) desyncs++;
     lines.push(...render(out));
+    checkGoals(run.name, s);
     for (const c of E.engine.suggestions(s)) {
       if (c[1] && !E.scenes[s.scene].entities[c[1]] && !E.partyAliases[c[1]]) fail(`${run.name}: suggestion targets missing entity ${c[1]} in ${s.scene}`);
     }
@@ -588,6 +602,7 @@ section('主線任務一');
         if (s.phase !== 'story') break;
         N.storyCommand(s, E.parser.parse(text, E.scenes[s.story.scene], s.story), { c: 'input', raw: text });
         for (const c of E.engine.suggestions(s.story || {})) if (c[1] && !E.scenes[s.story.scene].entities[c[1]]) fail(`m1: suggestion targets missing ${c[1]}`);
+        if (!s.storyDone) checkGoals(`m1 ${lang}/${world}`, s.story);
       }
       const x = EXPECT[lang];
       // 打完之後停在劇情畫面，按下繼續才進入挑人（繼續之後劇情就清掉了，所以先拿出來）。
@@ -659,6 +674,7 @@ section('主線任務二到八');
       for (const c of E.engine.suggestions(s.story)) {
         if (c[1] && !E.engine.visibleEntities(E.scenes[s.story.scene], s.story).includes(c[1])) fail(`${label}: ${s.story.scene} suggests a hidden or missing ${c[1]}`);
       }
+      if (!s.storyDone) checkGoals(label, s.story);
     }
     if (s.storyDone !== true) { fail(`${label}: stuck in ${s.story.scene} (done: ${s.storyDone})`); return null; }
     const flags = s.story.flags, log = s.storyLog;
@@ -983,6 +999,105 @@ section('戰術地圖');
       if (unresolved(render(s.log).join('\n'))) fail(`${label}: unresolved text in the log`);
     }
   }
+  // 街區：招募任務（找回東西、保護、找人）用的地圖。
+  for (const team of [[], [job('builder')], [job('bartender'), job('nurse')]]) {
+    const label = `tac street (${team.length + 1})`;
+    const { s, ids } = squadFor('ghost-street' + team.length, team);
+    const onStreet = (x) => ['recover', 'protect', 'search'].includes(E.s2.people.problems.find((p) => p.id === N.person(s, x).problem).mission);
+    const id = N.street(s).find(onStreet);
+    if (!id) { fail(`${label}: nobody on the street needs a street mission`); continue; }
+    N.scan(s, id);
+    N.keep(s, id);
+    const e = N.ops(s).find((x) => x.op === 'recruit' && x.target === id);
+    N.pickOp(s, e.key);
+    N.launch(s, ids, {}, 'tac');
+    if (!s.op.tac || s.op.tac.mapId !== 'street') { fail(`${label}: the mission did not use the street map`); continue; }
+    if (!TT.reachable(s.op.tac)) fail(`${label}: objectives or exit unreachable`);
+    const out = ghost(s);
+    if (out !== 'win') fail(`${label}: a squad with no enemies ended in ${out}`);
+  }
+  // 撤離點離出發點夠遠：完成目標之後不能在門口直接溜走。
+  for (const id of Object.keys(E.s2.maps).filter((m) => m !== 'training')) {
+    const t = TT.build({ map: id, ids: ['a'], rank: 0 });
+    const cells = (c) => t.map.flatMap((r, y) => [...r].map((v, x) => (v === c ? [x, y] : null)).filter(Boolean));
+    const far = Math.min(...cells('X').flatMap(([x, y]) => cells('S').map(([sx, sy]) => Math.abs(x - sx) + Math.abs(y - sy))));
+    if (far < 10) fail(`tac ${id}: the exit is only ${far} squares from the start`);
+  }
+
+  // 3. 教學關：照 Bagley 每一步說的做，一步一步走到撤離；被追上不算數，正在玩的那一輪完全不受影響。
+  {
+    const real = N.create('tut-real', { skipStory: true });
+    const before = JSON.stringify(real);
+    const s = N.tutorial();
+    const R = s.tutorial.roles;
+    const steps = E.s2.tutorial.steps;
+    // 走路的距離（不能穿過牆、圍欄、上鎖的門）
+    const walk = (t, from, goal) => {
+      const d = { [goal[0] + ',' + goal[1]]: 0 };
+      const q = [goal];
+      while (q.length) {
+        const [x, y] = q.shift();
+        for (const [dx, dy] of DIRS) {
+          const nx = x + dx, ny = y + dy, k = nx + ',' + ny;
+          if (d[k] !== undefined || !'.,dXSHE'.includes(TT.tile(t, nx, ny))) continue;
+          d[k] = d[x + ',' + y] + 1;
+          q.push([nx, ny]);
+        }
+      }
+      return d[from[0] + ',' + from[1]] === undefined ? 99 : d[from[0] + ',' + from[1]];
+    };
+    const order = [];
+    for (let k = 0; k < 200 && s.phase === 'tac'; k++) {
+      const st = N.tutorialStep(s);
+      if (!st) break;
+      if (order[order.length - 1] !== st.id) order.push(st.id);
+      if (st.id === 'end') { N.tacEnd(s); continue; }
+      const t = s.op.tac;
+      const marks = st.mark ? st.mark(t) : [];
+      const who = st.who ? [R[st.who]] : TT.live(t).map((u) => u.id);
+      let did = false;
+      // 這一步要動手的人：標記的地方能用能力就用，不能就往標記走近一點；都動不了就結束回合。
+      for (const id of who) {
+        const u = t.units.find((x) => x.id === id);
+        if (!u || u.out || u.taken || u.ap <= 0) continue;
+        const a = st.id === 'exit' ? null : N.tacAbilities(s, id).find((x) => x.targets.some(([tx, ty]) => marks.some((m) => m[0] === tx && m[1] === ty)));
+        if (a) {
+          const [tx, ty] = a.targets.find(([x, y]) => marks.some((m) => m[0] === x && m[1] === y));
+          did = N.tacUse(s, id, a.id, tx, ty);
+          break;
+        }
+        let best = null, bd = walk(t, [u.x, u.y], marks[0]);
+        for (const key of Object.keys(N.tacReach(s, id))) {
+          const p = key.split(',').map(Number);
+          const dd = walk(t, p, marks[0]);
+          if (dd < bd) { bd = dd; best = p; }
+        }
+        if (best) { did = N.tacMove(s, id, best[0], best[1]); break; }
+      }
+      if (!did) N.tacEnd(s);
+    }
+    if (s.phase !== 'result' || s.result.outcome !== 'win') fail(`tutorial: following the steps ended in ${s.phase === 'result' ? s.result.outcome : s.phase}`);
+    if (order.join(' ') !== steps.map((x) => x.id).join(' ')) fail(`tutorial: steps came in the wrong order: ${order.join(' ')}`);
+    if (s.log.some((e) => e.k === 's2.log.arrested')) fail('tutorial: someone was arrested in the simulation');
+    if (N.tutorialStep(s) !== null) fail('tutorial: still shows a step after the end');
+    if (JSON.stringify(real) !== before) fail('tutorial: starting the tutorial changed the real run');
+    if (unresolved(render(s.log).join('\n'))) fail('tutorial: unresolved text in the log');
+    // 被守衛追上：只是警告，不會被捕；警戒也不會滿。
+    const s2 = N.tutorial();
+    const t2 = s2.op.tac;
+    const g = t2.foes.find((f) => f.kind === 'guard');
+    const u = t2.units[0];
+    g.x = u.x + 1; g.y = u.y; g.state = 'alert'; g.target = [u.x, u.y]; g.route = [[g.x, g.y]];
+    N.tacEnd(s2);
+    if (t2.units.some((x) => x.taken) || !s2.log.some((e) => e.k === 'tac.log.practice')) fail('tutorial: a guard catching someone in the simulation arrests them');
+    s2.op.alert = 85;
+    N.tacUse(s2, u.id, 'hack', 5, 0);
+    for (const f of t2.foes) if (f.kind === 'cam') f.off = 0;
+    for (let i = 0; i < 4; i++) N.tacEnd(s2);
+    if (s2.phase !== 'tac' || s2.op.alert >= 100) fail('tutorial: the alert can fill up in the simulation');
+    if (!N.tutorialSkip(s2)) fail('tutorial: a step cannot be skipped');
+    console.log(`tutorial: ${order.length} steps followed to the exit`);
+  }
   // 2b. 招式卡、稀有人物的王牌、小習慣、守衛犬：每一張卡在地圖上真的有用。
   {
     const launchTac = (seed, tests, op = 'tower') => {
@@ -1065,8 +1180,9 @@ section('戰術地圖');
       const a = has(s, pigeon, 'pigeon');
       if (!a) fail('tac: the pigeon keeper has no pigeon');
       else {
-        N.tacUse(s, pigeon, 'pigeon', a.targets[0][0], a.targets[0][1]);
-        if (TT.objsLeft(t)) fail('tac: the pigeon did not complete the objective');
+        const [px, py] = a.targets[0];
+        N.tacUse(s, pigeon, 'pigeon', px, py);
+        if (!t.objs.find((o) => o.x === px && o.y === py).done) fail('tac: the pigeon did not complete the objective');
       }
       if (!has(s, radio, 'radio')) fail('tac: the pirate radio host cannot go on air');
       else {
@@ -1203,7 +1319,7 @@ section('戰術地圖');
       if (unresolved(text)) { fail(`tac-rand-${i} (${lang}): ${(text.match(/⟦[^⟧]+⟧|\{\w+\}/g) || []).join(' ')}`); break; }
     }
   }
-  console.log(`abilities by category / perk / trait / flaw, ${PLANS.length} maps × 3 squads cleared with no enemies, ${runs} random operations (${wins} won)`);
+  console.log(`abilities by category / perk / trait / flaw, ${PLANS.length + 1} maps × 3 squads cleared with no enemies, ${runs} random operations (${wins} won)`);
 }
 
 // ===== 8. 存檔 =====
@@ -1225,6 +1341,16 @@ section('存檔');
   E.save.write({ state: { ended: true, flags: { ending: 'seal' } } });
   if (E.save.v1Ending() !== 'seal') fail('v1Ending did not read the ending');
   console.log('migration, versions, v1 ending import');
+}
+
+// ===== 目標清單：第一章、第二章（第一季）和主線任務一、二（第二季）的每個場景都打到過，而且翻得出來 =====
+section('目標清單');
+{
+  const want = ['present.chinatown.street', 'present.chinatown.teahouse', 'memory.homan.hub', 'memory.homan.embankment', 'memory.homan.flat',
+    's2.m1.laundrette', 's2.m1.alley', 's2.m1.basement', 's2.m1.canal',
+    's2.m2.street', 's2.m2.fence', 's2.m2.yard', 's2.m2.tower', 's2.m2.escape', 's2.m2.home'];
+  for (const id of want) if (!goalScenes.has(id)) fail(`goals: ${id} has no goal list, or no route reached it`);
+  console.log(`${goalScenes.size} scenes with goals checked after every command`);
 }
 
 console.log(`\n${problems ? problems + ' problem(s)' : 'All checks passed'}`);

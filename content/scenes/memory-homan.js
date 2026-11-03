@@ -147,6 +147,14 @@
       },
     },
 
+    // 目標清單：記憶的規則，加上這個場景要做的事。
+    goals: (s) => [
+      { k: 'mem2.goal.rule', note: true },
+      { k: 'mem2.goal.text', how: s.flags.readText ? 'mem2.goal.text.how2' : 'mem2.goal.text.how', done: !!s.flags.replied, opt: true },
+      { k: 'mem2.goal.cassie', how: 'mem2.goal.cassie.how', done: !!s.flags.heard },
+      { k: 'mem2.goal.box', how: 'mem2.goal.box.how', done: !!s.flags.took },
+      { k: 'mem2.goal.ride', how: 'mem2.goal.ride.how', done: false },
+    ],
     suggest(s) {
       const out = [['look']];
       if (!s.flags.readText) out.push(['read', 'phone']);
@@ -231,6 +239,12 @@
       },
     },
 
+    goals: (s) => [
+      { k: 'mem2.goal.maya', how: 'mem2.goal.maya.how', done: !!s.flags.watched },
+      { k: 'mem2.goal.eileen', how: 'mem2.goal.eileen.how', done: !!s.flags.eileenKnown, opt: true },
+      { k: 'mem2.goal.notebook', how: 'mem2.goal.notebook.how', done: !!s.flags.notebook, opt: true },
+      { k: 'mem2.goal.road', how: 'mem2.goal.road.how', done: false },
+    ],
     suggest(s) {
       const out = [['look']];
       if (!s.flags.watched) out.push(['look', 'maya']);
@@ -329,6 +343,10 @@
       },
     ],
 
+    goals: (s) => [
+      { k: 'mem2.goal.call', how: 'mem2.goal.call.how', done: !!s.flags.answered },
+      { k: 'mem2.goal.daughter', how: 'mem2.goal.daughter.how', done: !!s.flags.covered },
+    ],
     suggest(s) {
       const out = [['look']];
       if (!s.flags.answered) out.push(['talk', 'caller']);

@@ -116,6 +116,9 @@
 
     events: [nightwatch],
 
+    // 目標清單（畫面上的「目標」）：第一次玩的人知道現在要做什麼、為什麼。
+    goals: () => [{ k: 'cw.goal.find', how: 'cw.goal.find.how', done: false }],
+
     suggest(s) {
       const out = [['look']];
       if (!s.flags.foundBike) out.push(['scan', 'bike']);
@@ -359,6 +362,18 @@
         run: (s) => { s.party.push('homan'); },
       },
     ],
+
+    // 招募浩文的四個條件；招募之後只剩「重建他的記憶」。
+    goals(s) {
+      if (s.flags.recruitedHoman) return [{ k: 'cw.goal.recruited', done: true }, { k: 'cw.goal.recall', how: 'cw.goal.recall.how', done: false }];
+      return [
+        { k: 'cw.goal.why', note: true },
+        { k: 'cw.goal.contact', how: s.flags.contact ? 'cw.goal.contact.how2' : 'cw.goal.contact.how', done: met(s) },
+        { k: 'cw.goal.account', how: s.flags.needsAccount ? 'cw.goal.account.how' : 'cw.goal.account.how0', done: !!s.flags.accountFixed },
+        { k: 'cw.goal.agent', how: 'cw.goal.agent.how', done: !!s.flags.agentGone },
+        { k: 'cw.goal.trust', v: { n: trust(s), max: TRUST_GOAL }, how: 'cw.goal.trust.how', done: trust(s) >= TRUST_GOAL },
+      ];
+    },
 
     suggest(s) {
       if (s.flags.recruitedHoman) return [['recall', 'homan'], ['talk', 'homan', 'maya']];

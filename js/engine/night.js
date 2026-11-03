@@ -648,9 +648,8 @@
   const others = (s, id) => membersOf(s).filter((m) => m !== id);
 
   // mode 是 'tac' 時改用戰術地圖（js/engine/tactics.js）；沒有地圖的行動、文字冒險的主線任務照原本的方式。
-  function launch(s, ids, laneMap = {}, mode) {
-    if (s.phase !== 'squad' || !squadCheck(s, ids, laneMap).ok) return false;
-    const e = picked(s);
+  // 一次行動的狀態：警戒、頻寬、這次行動用過的卡、受傷和被抓的人……（出發和戰術教學共用）。
+  function newOp(s, e, ids, laneMap = {}) {
     const called = ids.filter((id) => member(s, id).status === 'network');
     s.op = {
       key: e.key, op: e.op, main: e.main, kind: e.kind, target: e.target || null, name: e.name, reward: e.reward,
@@ -661,6 +660,13 @@
       revealed: {}, hurt: {}, away: {}, stageAway: {}, taken: {}, extraRisk: {}, sulk: {}, backdoor: {}, fired: {},
     };
     for (const id of ids) s.op.laneOf[id] = e.split ? laneMap[id] || 'main' : 'main';
+    return called;
+  }
+
+  function launch(s, ids, laneMap = {}, mode) {
+    if (s.phase !== 'squad' || !squadCheck(s, ids, laneMap).ok) return false;
+    const e = picked(s);
+    const called = newOp(s, e, ids, laneMap);
     s.pick = null;
     s.phase = 'op';
     say(s, 'op', 's2.log.opStart', { op: { l: e.name } });
@@ -703,6 +709,56 @@
     say(s, 'op', 'tac.log.start');
     if (s.op.tac.intel) say(s, 'gain', networkWith(s, 'gossip') ? 'tac.log.intelGossip' : 'tac.log.intelEcho');
     E.tactics.prepare(s, tacApi);
+  }
+
+  // ===== 戰術教學 =====
+  // 一份獨立的沙盒（不存檔，也不碰正在玩的這一輪）：開場的三個自願者（駭客、身體、社交）換成教學用的職業和特質，沒有弱點。
+  // 被看到、被追上都不算數（practice），警戒也不會滿。
+  function tutorial() {
+    const T = E.s2.tutorial;
+    const s = create('tutorial', { skipStory: true });
+    const ids = s.volunteers.slice(0, 3);
+    T.people.forEach((d, i) => Object.assign(person(s, ids[i]), { occupation: d.occupation, traits: d.traits.slice(), flaw: null, quirks: [] }));
+    s.relations = {};
+    pickVolunteers(s, [ids[1]]);
+    recruitPerson(s, ids[2]);
+    newOp(s, { key: 'tutorial', op: 'tutorial', kind: 'tutorial', name: T.name, reward: { support: 0 }, stages: [], timer: null }, ids);
+    s.op.mode = 'tac';
+    s.op.practice = true;
+    s.op.tac = E.tactics.build({ map: T.map, ids, rank: 0 });
+    s.op.tac.practice = true;
+    s.phase = 'tac';
+    s.tutorial = { step: 0, roles: {} };
+    T.people.forEach((d, i) => { s.tutorial.roles[d.role] = ids[i]; });
+    s.log = [];
+    say(s, 'op', 'tac.log.start');
+    E.tactics.prepare(s, tacApi);
+    return s;
+  }
+
+  // 教學現在走到哪一步（做完的步驟自動往下走；目標、撤離這種大步驟做完了，前面沒做的就跳過）。教學結束回傳 null。
+  function tutorialStep(s) {
+    const T = E.s2.tutorial;
+    const tut = s.tutorial;
+    const t = s.op && s.op.tac;
+    if (!tut) return null;
+    if (!t) { tut.step = T.steps.length; return null; }
+    const R = {};
+    for (const role in tut.roles) R[role] = t.units.find((u) => u.id === tut.roles[role]);
+    while (tut.step < T.steps.length) {
+      const st = T.steps[tut.step];
+      const later = T.steps.slice(tut.step + 1).some((x) => x.milestone && x.done(t, R, s));
+      if (!st.done(t, R, s) && !later) break;
+      tut.step++;
+    }
+    return T.steps[tut.step] || null;
+  }
+
+  // 玩家卡住了：跳過這一步（最後一步撤離不能跳）。
+  function tutorialSkip(s) {
+    if (!s.tutorial || s.tutorial.step >= E.s2.tutorial.steps.length - 1) return false;
+    s.tutorial.step++;
+    return true;
   }
 
   // 戰術地圖要用到的夜間引擎功能。
@@ -1135,7 +1191,7 @@
     // 回收：Echo 被困在守夜人裡，無人機學得更快。
     if (amount > 0 && s.world === 'recaptured') amount += 1;
     const before = op.alert;
-    op.alert = clamp(before + amount, 0, 100);
+    op.alert = clamp(before + amount, 0, op.practice ? 90 : 100); // 教學關的警戒不會滿
     if (before < 30 && op.alert >= 30) {
       say(s, 'warn', 's2.alert.30');
       // 脾氣差的人在警戒升高時會跟巡邏員吵起來，除非同隊有口才好的人拉住。
@@ -1256,7 +1312,7 @@
         }
       }
       // 親自指揮成功，民心多 5。
-      if (op.mode === 'tac') { support += TAC_BONUS; say(s, 'gain', 's2.log.tacBonus', { n: TAC_BONUS }); }
+      if (op.mode === 'tac' && !op.practice) { support += TAC_BONUS; say(s, 'gain', 's2.log.tacBonus', { n: TAC_BONUS }); }
       res.support = support;
       res.heat += Math.round(op.alert / 5);
       s.support = Math.min(100, s.support + support);
@@ -1425,6 +1481,7 @@
     stage, options, combos, cards, useCard, act, react, answer, retreat, nextDay,
     networkWith, puzzleSpec, hackable, clinic, travel, mainNow,
     // 戰術地圖
+    tutorial, tutorialStep, tutorialSkip,
     tacPlan: (s) => !!tacPlan(s, picked(s)),
     tacMove: (s, id, x, y) => E.tactics.move(s, tacApi, id, x, y),
     tacUse: (s, id, ab, x, y) => E.tactics.use(s, tacApi, id, ab, x, y),
