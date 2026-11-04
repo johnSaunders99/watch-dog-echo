@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>音效測試</title>
+<style>
+  body { margin: 0; padding: 20px 16px 40px; background: #0b0f1c; color: #e8ecf4; font: 15px/1.5 system-ui, "Microsoft JhengHei", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 { margin: 22px 0 8px; font-size: 14px; letter-spacing: 0.08em; color: #6cd6e2; }
+  p { margin: 0 0 8px; color: #9aa6c0; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { padding: 9px 13px; border: 1px solid #333c55; border-radius: 6px; background: #151b2c; color: inherit; font: inherit; cursor: pointer; }
+  button:hover { border-color: #ff2e88; }
+  button.on { border-color: #5cf29a; color: #5cf29a; }
+  label { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: #9aa6c0; }
+  input[type=range] { flex: 1; max-width: 300px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>音效測試</h1>
+  <p>點按鈕就會播放，每次都會有一點不一樣。環境音會一直放，可以邊聽邊點其他聲音。</p>
+  <div class="row"><button id="mute"></button></div>
+  <div id="groups"></div>
+  <h2>環境音</h2>
+  <div class="row" id="moods"></div>
+  <label>警戒 <input id="tension" type="range" min="0" max="100" value="0"> <span id="tension-v">0</span></label>
+</main>
+<script src="../js/ui/sfx.js"></script>
+<script>
+  const X = window.ECHO.sfx;
+  const GROUPS = [
+    ['介面', { click: '點擊', blip: '提示', event: '早上的事件', turn: '結束回合' }],
+    ['掃描和駭入', { prof: '掃描路人', link: '開始手動駭入', hack: '駭入成功', hackFail: '駭入失敗' }],
+    ['門和設備', { door: '開鎖', lock: '鎖門', crash: '撞門', camOff: '關掉攝影機', droneJam: '干擾無人機' }],
+    ['招式', { sergei: '謝爾蓋講話', smash: '扳手的鐵鎚', emp: '老鷹無人機（電磁聲接爆炸）', blackout: '大停電（環境音打開才聽得到斷電）' }],
+    ['地圖上', { step: '腳步', takedown: '制伏守衛', noise: '守衛聽到聲音', spotted: '被發現', alarm: '警報' }],
+    ['結果', { gain: '好事', loss: '壞事', win: '行動成功', fail: '行動失敗' }],
+    ['演出', { title: '標題', cameo: '客串角色登場', dream: '藍色的門', bleed: '記憶滲透', desync: '同步崩塌', ending: '結局' }],
+  ];
+  const listed = new Set(GROUPS.flatMap(([, g]) => Object.keys(g)));
+  const rest = X.names.filter((n) => !listed.has(n));
+  if (rest.length) GROUPS.push(['其他', Object.fromEntries(rest.map((n) => [n, n]))]);
+  const wake = () => X.unlock();
+
+  const box = document.getElementById('groups');
+  for (const [title, sounds] of GROUPS) {
+    const h = document.createElement('h2');
+    h.textContent = title;
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (const [id, label] of Object.entries(sounds)) {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.addEventListener('click', () => { wake(); X.play(id); });
+      row.appendChild(b);
+    }
+    box.append(h, row);
+  }
+
+  const tension = document.getElementById('tension');
+  const moods = document.getElementById('moods');
+  let mood = null;
+  const applyMood = () => { wake(); X.ambient(mood, tension.value / 100); };
+  for (const [id, label] of [['day', '白天'], ['city', '街頭'], ['tac', '戰術地圖'], [null, '關掉']]) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      mood = id;
+      moods.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b && id !== null));
+      applyMood();
+    });
+    moods.appendChild(b);
+  }
+  tension.addEventListener('input', () => { document.getElementById('tension-v').textContent = tension.value; applyMood(); });
+
+  const mute = document.getElementById('mute');
+  const showMute = () => { mute.textContent = X.muted ? '目前靜音：點一下打開' : '聲音開著：點一下靜音'; };
+  mute.addEventListener('click', () => { wake(); X.toggle(); showMute(); });
+  showMute();
+</script>
+</body>
+</html>

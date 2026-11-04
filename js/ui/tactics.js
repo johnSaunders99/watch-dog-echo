@@ -260,7 +260,7 @@
   // ===== 能力的小圖示（畫在可以動手的格子上） =====
   const GOLD = '#ffd23f'; // 招式卡一律金色
   const AB_COLOR = { hack: '#2ff3e0', climb: '#ff9a3d', takedown: '#ff9a3d', force: '#ff9a3d', breach: '#ff9a3d', talk: '#c2b3ff', disguise: GOLD, unlock: '#5cf29a', heal: '#5cf29a', cab: GOLD, use: '#ff2e88', pet: '#5cf29a',
-    summon: GOLD, code: GOLD, ghost: GOLD, soothe: GOLD, lift: GOLD, boost: GOLD, cover: GOLD, radio: GOLD, pigeon: GOLD, sergei: GOLD };
+    summon: GOLD, code: GOLD, ghost: GOLD, soothe: GOLD, lift: GOLD, boost: GOLD, cover: GOLD, radio: GOLD, pigeon: GOLD, hammer: GOLD, eagle: GOLD, focus: GOLD, blackout: GOLD, mask: GOLD, baton: GOLD, sergei: GOLD };
   const colorOf = (ab, card) => (card ? GOLD : { move: '#6cd6e2', select: '#9aa6c0' }[ab] || AB_COLOR[ab] || '#ff2e88');
   function glyph(ab) {
     const w = '#0b0f1c';
@@ -284,8 +284,15 @@
       case 'cover': return `<path d="M-6 5 l6 -10 l6 10 Z" fill="${w}"/><path d="M0 -5 v10" stroke="#fff" stroke-width="1"/>`;
       case 'radio': return `<rect x="-5" y="-1" width="10" height="7" rx="1.5" fill="${w}"/><path d="M-3 -1 l6 -5" stroke="${w}" stroke-width="1.6"/><circle cx="2" cy="2.5" r="1.8" fill="#fff"/>`;
       case 'pigeon': return `<path d="M-6 1 q3 -6 8 -3 l4 -1 l-3 3 q-1 5 -6 4 Z" fill="${w}"/><circle cx="3" cy="-2.5" r=".9" fill="#fff"/>`;
-      // 謝爾蓋：四個旋翼的小無人機
-      case 'sergei': return `<rect x="-2.5" y="-2" width="5" height="4" rx="1" fill="${w}"/><path d="M-2 -1.5 L-5 -4.5 M2 -1.5 L5 -4.5 M-2 1.5 L-5 4.5 M2 1.5 L5 4.5" stroke="${w}" stroke-width="1.4"/>${[[-5, -4.5], [5, -4.5], [-5, 4.5], [5, 4.5]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="1.1" fill="${w}"/>`).join('')}`;
+      // 謝爾蓋：工程無人機的機械臂
+      case 'sergei': return `<path d="M-6 6 H6 M-3 6 V0 L3 -4 L6 -1 M3 -4 L1 -7" stroke="${w}" stroke-width="2" fill="none"/><circle cx="-3" cy="0" r="1.4" fill="${w}"/>`;
+      case 'hammer': return `<path d="M-6 6 L2 -2" stroke="${w}" stroke-width="2.6"/><rect x="-1.5" y="-7.5" width="10" height="5.5" rx="1" transform="rotate(45 3.5 -4.5)" fill="${w}"/>`;
+      case 'focus': return `<circle r="6.2" stroke="${w}" stroke-width="1.8" fill="none"/><path d="M0 -3.8 V0 L2.8 1.8" stroke="${w}" stroke-width="1.8" fill="none"/>`;
+      case 'blackout': return `<path d="M0 -6 a4.5 4.5 0 0 1 2.6 8.2 V4 H-2.6 V2.2 A4.5 4.5 0 0 1 0 -6 Z" fill="${w}"/><path d="M-6 -6 L6 6" stroke="#fff" stroke-width="1.6"/><path d="M-2 6 H2" stroke="${w}" stroke-width="1.8"/>`;
+      case 'mask': return `<path d="M-7 -3 q7 -3 14 0 q0 8 -7 9 q-7 -1 -7 -9 Z" fill="${w}"/><circle cx="-3" cy="-0.5" r="1.4" fill="#fff"/><circle cx="3" cy="-0.5" r="1.4" fill="#fff"/>`;
+      case 'baton': return `<path d="M-6 3 L3 -6 L6 -3 L-3 6 Z" fill="${w}"/><path d="M-2 -5 h-4 v4 M2 5 h4 v-4" stroke="${w}" stroke-width="1.4" fill="none"/>`;
+      // 老鷹無人機：四個旋翼的偵察機
+      case 'eagle': return `<rect x="-2.5" y="-2" width="5" height="4" rx="1" fill="${w}"/><path d="M-2 -1.5 L-5 -4.5 M2 -1.5 L5 -4.5 M-2 1.5 L-5 4.5 M2 1.5 L5 4.5" stroke="${w}" stroke-width="1.4"/>${[[-5, -4.5], [5, -4.5], [-5, 4.5], [5, 4.5]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="1.1" fill="${w}"/>`).join('')}`;
       case 'move': return `<path d="M-6 0 H3 M-1 -5 L5 0 L-1 5" stroke="${w}" stroke-width="2.4" fill="none"/>`;
       case 'select': return `<circle cy="-2.5" r="3" fill="${w}"/><path d="M-5.5 6 q5.5 -8 11 0" fill="${w}"/>`;
       case 'pet': return `<circle cx="0" cy="2" r="3.2" fill="${w}"/>${[[-4.5, -2], [-1.5, -4.5], [1.5, -4.5], [4.5, -2]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${w}"/>`).join('')}`;
@@ -314,15 +321,18 @@
   const mover = (id, o, inner) => `<g data-mv="${id}" data-mx="${o.x}" data-my="${o.y}">${inner}</g>`;
   function motion(root) {
     const now = {};
+    let walked = false;
     const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     for (const el of root.querySelectorAll('[data-mv]')) {
       const x = Number(el.dataset.mx), y = Number(el.dataset.my), was = spots[el.dataset.mv];
       now[el.dataset.mv] = [x, y];
       if (still || !was || !el.animate || (was[0] === x && was[1] === y)) continue;
       const dist = Math.abs(was[0] - x) + Math.abs(was[1] - y);
+      if (el.dataset.mv.startsWith('u:')) walked = true;
       el.animate([{ transform: `translate(${(was[0] - x) * TS}px, ${(was[1] - y) * TS}px)` }, { transform: 'translate(0, 0)' }], { duration: Math.min(320, 100 + 40 * dist), easing: 'ease-out' });
     }
     spots = now;
+    if (walked && E.sfx) E.sfx.play('step');
   }
 
   // ===== 整張地圖 =====
@@ -489,7 +499,7 @@
     if (c.quiet && has('careful')) add('tac.cap.quiet', {}, tr('careful'));
     // 天賦（隊友事件送的）
     if (c.gifts.includes('quietstep')) add('tac.cap.soft', {}, { t: 's2.p.gifts' }, 'good');
-    if (c.sergei) add('tac.cap.sergei', {}, { t: 's2.p.gifts' }, tac.used['sergei:' + id] ? 'dim' : '', 'sergei');
+    for (const g of ['sergei', 'hammer', 'eagle', 'focus', 'blackout', 'mask', 'baton']) if (c[g]) add('tac.cap.' + g, {}, { t: 's2.p.gifts' }, tac.used[g + ':' + id] ? 'dim' : '', g);
     if (has('calm')) add('tac.cap.calm', {}, tr('calm'), tac.used['calm:' + id] ? 'dim' : '');
     if (c.slip) add('tac.cap.fast', {}, has('fast') ? tr('fast') : perk, tac.used['fast:' + id] ? 'dim' : '');
     if (has('unremarkable')) add('tac.cap.unremarkable', {}, tr('unremarkable'));
@@ -658,7 +668,7 @@
     if (k === 'tacGuideOk') { guide = false; lsSet(GUIDE_KEY, '1'); return; }
     if (k === 'tacClose') { pop = null; tip = null; return; }
     if (k === 'tacSel') { sel = d.id; pop = null; aim = null; return; }
-    if (k === 'tacEnd') { pop = null; aim = null; N.tacEnd(s); sel = null; return; }
+    if (k === 'tacEnd') { pop = null; aim = null; if (E.sfx) E.sfx.play('turn'); N.tacEnd(s); sel = null; return; }
     if (k === 'tacUndo') { pop = null; aim = null; N.tacUndo(s); return; }
     if (k === 'tacPick') {
       if (d.ab === 'select') { sel = d.id; pop = null; return; }

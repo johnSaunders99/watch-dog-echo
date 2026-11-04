@@ -31,6 +31,7 @@
   let worldOpen = false; // 正在問玩家第一季的結局
   let tut = null;        // 戰術教學關的沙盒（不存檔；有的話主畫面改畫教學，結束後回到原本的畫面）
   let tutSeen = 0;       // 教學關已經處理過音效的紀錄行數
+  let hushed = false;    // 這一次的紀錄不用再放音效（剛放過行動結果的音效）
   let info = null;       // 正在看哪一項的說明（民心、器材……，文字是 s2.info.<id>）
   const TUT_KEY = 'watchdogs-echo.s2.tutorial'; // 'offered' 問過要不要玩教學、'done' 玩完了
   let goalsOpen = false; // 主線任務的目標清單有沒有展開
@@ -578,7 +579,8 @@
       + stageChips(op.lanes.main.stages, op.lanes.main.i)
       + (split ? stageChips(op.lanes.decoy.stages, op.lanes.decoy.i) : '') + `</div></div>`;
     h += `<div class="alert alert-${lvl}"><div class="alert-top"><span>${T('s2.op.alert')}</span><b>${op.alert}</b><em>${T(alertStatus(op.alert))}</em></div>`
-      + `<div class="alert-bar"><i style="width:${op.alert}%"></i><u style="left:30%"></u><u style="left:60%"></u></div></div>`;
+      + `<div class="alert-bar"><i style="width:${op.alert}%"></i><u style="left:30%"></u><u style="left:60%"></u></div></div>`
+      + (op.event ? `<div class="tac-event ev-${op.event}"><em>${T('tac.ev.label')}</em><b>${T('tac.ev.' + op.event)}</b><span>${T('tac.ev.' + op.event + '.q')}</span></div>` : '');
     h += `<div class="op-meta">`
       + (op.timer !== null ? `<span class="chip timer${op.timer <= 2 ? ' bad' : ''}">⏱ ${T('s2.op.timer', { n: op.timer })}</span>` : '')
       + `<span class="chip">${T('s2.op.bandwidth')} <b class="pips">${'▮'.repeat(op.bw)}<u>${'▮'.repeat(Math.max(0, N.BANDWIDTH - op.bw))}</u></b></span>`
@@ -673,6 +675,7 @@
     hack.pz = E.puzzle.generate(hack.spec.seed, hack.spec.size);
     hack.spins = hack.pz.cells.map((c) => c.rot);
     hack.stage = 'play';
+    E.fx.sfx.play('link');
     hack.total = hack.spec.seconds * 1000;
     hack.deadline = Date.now() + hack.total;
     clearInterval(hackTimer);
@@ -706,7 +709,7 @@
     if (!hack || hack.stage !== 'play') return;
     clearInterval(hackTimer);
     hack.stage = solved ? 'solved' : 'timeout';
-    E.fx.sfx.play(solved ? 'hack' : 'loss');
+    E.fx.sfx.play(solved ? 'hack' : 'hackFail');
     const card = document.querySelector('.hack-play');
     if (card) card.classList.add('stage-' + hack.stage);
     const st = $('pz-status');
@@ -768,7 +771,9 @@
     } else if (s.phase === 'day' && s.day && s.day.event) {
       // 早上的隊友事件：有人的頭像、發生了什麼、怎麼處理。
       const ev = s.day.event;
-      h = `<div class="modal-card ev dev"><div class="dev-label">${T('s2.dev.label')}</div><div class="modal-faces">${ev.who.map((id) => `<div class="modal-face">${face(id)}</div>`).join('')}</div>`
+      const def = E.s2.days.events.find((x) => x.id === ev.id);
+      const guest = def && def.cameo ? `<div class="modal-face guest">${E.art.avatar(def.cameo)}</div>` : '';
+      h = `<div class="modal-card ev dev"><div class="dev-label">${T('s2.dev.label')}</div><div class="modal-faces">${guest}${ev.who.map((id) => `<div class="modal-face">${face(id)}</div>`).join('')}</div>`
         + `<h3>${T('s2.dev.' + ev.id + '.title', ev.v)}</h3><p>${T('s2.dev.' + ev.id + '.text', ev.v)}</p>`
         + `<div class="modal-actions">${ev.choices.map((c) => `<button data-act="dayAnswer" data-choice="${c}">${T('s2.dev.' + ev.id + '.' + c, ev.v)}</button>`).join('')}</div></div>`;
     } else if (dayPick && s.phase === 'day') {
@@ -838,6 +843,7 @@
       main.dataset.phase = 'tac';
       main.innerHTML = tut.phase === 'tac' ? E.tacUI.render(tut, { alertStatus, tutorial: true }) : renderTutDone();
       E.tacUI.motion(main);
+      E.fx.sfx.ambient('tac', 0);
       renderModal();
       return;
     }
@@ -846,6 +852,8 @@
     const renderTac = () => E.tacUI.render(s, { alertStatus });
     main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, tac: renderTac, result: renderResult, end: renderEnd, interlude: renderInterlude }[phase]();
     E.tacUI.motion(main);
+    // 環境音：白天比較輕，晚上是街頭，戰術地圖多一層跟著警戒走的脈動。
+    E.fx.sfx.ambient(phase === 'tac' ? 'tac' : ['op', 'story'].includes(phase) ? 'city' : 'day', s.op ? s.op.alert / 100 : 0);
     renderModal();
     if (phase === 'story') {
       const log2 = $('story-log');
@@ -855,6 +863,24 @@
     }
   }
 
+  // 紀錄的 key 對應的音效，越前面越優先；沒有對應的才看這一行是好事還是壞事。
+  const SOUND_OF = [
+    [/^tac\.log\.spotted\.|^tac\.log\.hothead$/, 'spotted'],
+    [/^(tac\.log|s2\.card)\.blackout$/, 'blackout'],
+    [/^(tac\.log|s2\.card)\.eagle$/, 'emp'],
+    [/^tac\.log\.sergei|^s2\.card\.sergei$/, 'sergei'],
+    [/^tac\.log\.hammer|^s2\.card\.hammer$/, 'smash'],
+    [/^tac\.log\.(camOff|camTaken)$/, 'camOff'],
+    [/^tac\.log\.(droneLoop|droneTaken|crowd)$/, 'droneJam'],
+    [/^tac\.log\.doorLock$/, 'lock'],
+    [/^tac\.log\.(doorHack|forceQuiet|breachQuiet)$|^tac\.log\.unlock\./, 'door'],
+    [/^tac\.log\.(force|forceHard|breach|doorBroken)$/, 'crash'],
+    [/^tac\.log\.takedown$/, 'takedown'],
+    [/^tac\.log\.(obj\.(terminal|antenna|box)|remote)$|^s2\.log\.hackSolved$/, 'hack'],
+    [/^tac\.log\.noise$/, 'noise'],
+    [/^s2\.fail\.hack$|^s2\.log\.hackFailed$/, 'hackFail'],
+  ];
+
   // 新出現的紀錄決定音效和畫面閃一下。
   function feedback() {
     const fresh = tut ? tut.log.slice(tutSeen) : s.log.slice(seen);
@@ -863,12 +889,16 @@
     if (!fresh.length) return;
     const has = (fn) => fresh.some(fn);
     const main = $('s2-main');
+    const rule = SOUND_OF.find(([re]) => has((e) => re.test(e.k)));
+    const closing = hushed; // 行動結束的那一刻，由結果音效負責
+    hushed = false;
     if (has((e) => /^s2\.(alert|counter)\./.test(e.k))) {
       E.fx.sfx.play('alarm');
       document.body.classList.remove('alarm');
       void document.body.offsetWidth;
       document.body.classList.add('alarm');
-    } else if (has((e) => e.c === 'bad')) E.fx.sfx.play('loss');
+    } else if (closing) { /* 不再疊一個音效 */ } else if (rule) E.fx.sfx.play(rule[1]);
+    else if (has((e) => e.c === 'bad')) E.fx.sfx.play('loss');
     else if (has((e) => e.c === 'card')) E.fx.sfx.play('hack');
     else if (has((e) => e.c === 'ok' || e.c === 'gain')) E.fx.sfx.play('gain');
     else E.fx.sfx.play('blip');
@@ -1029,6 +1059,10 @@
       } else if (s.tonight) {
         cine('desync', `<div class="cine-desync" data-text="${T('s2.counter.' + s.tonight.type + '.title')}">${T('s2.counter.' + s.tonight.type + '.title')}</div>`, 1800);
       }
+      if (s.day && s.day.event) {
+        const ev = E.s2.days.events.find((x) => x.id === s.day.event.id);
+        E.fx.sfx.play(ev.sound || (ev.cameo ? 'cameo' : 'event'));
+      }
     },
     again() { newRun(); },
     profile(d) { profileId = d.id; },
@@ -1088,6 +1122,8 @@
   function resultCard(before) {
     if (before !== 'result' && s.phase === 'result' && s.result.outcome !== 'rest') {
       const ok = s.result.outcome === 'win';
+      E.fx.sfx.play(ok ? 'win' : 'fail');
+      hushed = true;
       cine(ok ? 'title' : 'desync', ok ? `<div class="cine-title">${T('s2.res.win')}</div>` : `<div class="cine-desync" data-text="${T('s2.res.' + s.result.outcome)}">${T('s2.res.' + s.result.outcome)}</div>`, 1500);
     }
   }

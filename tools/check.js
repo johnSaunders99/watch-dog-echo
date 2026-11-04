@@ -37,16 +37,16 @@ function sandbox(list) {
       ctx.ECHO.i18n.register = (code, table) => { tables[code] = Object.assign(tables[code] || {}, table); reg(code, table); };
     }
   }
-  return { E: ctx.ECHO, tables };
+  return { E: ctx.ECHO, tables, ctx };
 }
 
 // 第一季：照 index.html 的順序載入（介面相關的檔案除外）。
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]).filter((f) => !/ui\/|main\.js/.test(f));
-// 第二季：照 s2.html 的順序載入。介面只載入頭像和戰術地圖（都是純字串，不碰畫面）。
+// 第二季：照 s2.html 的順序載入。介面只載入頭像、戰術地圖和音效（都不碰畫面）。
 const s2html = fs.readFileSync(path.join(root, 's2.html'), 'utf8');
 const S2_SCRIPTS = [...s2html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1])
-  .filter((f) => !/ui\//.test(f) || f.endsWith('faces.js') || f.endsWith('ui/tactics.js'));
+  .filter((f) => !/ui\//.test(f) || f.endsWith('faces.js') || f.endsWith('ui/tactics.js') || f.endsWith('ui/sfx.js'));
 const S1 = sandbox(scripts);
 const S2 = sandbox(S2_SCRIPTS);
 let E = S1.E; // 第一季的段落用第一季的沙盒；第二季的段落開始前換成 S2
@@ -170,7 +170,8 @@ const families = {
   'm8.last.': ['cage', 'wild', 'deal', 'dawn'],
   // 戰術地圖
   'tac.obj.': ['box', 'terminal', 'antenna', 'prisoner', 'files', 'person', 'crate', 'wall'],
-  'tac.ab.': ['hack', 'climb', 'takedown', 'talk', 'disguise', 'unlock', 'force', 'heal', 'cab', 'sergei', 'move', 'select', 'lockDoor', 'hackDoor', 'hackCam', 'hackDrone'],
+  'tac.ab.': ['hack', 'climb', 'takedown', 'talk', 'disguise', 'unlock', 'force', 'heal', 'cab', 'sergei', 'hammer', 'eagle', 'focus', 'blackout', 'mask', 'baton', 'move', 'select', 'lockDoor', 'hackDoor', 'hackCam', 'hackDrone'],
+  'tac.cap.': ['sergei', 'hammer', 'eagle', 'focus', 'blackout', 'mask', 'baton'],
   'tac.log.obj.': ['box', 'terminal', 'antenna', 'prisoner', 'files', 'person', 'crate', 'wall'],
   'tac.log.spotted.': ['guard', 'cam', 'drone'],
   'tac.log.unlock.': ['lockpick', 'master_keys', 'site_pass', 'building_access'],
@@ -187,7 +188,7 @@ const families = {
   's2.dev.': S2.E.s2.days.events.flatMap((ev) => ['title', 'text'].concat(ev.choices.flatMap((c) => [c.id].concat(c.p !== undefined ? [c.id + 'Ok', c.id + 'Bad'] : [c.id + 'Done']))).map((k) => ev.id + '.' + k)),
   's2.inter.': ['regroup', 'patch', 'regroup.d', 'patch.d'],
   's2.inter.b.': Object.keys(S2.E.s2.ops.main),
-  'tac.ev.': S2.E.s2.mapEvents.flatMap((x) => [x.id, x.id + '.d']),
+  'tac.ev.': S2.E.s2.mapEvents.flatMap((x) => [x.id, x.id + '.d', x.id + '.q']),
   // 教學關：每一步的說明、完成之後的重點
   'tac.tut.step.': S2.E.s2.tutorial.steps.map((x) => x.id),
   'tac.tut.tip.': S2.E.s2.tutorial.tips,
@@ -594,6 +595,10 @@ section('夜間行動');
     ends[(i % 2 ? 'random ' : 'smart ') + s.ended] = (ends[(i % 2 ? 'random ' : 'smart ') + s.ended] || 0) + 1;
     if (i % 2 === 0) { nights += s.night; freed += s.liberated.length; if (WINS.includes(s.ended)) won++; }
     delete s.allLog;
+    for (const ev of E.s2.days.events) {
+      const seen = (s.devLast || {})[ev.id], before = (s.devLast || {})[ev.after];
+      if (ev.after && seen !== undefined && !(before < seen)) fail(`night-${i}: ${ev.id} happened before ${ev.after}`);
+    }
     for (const lang of LANGS) {
       E.i18n.set(lang);
       for (const e of s.log) {
@@ -1166,6 +1171,41 @@ section('戰術地圖');
       if (Math.abs(foe('near1').x - 4) + Math.abs(foe('near1').y - 3) > 2) fail('noise: a guard never got to the spot');
     }
   }
+  // 特殊狀況在快速結算也有效果，而且畫面上寫的和實際算的一樣。
+  {
+    const seen = new Set();
+    for (let i = 0; i < 60; i++) {
+      const { s, ids } = squadFor('quick-ev-' + i, []);
+      s.district = 'rotherhithe';
+      s.towers = 4;
+      N.pickOp(s, 'tower');
+      N.launch(s, ids);
+      if (s.op.event) {
+        seen.add(s.op.event);
+        if (!s.log.some((e) => e.k === 'tac.ev.' + s.op.event + '.q')) fail(`quick event ${s.op.event}: not announced`);
+      }
+    }
+    const site = E.s2.mapEvents.filter((x) => x.themes.includes('site')).map((x) => x.id);
+    for (const id of site) if (!seen.has(id)) fail(`quick event ${id}: never rolled in 60 quick operations`);
+    if (seen.size === 0) fail('quick events: none ever happened');
+    // 每一種的效果：和沒有特殊狀況的同一步比。
+    for (const ev of E.s2.mapEvents) {
+      const q = ev.quick;
+      if (!q) { fail(`event ${ev.id}: no quick effect`); continue; }
+      const { s, ids } = squadFor('quick-fx-' + ev.id, []);
+      N.pickOp(s, 'tower');
+      N.launch(s, ids);
+      s.op.event = null;
+      s.op.alert = 0;
+      if (q.stage !== undefined) s.op.lanes.main.i = q.stage;
+      const read = () => N.options(s).flatMap((o) => o.candidates.filter((c) => c.ok && !o.approach.sure).map((c) => [o.approach.id, c.risk, c.exposure]));
+      const before = read();
+      s.op.event = ev.id;
+      const after = read();
+      const moved = before.some((b, i) => b[1] !== after[i][1] || b[2] !== after[i][2]);
+      if ((q.risk || q.exposure) && !moved && Object.keys(q.risk || {}).every((k) => ['all', 'patrol', 'climb', 'run'].includes(k))) fail(`quick event ${ev.id}: changed nothing on a stage it should touch`);
+    }
+  }
   // 地圖的操作：點下去會發生的事不能出乎意料。
   {
     const UI = E.tacUI;
@@ -1399,32 +1439,108 @@ section('戰術地圖');
     if (!N.tutorialSkip(s2)) fail('tutorial: a step cannot be skipped');
     console.log(`tutorial: ${order.length} steps followed to the exit`);
   }
-  // 天賦：扳手的謝爾蓋把附近的守衛引過去、攝影機關掉；Darcy 教的腳步讓制伏不出聲音。朋友在旁邊，被追上的人會被拉開一次。
+  // 天賦：每一張卡在地圖上做的事，和說明寫的一樣。
   {
-    const { s, ids } = squadFor('gift-sergei', [job('builder')]);
+    const { s, ids } = squadFor('gift-map', [job('builder')]);
     const [hero, builder] = ids;
-    E.roster.get(s.roster, hero).gifts = ['sergei'];
+    E.roster.get(s.roster, hero).gifts = ['sergei', 'hammer', 'eagle', 'focus', 'blackout', 'mask', 'baton'];
     E.roster.get(s.roster, builder).gifts = ['quietstep'];
+    Object.assign(N.person(s, hero), { flaw: null, quirks: [], traits: [] });
     N.pickOp(s, 'tower');
     N.launch(s, ids, {}, 'tac');
     const t = s.op.tac;
-    if (!N.tacCards(s, hero).some((c) => c.ab === 'sergei')) fail('gift: Sergei is not on the card row');
+    t.event = null;
+    t.spawns = [];
+    const u = t.units.find((x) => x.id === hero), b = t.units.find((x) => x.id === builder);
+    const mk = (id, kind, x, y) => ({ id, kind, x, y, face: [1, 0], route: [[x, y]], ri: 0, state: 'patrol', timer: 0, target: null, down: false, off: 0, loop: 0 });
+    const foe = (id) => t.foes.find((x) => x.id === id);
+    const can = (ab) => N.tacAbilities(s, hero).some((x) => x.id === ab);
+    if (!t.intel) fail('gift: the Eagle Drone does not show patrol routes');
     if (!N.tacCaps(s, builder).quiet) fail('gift: soft steps still make a sound');
-    const g = t.foes.find((x) => x.kind === 'guard');
+    for (const g of ['sergei', 'hammer', 'eagle', 'focus', 'blackout', 'mask', 'baton']) if (!N.tacCards(s, hero).some((c) => c.ab === g)) fail(`gift: ${g} is not on the card row`);
+    Object.assign(u, { x: 3, y: 3, ap: 6 });
+    Object.assign(b, { x: 2, y: 4, ap: 2 });
+    t.foes = [mk('near', 'guard', 8, 4)];
+    s.op.alert = 0;
+    // 謝爾蓋：工程無人機，隔著牆拆門，不出聲、不引開任何人。
+    if (TT.tile(t, 5, 3) !== 'D' || !N.tacUse(s, hero, 'sergei', 5, 3)) fail('gift: Sergei did not go to the door');
+    if (TT.tile(t, 5, 3) !== 'd' || s.op.alert !== 0 || foe('near').state !== 'patrol') fail('gift: Sergei was not a quiet demolition');
+    if (can('sergei')) fail('gift: Sergei can be sent twice');
+    delete t.used['sergei:' + hero];
+    if (!N.tacUse(s, hero, 'sergei', 5, 2) || TT.tile(t, 5, 2) !== '.') fail('gift: Sergei did not take the fence apart');
+    // 鐵鎚：正面砸倒守衛、砸掉無人機，每次行動一次，聲音傳 3 格。
+    t.foes = [Object.assign(mk('front', 'guard', u.x + 1, u.y), { face: [-1, 0] }), mk('ear', 'guard', u.x + 3, u.y)];
+    const ham = N.tacAbilities(s, hero).find((x) => x.id === 'hammer');
+    if (!ham || ham.noise !== 3) fail('gift: the hammer is not offered, or is not loud');
+    else if (!N.tacUse(s, hero, 'hammer', u.x + 1, u.y) || !foe('front').down) fail('gift: the hammer did not drop a guard head-on');
+    if (foe('ear').state !== 'alert') fail('gift: nobody heard the hammer');
+    if (can('hammer')) fail('gift: the hammer can be used twice');
+    delete t.used['hammer:' + hero];
+    t.foes = [mk('rd', 'drone', u.x + 1, u.y)];
+    if (!N.tacUse(s, hero, 'hammer', u.x + 1, u.y) || !foe('rd').down) fail('gift: the hammer did not smash a drone');
+    // 老鷹無人機：自爆，兩格內的守衛、狗、攝影機、無人機都停擺兩回合。
+    t.foes = [mk('g', 'guard', 7, 3), mk('c', 'cam', 8, 3), mk('r', 'drone', 7, 4), mk('d', 'dog', 8, 4), mk('far', 'guard', 12, 8)];
+    if (!N.tacUse(s, hero, 'eagle', 7, 3)) fail('gift: the Eagle Drone could not reach an enemy');
+    if (foe('g').state !== 'distracted' || foe('g').timer !== 2 || foe('c').off !== 2 || foe('r').loop !== 2 || foe('d').state !== 'distracted') fail('gift: the EMP missed something in range');
+    if (foe('far').state !== 'patrol') fail('gift: the EMP reached too far');
+    if (can('eagle')) fail('gift: the Eagle Drone can go off twice');
+    // 專注
+    const ap = u.ap;
+    N.tacUse(s, hero, 'focus', u.x, u.y);
+    if (u.ap !== ap + 2) fail('gift: Focus did not give 2 AP');
+    // 大停電：全圖，有代價，撤回不了。
+    const heat = s.heat;
+    t.foes = [mk('c2', 'cam', 13, 1), mk('r2', 'drone', 12, 2), mk('g2', 'guard', 12, 8)];
+    N.tacUse(s, hero, 'blackout', u.x, u.y);
+    if (foe('c2').off !== 3 || foe('r2').loop !== 3 || foe('g2').state !== 'distracted' || s.heat !== heat + 5) fail('gift: Blackout did not hit the whole map at its price');
+    if (t.undo) fail('gift: Blackout can be undone');
+    // 第二張臉
+    N.tacUse(s, hero, 'mask', u.x, u.y);
+    if (u.disguise !== 3) fail('gift: Second Face did not disguise');
+    // 接力
+    const left = u.ap, had = b.ap;
+    if (!N.tacUse(s, hero, 'baton', b.x, b.y) || b.ap !== had + left + 1 || u.ap !== 0) fail('gift: Baton Pass did not hand over the AP');
+    if (unresolved(render(s.log).join('\n'))) fail('gift: unresolved text in the log');
+  }
+  // 快速結算：同一張卡的效果。
+  for (const g of ['sergei', 'hammer', 'eagle', 'focus', 'blackout', 'mask', 'baton']) {
+    const { s, ids } = squadFor('gift-quick-' + g, [job('builder')]);
+    const [hero] = ids;
+    E.roster.get(s.roster, hero).gifts = [g];
+    N.pickOp(s, 'tower');
+    N.launch(s, ids);
+    s.op.alert = 40;
+    const heat = s.heat;
+    const o = N.options(s).find((x) => x.candidates.some((c) => c.id === hero && c.ok && c.risk > 0.1));
+    const before = o && o.candidates.find((c) => c.id === hero);
+    if (!N.useCard(s, hero, g)) { fail(`gift ${g}: card refused in a quick operation`); continue; }
+    const after = o && N.options(s).find((x) => x.approach.id === o.approach.id).candidates.find((c) => c.id === hero);
+    if (g === 'sergei' && (s.op.alert !== 40 || !s.op.boost || s.op.force !== hero)) fail('gift sergei: should help the stage, not lower the alert');
+    if (g === 'hammer' && (s.op.alert !== 30 || s.op.force !== hero)) fail('gift hammer: alert -10 and physical approaches');
+    if (g === 'eagle' && (s.op.alert !== 25 || !s.op.boost)) fail('gift eagle: alert -15 and a boost');
+    if (g === 'eagle' && !s.op.revealed['main:0']) fail('gift eagle: no scouting in a quick operation');
+    if (g === 'blackout' && (s.op.alert !== 15 || s.heat !== heat + 5)) fail('gift blackout: alert -25 for heat +5');
+    if (g === 'mask' && s.op.ghost !== hero) fail('gift mask: the next action should raise no alert');
+    if (g === 'baton' && !s.op.boost) fail('gift baton: no boost');
+    if (g === 'focus' && before && after.risk >= before.risk) fail('gift focus: the next action is no safer');
+    if (unresolved(render(s.log).join('\n'))) fail(`gift ${g}: unresolved text`);
+  }
+  // 朋友：守衛追上主角時，旁邊的朋友把人拉開。Darcy 教的腳步：聲音和視線。
+  {
+    const { s, ids } = squadFor('gift-friend', [job('builder')]);
+    const [hero, builder] = ids;
+    N.pickOp(s, 'tower');
+    N.launch(s, ids, {}, 'tac');
+    const t = s.op.tac;
     const u = t.units.find((x) => x.id === hero);
-    g.x = u.x + 3; g.y = u.y;
-    const a = N.tacAbilities(s, hero).find((x) => x.id === 'sergei');
-    if (!a || !N.tacUse(s, hero, 'sergei', g.x, g.y) || g.state !== 'distracted') fail('gift: Sergei did not distract the guard');
-    if (N.tacAbilities(s, hero).some((x) => x.id === 'sergei')) fail('gift: Sergei can be called twice');
-    // 朋友：守衛追上主角時，旁邊的朋友把人拉開。
     N.bondUp(s, hero, builder, 5);
     const b = t.units.find((x) => x.id === builder);
     b.x = u.x; b.y = u.y + 1;
-    const f2 = t.foes.find((x) => x.kind === 'guard' && x !== g) || g;
+    const f2 = t.foes.find((x) => x.kind === 'guard');
     f2.x = u.x + 1; f2.y = u.y; f2.state = 'alert'; f2.target = [u.x, u.y]; f2.route = [[f2.x, f2.y]];
     N.tacEnd(s);
     if (u.taken || !s.log.some((e) => e.k === 'tac.log.friend')) fail('gift: a friend next to the hero did not pull them away');
-    console.log('gifts: Sergei, soft steps; friends pull each other away');
+    console.log('gifts: Sergei, Eagle Drone, Focus, Blackout, Second Face, Baton Pass on maps and in quick operations; friends pull each other away');
   }
   // 2b. 招式卡、稀有人物的王牌、小習慣、守衛犬：每一張卡在地圖上真的有用。
   {
@@ -1769,6 +1885,8 @@ section('白天');
     E.roster.get(s.roster, hero).wins = 2;
     s.heat = 40;
     s.night = 6;
+    s.dnight = 6;
+    N.bondUp(s, a, b, 5);
     let n = 0;
     for (const ev of E.s2.days.events) {
       for (const ch of ev.choices) {
@@ -1783,6 +1901,16 @@ section('白天');
           if (bad) fail(`day event ${ev.id}.${ch.id}: unresolved ${(bad.match(/⟦[^⟧]+⟧|\{\w+\}/g) || []).join(' ')}`);
           if (ev.id === 'wrench' && ch.id === 'take' && !(E.roster.get(c2.roster, who[0]).gifts || []).includes('sergei')) fail('day event wrench: no Sergei');
           if (ev.id === 'darcy' && ch.id === 'learn' && !(E.roster.get(c2.roster, who[0]).gifts || []).includes('quietstep')) fail('day event darcy: no soft steps');
+          const taught = { wrench_hammer: 'hammer', darcy_eagle: 'eagle', aiden_focus: 'focus', aiden_blackout: 'blackout', blue_door: 'mask', rank: 'baton' }[ev.id];
+          if (taught && (ch.slot || ev.id === 'rank') && !(E.roster.get(c2.roster, who[0]).gifts || []).includes(taught)) fail(`day event ${ev.id}: nobody learned ${taught}`);
+          if (ev.id === 'dark_hour' && (c2.day.spare !== 1 || !N.dayAct(c2, 'hang', [hero, a]) || c2.day.slot !== 0 || c2.day.spare)) fail('day event dark_hour: no extra part of the day');
+          if (ev.id === 'white_dog' && ch.id === 'stay' && !N.person(c2, who[0]).quirks.includes('dogs_love')) fail('day event white_dog: no dog person');
+          if (ev.id === 'midnight_tv' && ch.id === 'tell' && !(E.roster.get(c2.roster, who[1]).train || {})[N.person(c2, who[1]).flaw]) fail('day event midnight_tv: no progress on the weakness');
+          if (ev.id === 'bear' && c2.heat >= s.heat) fail('day event bear: the heat did not go down');
+          if (ev.id === 'wrench_tv' && c2.heat >= s.heat) fail('day event wrench_tv: the heat did not go down');
+          if (ev.id === 'marcus' && ch.id === 'yes' && Object.keys(c2.owed).length !== Object.keys(s.owed).length + 1) fail('day event marcus: nobody was sent');
+          if (ev.id === 'fortune' && ch.id === 'listen' && c2.tap !== c2.night + 2) fail('day event fortune: no warning of counter-attacks');
+          if (ev.id === 'cat' && ch.id === 'sleep' && (c2.day.slot !== E.s2.days.SLOTS.length || E.days.busyOf(c2, hero) !== 0)) fail('day event cat: the day went on');
           if (ev.id === 'dog' && ch.id === 'befriend' && (N.person(c2, who[0]).quirks.includes('dogs_fear') || !N.person(c2, who[0]).quirks.includes('dogs_love'))) fail('day event dog: still afraid of dogs');
           if (ev.id === 'derby' && ch.id === 'leave' && E.roster.get(c2.roster, who[1]).status !== 'injured') fail('day event derby: nobody got hurt in the fight');
           if (ev.id === 'nightjob' && ch.id === 'take' && !N.person(c2, who[0]).quirks.includes('night_shift')) fail('day event nightjob: no night-work permit');
@@ -1792,8 +1920,75 @@ section('白天');
       }
     }
     E.i18n.set('zh-Hant');
-    console.log(`slots, bonds (friends, rivals, making up), training, care, neighbours, scouting, parties, ${E.s2.days.events.length} teammate events (${n} outcomes)`);
+    for (const ev of E.s2.days.events) {
+      if (ev.after && !E.s2.days.events.some((x) => x.id === ev.after)) fail(`day event ${ev.id}: comes after an unknown event`);
+      if (ev.cameo && S2.ctx.ECHO.art === undefined && !/^[a-z]+$/.test(ev.cameo)) fail(`day event ${ev.id}: bad portrait id`);
+    }
+    const artSrc = fs.readFileSync(path.join(root, 'js/ui/art.js'), 'utf8');
+    for (const id of new Set(E.s2.days.events.map((x) => x.cameo).filter(Boolean))) if (!new RegExp('\\b' + id + ': \\(\\) =>').test(artSrc)) fail(`day event portrait ${id} is not drawn`);
+    console.log(`slots, bonds (friends, rivals, making up), training, care, neighbours, scouting, parties, ${E.s2.days.events.length} teammate events (${n} outcomes), every cameo with a portrait`);
   }
+}
+
+// ===== 7d. 音效 =====
+section('音效');
+{
+  // 假的 AudioContext：不出聲音，但和真的一樣會在數值不合法時丟出錯誤（指數滑音不能到 0）。
+  const param = () => ({
+    value: 0,
+    setValueAtTime(v, t) { if (!Number.isFinite(v) || !Number.isFinite(t)) throw new Error('bad value'); },
+    cancelScheduledValues() {},
+    exponentialRampToValueAtTime(v, t) { if (!(v > 0) || !Number.isFinite(t)) throw new Error('exponential ramp to ' + v); },
+    linearRampToValueAtTime(v, t) { if (!Number.isFinite(v) || !Number.isFinite(t)) throw new Error('bad ramp'); },
+    setTargetAtTime(v, t, c) { if (!Number.isFinite(v) || !(c > 0)) throw new Error('bad target'); },
+  });
+  let nodes = 0;
+  const node = (fields = []) => {
+    nodes++;
+    const n = { connect: (x) => x, start() {}, stop() {} };
+    for (const k of fields) n[k] = param();
+    return n;
+  };
+  class FakeAudio {
+    constructor() { this.currentTime = 0; this.sampleRate = 8000; this.state = 'running'; this.destination = node(); }
+    createGain() { return node(['gain']); }
+    createOscillator() { return node(['frequency', 'detune']); }
+    createBiquadFilter() { return node(['frequency', 'Q']); }
+    createBufferSource() { return node(); }
+    createConvolver() { return node(); }
+    createDelay() { return node(['delayTime']); }
+    createWaveShaper() { return node(); }
+    createStereoPanner() { return node(['pan']); }
+    createDynamicsCompressor() { return node(['threshold', 'knee', 'ratio', 'attack', 'release']); }
+    createBuffer(ch, len) { const d = new Float32Array(len); return { getChannelData: () => d }; }
+    resume() {}
+    suspend() {}
+  }
+  S2.ctx.AudioContext = FakeAudio;
+  S2.ctx.setTimeout = () => 0;
+  S2.ctx.clearTimeout = () => {};
+  const X = S2.E.sfx;
+  storage.delete('watchdogs-echo.muted');
+  X.unlock();
+  // sfx 裡的 try/catch 會把錯誤吞掉：直接換掉 console 看不到，所以用 render 以外的方式檢查——把 play 的錯誤攤開。
+  const names = X.names;
+  if (names.length < 25) fail(`sfx: only ${names.length} sounds`);
+  for (const name of names) {
+    const before = nodes;
+    for (let i = 0; i < 12; i++) X.play(name); // 有隨機的部分，多放幾次
+    if (nodes === before) fail(`sfx ${name}: built nothing (an error was swallowed?)`);
+  }
+  for (const mood of ['day', 'city', 'tac', null]) X.ambient(mood, 0.8);
+  // 程式裡用到的聲音都要存在。
+  const used = new Set();
+  for (const file of ['js/ui/s2.js', 'js/ui/tactics.js', 'js/ui/fx.js', 'js/ui/terminal.js', 'js/main.js']) {
+    const text = fs.readFileSync(path.join(root, file), 'utf8');
+    for (const m of text.matchAll(/sfx\.play\(([^)]*)\)/g)) for (const q of m[1].matchAll(/'(\w+)'/g)) used.add(q[1]);
+    for (const m of text.matchAll(/\/, '(\w+)'\],?$/gm)) used.add(m[1]);
+  }
+  for (const ev of S2.E.s2.days.events) if (ev.sound) used.add(ev.sound);
+  for (const name of used) if (!names.includes(name)) fail(`sfx: ${name} is used but not defined`);
+  console.log(`${names.length} sounds built without errors, ${used.size} used in the game, ambient moods`);
 }
 
 // ===== 7e. 今晚的機會 =====

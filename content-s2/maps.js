@@ -190,16 +190,18 @@
 
   // 地圖上的特殊狀況：每次潛入有一半的機會遇到一種（themes 是會出現的地圖主題，minRank 是從第幾區起）。
   // 效果在 js/engine/tactics.js 的 build／endTurn；文字是 tac.ev.<id>（標題）和 tac.ev.<id>.d（說明）。
+  // quick：快速結算時同一件事的效果。exposure 每個動作的警戒、risk 依標籤改失敗率（all 是全部）、stage 只有第幾關（從 0 算）才有效、
+  // alert 起始警戒、hidden 第一關的隱藏解法先知道、bad 對玩家不利（紀錄的顏色）。
   S2.mapEvents = [
-    { id: 'fog', themes: ['street', 'site', 'yard'] },          // 大霧：守衛和攝影機少看一格
-    { id: 'rain', themes: ['street', 'site', 'yard'] },         // 大雨：聲音傳得近一格，無人機少看一格
-    { id: 'drill', themes: ['office'] },                         // 停電演練：攝影機前三回合都關著
-    { id: 'shift', themes: ['office', 'yard', 'site', 'tunnel'] }, // 換班：第三回合結束時，守衛聚在一起聊兩回合
-    { id: 'crowd', themes: ['street'] },                         // 散場人潮：街上多了三個藏身的地方
-    { id: 'trolley', themes: ['office', 'home'] },               // 清潔推車：多一個藏身處
-    { id: 'kennel', themes: ['yard', 'site', 'street'], minRank: 1 }, // 加派警犬
-    { id: 'sweep', themes: ['street', 'site', 'yard', 'office', 'tunnel'], minRank: 2 }, // 加強巡邏：多一架無人機
-    { id: 'echo', themes: ['street', 'site', 'yard', 'office', 'tunnel'] }, // Echo 的低語：開場就看得到巡邏路線
+    { id: 'fog', themes: ['street', 'site', 'yard'], quick: { exposure: -1 } },          // 大霧：守衛和攝影機少看一格
+    { id: 'rain', themes: ['street', 'site', 'yard'], quick: { exposure: -1, risk: { climb: 0.1, run: 0.1 } } },         // 大雨：聲音傳得近一格，無人機少看一格
+    { id: 'drill', themes: ['office'], quick: { risk: { door: -0.1, data: -0.1 } } },                         // 停電演練：攝影機前三回合都關著
+    { id: 'shift', themes: ['office', 'yard', 'site', 'tunnel'], quick: { stage: 1, risk: { all: -0.15 } } }, // 換班：第三回合結束時，守衛聚在一起聊兩回合
+    { id: 'crowd', themes: ['street'], quick: { risk: { social: -0.1 } } },                         // 散場人潮：街上多了三個藏身的地方
+    { id: 'trolley', themes: ['office', 'home'], quick: { risk: { door: -0.1 } } },               // 清潔推車：多一個藏身處
+    { id: 'kennel', themes: ['yard', 'site', 'street'], minRank: 1, quick: { bad: true, risk: { patrol: 0.1, dog: 0.1 } } }, // 加派警犬
+    { id: 'sweep', themes: ['street', 'site', 'yard', 'office', 'tunnel'], minRank: 2, quick: { bad: true, alert: 8 } }, // 加強巡邏：多一架無人機
+    { id: 'echo', themes: ['street', 'site', 'yard', 'office', 'tunnel'], quick: { hidden: true } }, // Echo 的低語：開場就看得到巡邏路線
   ];
 
   // 每種行動用哪一張地圖、T 格是什麼目標。擴充安全屋（談租約）沒有地圖，只能快速結算。

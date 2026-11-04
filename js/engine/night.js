@@ -46,6 +46,7 @@
   const JOB_NIGHTS = 2;       // 每件機會留幾晚
   const TAP_COUNTER = 0.25;   // 監聽獅心防務的頻道時，反擊的機率少多少
   const INTEL_ALERT = 10;     // 偷到部署圖：主線任務的起始警戒少多少
+  const BLACKOUT_HEAT = 5;    // 大停電：全區都知道有人動過電網
   const LANGS = ['en', 'tc', 'sc'];
 
   // ===== 小工具 =====
@@ -760,7 +761,8 @@
     if (e.job) s.jobs = s.jobs.filter((j) => j.id !== e.job);
     // 第二段直接進文字冒險的話用不到頻寬。
     const story = e.story && e.part !== 0;
-    const plan = !story && mode === 'tac' && tacPlan(s, e);
+    const where = !story && tacPlan(s, e); // 這次行動在哪裡（快速結算也用地圖的主題挑特殊狀況）
+    const plan = mode === 'tac' && where;
     // 搶來的器材：隊上有人會駭入才帶一份，頻寬 +1；沒有的話留到下次。
     if (!story && gearGoes(s, ids, !!plan)) {
       s.gear--;
@@ -797,6 +799,7 @@
       beginTac(s, e, plan, ids);
       return true;
     }
+    if (where) rollQuickEvent(s, where.map);
     startStages(s);
     return true;
   }
@@ -819,12 +822,24 @@
     if (E.s2.maps[plan.map].rows.some((r) => r.includes('P'))) escort = e.op === 'rescue' ? e.target : person(s, s.district + '-' + (HELPERS + s.helperCount++)).id;
     s.op.mode = 'tac';
     const event = mapEvent(s, plan.map);
-    s.op.tac = E.tactics.build({ map: plan.map, obj: plan.obj, ids, rank: rank(s.district), limit: e.timer, turns: plan.turns, escort, event, rng: E.rng.derive(s.seed, 'mapev', s.step), intel: !!networkWith(s, 'gossip') || s.world === 'stay' || !!s.op.scouted || !!s.op.planned });
+    const eagle = ids.some((id) => giftsOf(s, id).includes('eagle')); // Darcy 的偵察無人機先飛出去看過了
+    s.op.tac = E.tactics.build({ map: plan.map, obj: plan.obj, ids, rank: rank(s.district), limit: e.timer, turns: plan.turns, escort, event, rng: E.rng.derive(s.seed, 'mapev', s.step), intel: !!networkWith(s, 'gossip') || s.world === 'stay' || !!s.op.scouted || !!s.op.planned || eagle });
     s.phase = 'tac';
     say(s, 'op', 'tac.log.start');
     if (event) say(s, 'warn', 'tac.ev.' + event + '.d');
-    if (s.op.tac.intel && event !== 'echo') say(s, 'gain', networkWith(s, 'gossip') ? 'tac.log.intelGossip' : s.op.planned ? 'tac.log.intelPlan' : s.op.scouted ? 'tac.log.intelScout' : 'tac.log.intelEcho');
+    if (s.op.tac.intel && event !== 'echo') say(s, 'gain', networkWith(s, 'gossip') ? 'tac.log.intelGossip' : s.op.planned ? 'tac.log.intelPlan' : s.op.scouted ? 'tac.log.intelScout' : eagle ? 'tac.log.intelEagle' : 'tac.log.intelEcho');
     E.tactics.prepare(s, tacApi);
+  }
+
+  // 快速結算一樣會遇到特殊狀況（效果是 mapEvents 的 quick，在 riskOf、exposureOf 裡算）。
+  const quickEvent = (s) => (s.op && s.op.event ? E.s2.mapEvents.find((x) => x.id === s.op.event).quick : null);
+  function rollQuickEvent(s, map) {
+    const id = mapEvent(s, map);
+    s.op.event = id;
+    if (!id) return;
+    const q = quickEvent(s);
+    say(s, q.bad ? 'warn' : 'gain', 'tac.ev.' + id + '.q');
+    if (q.alert) addAlert(s, q.alert, s.op.squad[0]);
   }
 
   // 這次潛入的特殊狀況（content-s2/maps.js 的 mapEvents）：一半的機會遇到一種，依地圖主題和第幾區挑。
@@ -885,6 +900,7 @@
       beginTac(s, { op: 'main', target: null, timer: null }, plan, ids);
       return true;
     }
+    if (E.s2.opMaps.main[op.main]) rollQuickEvent(s, E.s2.opMaps.main[op.main].map);
     startStages(s);
     return true;
   }
@@ -946,6 +962,11 @@
     friend: (s, a, b) => related(s, a, b, 'friend'),
     gifts: giftsOf,
     tired: (s, id) => E.days.tired(s, id),
+    // 大停電的代價（有警告的紀錄，所以撤回不了）。
+    heatUp(s, n = BLACKOUT_HEAT) {
+      s.heat = clamp(s.heat + n, 0, 100);
+      say(s, 'warn', 's2.log.blackoutHeat', { n });
+    },
     // 人脈廣：叫一個路人來幫忙。行動結束時沒被抓的話，可以直接招募（見 finish）。
     summon(s) {
       const p = person(s, s.district + '-' + (HELPERS + s.helperCount++));
@@ -984,6 +1005,13 @@
   const dayApi = {
     person, member, name: nameOf, say, rand, related, setPerson,
     flaw: (s, id) => flawOf(s, id).id, category: categoryOf, perk: perkId, traits: traitIds,
+    mainOpen: (s) => !!mainNow(s) && s.dnight >= MAIN_NIGHT,
+    // 客串角色介紹來的人：放進「欠你一次的人」，不用出任務就能加入。
+    send(s) {
+      const p = person(s, s.district + '-' + (HELPERS + s.helperCount++));
+      s.owed[p.id] = 'helper';
+      say(s, 'gain', 's2.day.log.sent', { name: nameOf(s, p.id), job: { l: E.people.occupationOf(p).name } });
+    },
     // 白天受的傷（例如德比戰打起來）：在家的人休息幾晚；本來就受傷的人，休養的時間拉長。
     injure(s, id, nights) {
       const m = member(s, id);
@@ -998,7 +1026,12 @@
   function startStages(s) {
     const first = content().stages[s.op.lanes.main.stages[0]];
     const gossip = networkWith(s, 'gossip');
-    if ((s.op.scouted || s.op.planned) && first.hidden) s.op.revealed['main:0'] = true;
+    const ev = quickEvent(s);
+    const eagle = s.op.squad.find((id) => giftsOf(s, id).includes('eagle'));
+    if (eagle && first.hidden) {
+      s.op.revealed['main:0'] = true;
+      say(s, 'gain', 's2.log.eagleScout', { name: nameOf(s, eagle) });
+    } else if ((s.op.scouted || s.op.planned || (ev && ev.hidden)) && first.hidden) s.op.revealed['main:0'] = true;
     else if (gossip && first.hidden) {
       s.op.revealed['main:0'] = true;
       say(s, 'gain', 's2.log.gossip', { name: nameOf(s, gossip) });
@@ -1162,6 +1195,9 @@
     if (s.op.alert >= 60) r += 0.2;
     else if (s.op.alert >= 30) r += 0.1;
     if (s.op.boost === spot(s, lane)) r -= 0.15;
+    if (s.op.focus === id) r -= 0.3; // 艾登教的專注
+    const ev = quickEvent(s);
+    if (ev && ev.risk && (ev.stage === undefined || ev.stage === s.op.lanes[lane].i)) for (const k in ev.risk) if (k === 'all' || tags.has(k)) r += ev.risk[k];
     if (lane === 'main' && s.op.screen > 0) r -= 0.15;
     r += s.op.extraRisk[id] || 0;
     return clamp(round2(r), 0.05, 0.95);
@@ -1177,6 +1213,8 @@
     if (perk === 'network_access' && tags.has('hack') && tags.has('office')) x = 0;
     x += flawOf(s, id).exposure || 0;
     if (giftsOf(s, id).includes('quietstep')) x -= 2; // Darcy 教的腳步
+    const ev = quickEvent(s);
+    if (ev && ev.exposure) x += ev.exposure;
     if (combos(s).includes('cantonese_pair')) x -= 1;
     if (lane === 'main' && s.op.screen > 0) x = Math.floor(x / 2);
     return Math.max(0, x);
@@ -1232,7 +1270,13 @@
       if (card.effect === 'cover') usable = s.op.cover !== owner;
       if (card.effect === 'force') usable = s.op.force !== owner;
       if (card.effect === 'boost') usable = s.op.boost !== spot(s, lane);
-      if (card.effect === 'sergei') usable = s.op.alert > 0 || s.op.boost !== spot(s, lane);
+      if (card.effect === 'sergei') usable = s.op.boost !== spot(s, lane) || s.op.force !== owner;
+      if (card.effect === 'hammer') usable = s.op.alert > 0 || s.op.force !== owner;
+      if (card.effect === 'eagle') usable = s.op.alert > 0 || s.op.boost !== spot(s, lane);
+      if (card.effect === 'focus') usable = s.op.focus !== owner;
+      if (card.effect === 'blackout') usable = s.op.alert > 0;
+      if (card.effect === 'mask') usable = s.op.ghost !== owner;
+      if (card.effect === 'baton') usable = s.op.boost !== spot(s, lane);
     }
     const inherited = !!(member(s, owner) && member(s, owner).inherited && member(s, owner).inherited.trait === cid);
     return { owner, id: cid, card, used, usable, inherited, sulking: !!s.op.sulk[owner] };
@@ -1261,8 +1305,15 @@
       case 'boost': s.op.boost = spot(s, lane); say(s, 'card', 's2.card.boost', v); break;
       case 'cover': s.op.cover = owner; say(s, 'card', 's2.card.cover', v); break;
       case 'jam': say(s, 'card', 's2.card.jam', v); addAlert(s, -30, owner); break;
-      // 扳手送的小無人機：飛去鬧巡邏隊，警戒 −15，這一關全隊成功率 +15%。
-      case 'sergei': say(s, 'card', 's2.card.sergei', v); s.op.boost = spot(s, lane); addAlert(s, -15, owner); break;
+      // 扳手的工程無人機：粗活都給它，這一關全隊成功率 +15%，這個人也能試需要力氣的解法。
+      case 'sergei': say(s, 'card', 's2.card.sergei', v); s.op.boost = spot(s, lane); s.op.force = owner; break;
+      case 'hammer': say(s, 'card', 's2.card.hammer', v); s.op.force = owner; addAlert(s, -10, owner); break;
+      // Darcy 的老鷹無人機：飛過去自爆，警戒 −15，這一關全隊成功率 +15%。
+      case 'eagle': say(s, 'card', 's2.card.eagle', v); s.op.boost = spot(s, lane); addAlert(s, -15, owner); break;
+      case 'focus': s.op.focus = owner; say(s, 'card', 's2.card.focus', v); break;
+      case 'blackout': say(s, 'card', 's2.card.blackout', v); addAlert(s, -25, owner); tacApi.heatUp(s, BLACKOUT_HEAT); break;
+      case 'mask': s.op.ghost = owner; say(s, 'card', 's2.card.mask', v); break;
+      case 'baton': s.op.boost = spot(s, lane); say(s, 'card', 's2.card.baton', v); break;
     }
     return true;
   }
@@ -1300,6 +1351,7 @@
     const exposure = byHand && manual.solved ? Math.floor(c.exposure / 2) : c.exposure;
     if (byHand) say(s, manual.solved ? 'card' : 'bad', manual.solved ? 's2.log.hackSolved' : 's2.log.hackFailed', { name: nameOf(s, id) });
     if (s.op.ghost === id) s.op.ghost = null;
+    if (s.op.focus === id) s.op.focus = null;
     if (s.op.force === id && (a.tags || []).includes('physical')) s.op.force = null;
     if (success) succeed(s, a, id, exposure);
     else if (s.op.cover === id) {

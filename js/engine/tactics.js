@@ -15,7 +15,7 @@
   // 地圖上誰會駭入（出門帶不帶器材也看這個）。
   const canHack = (cat, skills, perk) => cat === 'hacker' || skills.hack >= 2 || ['take_over', 'legacy', 'backdoor', 'botnet', 'network_access', 'broadcast'].includes(perk);
   // 動作的聲音傳幾格（曼哈頓距離，隔著牆也聽得到）。傳得到的守衛會走到那一格查看，見 noise()。
-  const LOUD = { takedown: 2, breach: 3, force: 3, forceHard: 5, slow: 4, box: 3, climbFail: 3 };
+  const LOUD = { takedown: 2, breach: 3, force: 3, forceHard: 5, slow: 4, box: 3, climbFail: 3, hammer: 3 };
   const STAND = '.,dXSHE';   // 人可以站的格子
   const OPAQUE = '#D';        // 擋住視線的格子
   const OBJ = 'TPF';          // 目標（終端、控制箱、天線、被關的人、要燒的檔案）
@@ -251,7 +251,7 @@
     c.strong = cat === 'physical' || has('strong');
     c.lift = perk === 'heavy_lift'; // 搬家工人：撞門、拆圍欄都很安靜
     c.quiet = has('careful') || gifts.includes('quietstep');
-    c.sergei = gifts.includes('sergei');
+    for (const g of ['sergei', 'hammer', 'eagle', 'focus', 'blackout', 'mask', 'baton']) c[g] = gifts.includes(g);
     c.loud = fl === 'loudmouth';
     c.clumsy = fl === 'clumsy';
     c.dark = fl === 'dark';
@@ -281,6 +281,12 @@
     radio: { src: 'perk', key: 'pirate_radio' },
     pigeon: { src: 'perk', key: 'pigeon_post' },
     sergei: { src: 'gift', key: 'sergei' },
+    hammer: { src: 'gift', key: 'hammer' },
+    eagle: { src: 'gift', key: 'eagle' },
+    focus: { src: 'gift', key: 'focus' },
+    blackout: { src: 'gift', key: 'blackout' },
+    mask: { src: 'gift', key: 'mask' },
+    baton: { src: 'gift', key: 'baton' },
   };
   const usedCard = (t, ab, id) => (ab === 'cab' ? !!t.used.cab : ab === 'lift' ? t.keycard : !!t.used[ab + ':' + id]);
 
@@ -387,8 +393,24 @@
     // 信鴿：讓鴿子把隨身碟送進去，一個目標不用走過去就完成。
     if (perk === 'pigeon_post' && once('pigeon')) push({ id: 'pigeon', ap: 1, card: true, targets: t.objs.filter((o) => !o.done && !['prisoner', 'person', 'crate', 'wall'].includes(o.kind)).map((o) => [o.x, o.y]) });
     // ----- 天賦 -----
-    // 扳手送的謝爾蓋：飛去六格內的守衛或攝影機（牆擋不住），附近的守衛盯著它看，攝影機關機。
-    if (c.sergei && once('sergei')) push({ id: 'sergei', ap: 1, card: true, targets: foesAt((f) => (f.kind === 'guard' || (f.kind === 'cam' && !(f.off > 0))) && manh(f.x, f.y, u.x, u.y) <= 6).map((f) => [f.x, f.y]) });
+    // 扳手的謝爾蓋：工程無人機，飛去六格內拆掉上鎖的門或一段圍欄（牆擋不住它），一點聲音都沒有。
+    if (c.sergei && once('sergei')) {
+      const targets = [];
+      for (let y = 0; y < t.h; y++) for (let x = 0; x < t.w; x++) if ('D='.includes(tile(t, x, y)) && manh(u.x, u.y, x, y) <= 6) targets.push([x, y]);
+      push({ id: 'sergei', ap: 1, card: true, targets });
+    }
+    // 扳手的鐵鎚：砸倒旁邊的守衛（不用繞到背後）或無人機，每次行動一次，而且很大聲。
+    if (c.hammer && once('hammer')) push({ id: 'hammer', ap: 1, card: true, noise: heardAt(t, c, LOUD.hammer), targets: foesAt((f) => ['guard', 'drone'].includes(f.kind) && manh(f.x, f.y, u.x, u.y) === 1).map((f) => [f.x, f.y]) });
+    // Darcy 的老鷹無人機：飛去六格內的敵人再自爆，短距離電磁脈衝讓兩格內的敵人和設備停擺。
+    if (c.eagle && once('eagle')) push({ id: 'eagle', ap: 1, card: true, targets: foesAt((f) => !(f.kind === 'cam' && f.off > 0) && manh(f.x, f.y, u.x, u.y) <= 6).map((f) => [f.x, f.y]) });
+    // 艾登教的專注：時間慢下來，這一回合多兩個行動點。
+    if (c.focus && once('focus')) push({ id: 'focus', ap: 0, card: true, targets: self });
+    // 艾登的大停電：全圖的攝影機和無人機停擺，守衛和狗愣住，熱度上升。
+    if (c.blackout && once('blackout')) push({ id: 'blackout', ap: 1, card: true, targets: self });
+    // 藍色的門後面拿到的面具：三回合內守衛要貼身才認得出來。
+    if (c.mask && once('mask')) push({ id: 'mask', ap: 1, card: true, targets: self });
+    // 接力：把剩下的行動點全交給兩格內的隊友，再多一點。
+    if (c.baton && once('baton')) push({ id: 'baton', ap: 0, card: true, targets: live(t).filter((v) => v !== u && !v.escort && manh(v.x, v.y, u.x, u.y) <= 2).map((v) => [v.x, v.y]) });
     // ----- 小習慣 -----
     // 愛狗：蹲下來摸摸狗，牠就不叫了。
     if (q.includes('dogs_love')) push({ id: 'pet', ap: 1, targets: foesAt((f) => f.kind === 'dog' && manh(f.x, f.y, u.x, u.y) <= 1).map((f) => [f.x, f.y]) });
@@ -711,17 +733,44 @@
       api.say(s, 'card', 'tac.log.pigeon', v);
       api.say(s, 'gain', 'tac.log.obj.' + obj.kind, v);
     } else if (ab === 'sergei') {
+      const fence = tile(t, x, y) === '=';
+      setTile(t, x, y, fence ? '.' : 'd');
+      api.say(s, 'card', fence ? 'tac.log.sergeiFence' : 'tac.log.sergeiDoor', v);
+    } else if (ab === 'hammer') {
+      foe.down = true;
+      api.say(s, 'card', foe.kind === 'drone' ? 'tac.log.hammerDrone' : 'tac.log.hammerGuard', v);
+      loud(LOUD.hammer);
+    } else if (ab === 'eagle') {
       let n = 0;
       for (const f of t.foes) {
         if (f.down || manh(f.x, f.y, x, y) > 2) continue;
-        if (f.kind === 'guard') {
-          f.state = 'distracted';
-          f.timer = 2;
-          f.target = null;
-          n++;
-        } else if (f.kind === 'cam') { f.off = Math.max(f.off || 0, 2); n++; }
+        if (f.kind === 'cam') f.off = Math.max(f.off || 0, 2);
+        else if (f.kind === 'drone') f.loop = Math.max(f.loop || 0, 2);
+        else { f.state = 'distracted'; f.timer = 2; f.target = null; }
+        n++;
       }
-      api.say(s, 'card', 'tac.log.sergei', Object.assign({ n }, v));
+      api.say(s, 'card', 'tac.log.eagle', Object.assign({ n }, v));
+    } else if (ab === 'focus') {
+      u.ap += 2;
+      api.say(s, 'card', 'tac.log.focus', v);
+    } else if (ab === 'blackout') {
+      for (const f of t.foes) {
+        if (f.down) continue;
+        if (f.kind === 'cam') f.off = Math.max(f.off || 0, 3);
+        else if (f.kind === 'drone') f.loop = Math.max(f.loop || 0, 3);
+        else { f.state = 'distracted'; f.timer = 1; f.target = null; }
+      }
+      api.say(s, 'card', 'tac.log.blackout', v);
+      api.heatUp(s);
+    } else if (ab === 'mask') {
+      u.disguise = 3;
+      api.say(s, 'card', 'tac.log.mask', v);
+    } else if (ab === 'baton') {
+      const o = live(t).find((w) => w.x === x && w.y === y);
+      const n = u.ap + 1;
+      o.ap += n;
+      u.ap = 0;
+      api.say(s, 'card', 'tac.log.baton', { name: v.name, other: api.name(s, o.id), n });
     } else if (ab === 'pet') {
       foe.down = true;
       foe.friend = true;

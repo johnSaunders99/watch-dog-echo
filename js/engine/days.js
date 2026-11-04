@@ -1,7 +1,7 @@
 // 第二季的白天：早上、中午、傍晚三個時段，每個時段安排一件事；晚上才出去行動。
 // 交情：兩個人一起做事會變熟，到 3 變成朋友，掉到 −3 變成死對頭；死對頭的交情回到 0 就算和好。
 // 弱點練得掉：有對應的教練一次算兩次，練夠了這個弱點就沒了。
-// 每天早上可能發生一件隊友之間的事（足球、生日、前任、Wrench 和 Darcy 來訪……），有的會佔掉一個時段。
+// 每天早上可能發生一件隊友之間的事（足球、生日、前任、客串角色來訪、白天的奇遇……），有的會佔掉一個時段。
 // 同一個人白天做了兩件事（派對不算），晚上就會累：失敗率 +10%，戰術地圖上第一回合少一個行動點。
 // 資料在 content-s2/days.js；這裡只放規則。需要的夜間引擎功能（找人、說話、亂數、受傷）都經由 api 傳進來。
 // 狀態：s.day（今天走到第幾個時段、做過什麼、早上的事件）、s.bonds（交情）、成員身上的 train（練到哪裡）、overcame（練掉的弱點）、gifts（天賦）。
@@ -143,7 +143,9 @@
       skill: (id, k) => api.person(s, id).skills[k] || 0,
       wins: (id) => (api.member(s, id) && api.member(s, id).wins) || 0,
       rel: (a, b, t) => api.related(s, a, b, t),
-      gifted: (id) => !!((api.member(s, id) && api.member(s, id).gifts) || []).length,
+      gifts: (id) => ((api.member(s, id) && api.member(s, id).gifts) || []).length,
+      lacks: (id, g) => !((api.member(s, id) && api.member(s, id).gifts) || []).includes(g),
+      mainOpen: api.mainOpen(s),
       trainable: (id) => !!trainOf(s, api, id),
       pick: (list) => (list.length ? r.pick(list) : null),
       best: (list, score) => list.slice().sort((a, b) => score(b) - score(a))[0] || null,
@@ -168,6 +170,7 @@
       if (last[ev.id] !== undefined && (ev.once || s.night - last[ev.id] < EVENT_GAP)) continue;
       if (ev.perDistrict && (s.devWhere || {})[ev.id] === s.district) continue;
       if ((ev.from && s.night < ev.from) || (ev.minHeat && s.heat < ev.minHeat)) continue;
+      if (ev.after && last[ev.after] === undefined) continue;
       const who = whoOf(ev, q);
       if (who) pool.push({ ev, who });
     }
@@ -228,10 +231,19 @@
       else if (k === 'heat') {
         s.heat = clamp(s.heat + a[0], 0, 100);
         api.say(s, a[0] > 0 ? 'warn' : 'gain', a[0] > 0 ? 's2.day.log.heatUp' : 's2.day.log.heatDown', { n: Math.abs(a[0]) });
-      } else if (k === 'threat' && here(a[0])) { const m = api.member(s, here(a[0])); m.threat = Math.min(100, (m.threat || 0) + a[1]); }
+      } else if (k === 'threat' && here(a[0])) { const m = api.member(s, here(a[0])); m.threat = clamp((m.threat || 0) + a[1], 0, 100); }
       else if (k === 'gift' && here(a[0])) giveGift(s, api, here(a[0]), a[1]);
       else if (k === 'train' && here(a[0])) trainUp(s, api, here(a[0]), a[1]);
       else if (k === 'quirk' && here(a[0])) swapQuirk(s, api, here(a[0]), a[1], a[2]);
+      else if (k === 'send') api.send(s);
+      else if (k === 'hour') { s.day.spare = (s.day.spare || 0) + 1; api.say(s, 'gain', 's2.day.log.hour'); }
+      else if (k === 'tap') { s.tap = Math.max(s.tap || 0, s.night + a[0]); api.say(s, 'gain', 's2.log.job.tap', { n: a[0] }); }
+      else if (k === 'rest') {
+        s.day.slot = D().SLOTS.length;
+        s.day.busy = {};
+        for (const m of s.roster.members) if (m.threat) m.threat = Math.max(0, m.threat - 3);
+        api.say(s, 'gain', 's2.day.log.rest');
+      }
     }
   }
 
@@ -272,7 +284,8 @@
     const [a, b] = ids;
     const v = { name: a ? api.name(s, a) : null, other: b ? api.name(s, b) : null };
     s.day.did[id] = true;
-    s.day.slot++;
+    if (s.day.spare) s.day.spare--; // 多出來的一小時
+    else s.day.slot++;
     if (id !== 'party') busy(s, ids);
     if (id === 'hang') {
       const qa = api.person(s, a).quirks, qb = api.person(s, b).quirks;
