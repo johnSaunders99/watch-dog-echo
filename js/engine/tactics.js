@@ -12,6 +12,10 @@
 (function (E) {
   const AP = 2;
   const MOVE = 3;
+  // 地圖上誰會駭入（出門帶不帶器材也看這個）。
+  const canHack = (cat, skills, perk) => cat === 'hacker' || skills.hack >= 2 || ['take_over', 'legacy', 'backdoor', 'botnet', 'network_access', 'broadcast'].includes(perk);
+  // 動作的聲音傳幾格（曼哈頓距離，隔著牆也聽得到）。傳得到的守衛會走到那一格查看，見 noise()。
+  const LOUD = { takedown: 2, breach: 3, force: 3, forceHard: 5, slow: 4, box: 3, climbFail: 3 };
   const STAND = '.,dXSHE';   // 人可以站的格子
   const OPAQUE = '#D';        // 擋住視線的格子
   const OBJ = 'TPF';          // 目標（終端、控制箱、天線、被關的人、要燒的檔案）
@@ -221,7 +225,7 @@
     // 騎單車通勤：目標都完成之後，騎車走人。
     c.bike = hq('cyclist') && !objsLeft(t);
     c.move = MOVE + (has('fast') ? 1 : 0) + (hq('marathon') ? 1 : 0) + (perk === 'sprint' ? 1 : 0) + (perk === 'rooftops' ? 2 : 0) + (c.bike ? 2 : 0) - (fl === 'bad_knees' ? 1 : 0);
-    c.hack = cat === 'hacker' || skills.hack >= 2 || ['take_over', 'legacy', 'backdoor', 'botnet', 'network_access', 'broadcast'].includes(perk);
+    c.hack = canHack(cat, skills, perk);
     // 駭入距離四格（還要看得到）：地圖變大之後，駭客也得走進去，不能站在出發點把整張圖駭完。
     c.hackRange = 4 + (perk === 'botnet' ? 2 : 0) + (hq('gamer') ? 1 : 0);
     c.remote = perk === 'legacy'; // 老系統全都連在一起：目標也能遠端駭
@@ -341,7 +345,7 @@
       push({ id: 'climb', ap: c.climbCost, targets });
     }
     if (c.takedown) {
-      push({ id: 'takedown', ap: 1, targets: foesAt((f) => f.kind === 'guard' && manh(f.x, f.y, u.x, u.y) === 1 && (c.anyAngle || f.state === 'distracted' || !inFront(f, u))).map((f) => [f.x, f.y]) });
+      push({ id: 'takedown', ap: 1, noise: heardAt(t, c, LOUD.takedown), targets: foesAt((f) => f.kind === 'guard' && manh(f.x, f.y, u.x, u.y) === 1 && (c.anyAngle || f.state === 'distracted' || !inFront(f, u))).map((f) => [f.x, f.y]) });
     }
     if (c.talk) {
       const inTalk = (f) => manh(f.x, f.y, u.x, u.y) <= c.talkRange && los(t, u.x, u.y, f.x, f.y);
@@ -351,7 +355,7 @@
     if (c.disguise && once('disguise')) push({ id: 'disguise', ap: 1, card: true, targets: self });
     const doors = adj.filter(([x, y]) => tile(t, x, y) === 'D');
     if (c.unlock || c.needles) push({ id: 'unlock', ap: c.unlock ? 1 : 2, targets: doors });
-    push({ id: 'force', ap: c.strong || c.lift ? 1 : 2, targets: doors });
+    push({ id: 'force', ap: c.strong || c.lift ? 1 : 2, noise: c.lift ? 0 : heardAt(t, c, c.strong ? LOUD.force : LOUD.forceHard), targets: doors });
     if (c.heal) push({ id: 'heal', ap: 1, targets: live(t).filter((v) => api.hurt(s, v.id) && manh(v.x, v.y, u.x, u.y) <= 1).map((v) => [v.x, v.y]) });
     if (c.cab && !t.used.cab && tile(t, u.x, u.y) !== 'X') push({ id: 'cab', ap: 1, card: true, targets: self });
     // ----- 特質的招式卡 -----
@@ -372,7 +376,7 @@
       push({ id: 'lift', ap: 1, card: true, targets: foesAt((f) => f.kind === 'guard' && f.state !== 'alert' && manh(f.x, f.y, u.x, u.y) === 1 && (f.state === 'distracted' || !inFront(f, u))).map((f) => [f.x, f.y]) });
     }
     // 力氣大：硬闖，扯開一段圍欄（會發出聲音）。搬家工人隨時都能拆，而且很安靜。
-    if ((has('strong') && once('breach')) || c.lift) push({ id: 'breach', ap: 1, card: !c.lift, targets: adj.filter(([x, y]) => tile(t, x, y) === '=') });
+    if ((has('strong') && once('breach')) || c.lift) push({ id: 'breach', ap: 1, card: !c.lift, noise: c.lift ? 0 : heardAt(t, c, LOUD.breach), targets: adj.filter(([x, y]) => tile(t, x, y) === '=') });
     // 樂天：替兩格內的隊友打氣，這一回合每人多一個行動點。
     if (has('cheerful') && once('boost') && live(t).some((v) => v !== u && !v.escort && manh(v.x, v.y, u.x, u.y) <= 2)) push({ id: 'boost', ap: 0, card: true, targets: self });
     // 謹慎：留後路，在腳下佈置一個藏身處。
@@ -389,7 +393,10 @@
     // 愛狗：蹲下來摸摸狗，牠就不叫了。
     if (q.includes('dogs_love')) push({ id: 'pet', ap: 1, targets: foesAt((f) => f.kind === 'dog' && manh(f.x, f.y, u.x, u.y) <= 1).map((f) => [f.x, f.y]) });
     // 目標：沒有對應的人也做得到，只是要兩個行動點，還會發出聲音。
-    for (const o of t.objs.filter((v) => !v.done && manh(v.x, v.y, u.x, u.y) === 1)) push({ id: 'use', ap: interactCost(s, api, id, o, c), targets: [[o.x, o.y]], kind: o.kind });
+    for (const o of t.objs.filter((v) => !v.done && manh(v.x, v.y, u.x, u.y) === 1)) {
+      const ap = interactCost(s, api, id, o, c);
+      push({ id: 'use', ap, noise: heardAt(t, c, useNoise(o, c, ap)), targets: [[o.x, o.y]], kind: o.kind });
+    }
     return out;
   }
 
@@ -398,6 +405,9 @@
     const dx = u.x - f.x, dy = u.y - f.y;
     return dx * f.face[0] + dy * f.face[1] >= 1;
   }
+
+  // 完成目標會發出的聲音：沒有對應專長的人慢慢弄，或沒有駭客拔控制箱的線。
+  const useNoise = (o, c, ap) => (ap >= 2 ? LOUD.slow : o.kind === 'box' && !c.hack ? LOUD.box : 0);
 
   function interactCost(s, api, id, o, c) {
     if (o.kind === 'prisoner' || o.kind === 'files' || o.kind === 'person') return 1;
@@ -471,12 +481,13 @@
     const saved = Object.assign({}, t, { undo: null });
     return { tac: JSON.stringify(saved), alert: s.op.alert, bw: s.op.bw, hurt: JSON.stringify(s.op.hurt), step: s.step, log: s.log.length, temp: s.op.temp.length };
   }
-  // 動作做完之後：有沒有發生撤回不了的事（擲了骰子、警戒變了、紀錄裡出現警告、叫了人來）。
+  // 動作做完之後：有沒有發生撤回不了的事（擲了骰子、紀錄裡出現警告、叫了人來）。
+  // 被看到一定有警告的紀錄；駭入固定加一點警戒，沒有透露任何事，可以撤回。
   function settle(s, snap) {
     if (s.phase !== 'tac') return;
     const t = s.op.tac;
     const fresh = s.log.slice(snap.log);
-    const clean = s.step === snap.step && s.op.alert === snap.alert && s.op.temp.length === snap.temp && !fresh.some((e) => e.c === 'warn' || e.c === 'bad');
+    const clean = s.step === snap.step && s.op.temp.length === snap.temp && !fresh.some((e) => e.c === 'warn' || e.c === 'bad');
     t.undo = clean ? snap : null;
   }
   function undo(s) {
@@ -536,10 +547,14 @@
     return check(s, api);
   }
 
-  // 發出聲音：附近在巡邏的守衛會過來看看。
+  // 發出聲音：傳得到的守衛會走到出聲的那一格查看（固定的一格，不會跟著人走），到了沒看到人，再查兩回合就回去巡邏。
+  // 聲音本身不加警戒。狗、無人機、攝影機都不理聲音；被引開和被制伏的守衛也聽不到。
+  const rainCut = (t, r) => (t.event === 'rain' ? Math.max(1, r - 1) : r); // 大雨蓋過了聲音
+  // 這個人的動作實際傳幾格：做什麼都不出聲的人是 0，特別大聲的人多 2 格。
+  const heardAt = (t, c, r) => (!r || c.quiet ? 0 : rainCut(t, r + (c.loud ? 2 : 0)));
   function noise(s, api, x, y, r) {
     const t = s.op.tac;
-    if (t.event === 'rain') r = Math.max(1, r - 1); // 大雨蓋過了聲音
+    r = rainCut(t, r);
     let heard = false;
     for (const f of t.foes) {
       if (f.kind !== 'guard' || f.down || f.state === 'distracted' || manh(f.x, f.y, x, y) > r) continue;
@@ -571,7 +586,7 @@
     // 只有真的要擲骰子的時候才擲（擲過骰子的動作不能撤回）。
     let roll = null;
     const r = () => roll || (roll = api.rand(s));
-    const loud = (radius) => { if (!c.quiet) noise(s, api, u.x, u.y, radius + (c.loud ? 2 : 0)); };
+    const loud = (radius) => { if (radius && !c.quiet) noise(s, api, u.x, u.y, radius + (c.loud ? 2 : 0)); };
     u.ap -= a.ap;
     if (CARDS[ab] && ab !== 'lift') t.used[ab === 'cab' ? ab : ab + ':' + id] = true;
     const foe = t.foes.find((f) => f.x === x && f.y === y && !f.down);
@@ -593,7 +608,7 @@
       if (perk !== 'legacy' && perk !== 'network_access') api.addAlert(s, 2, id);
     } else if (ab === 'climb') {
       const dx = x - u.x, dy = y - u.y;
-      if (c.clumsy && r().chance(0.25)) { api.say(s, 'bad', 'tac.log.climbFail', v); loud(3); }
+      if (c.clumsy && r().chance(0.25)) { api.say(s, 'bad', 'tac.log.climbFail', v); loud(LOUD.climbFail); }
       else { u.x = x + dx; u.y = y + dy; api.say(s, 'ok', perk === 'rooftops' ? 'tac.log.vault' : 'tac.log.climb', v); }
     } else if (ab === 'takedown') {
       if (c.clumsy && r().chance(0.25)) {
@@ -604,7 +619,7 @@
       } else {
         foe.down = true;
         api.say(s, 'ok', 'tac.log.takedown', v);
-        loud(2);
+        loud(LOUD.takedown);
       }
     } else if (ab === 'talk') {
       if (foe.kind === 'drone') {
@@ -631,7 +646,7 @@
       if (c.lift) api.say(s, 'ok', 'tac.log.forceQuiet', v);
       else {
         api.say(s, 'warn', c.strong ? 'tac.log.force' : 'tac.log.forceHard', v);
-        loud(c.strong ? 3 : 5);
+        loud(c.strong ? LOUD.force : LOUD.forceHard);
         if (!c.strong) api.addAlert(s, 5, id);
       }
     } else if (ab === 'heal') {
@@ -679,7 +694,7 @@
     } else if (ab === 'breach') {
       setTile(t, x, y, '.');
       if (c.lift) api.say(s, 'ok', 'tac.log.breachQuiet', v);
-      else { api.say(s, 'card', 'tac.log.breach', v); loud(3); }
+      else { api.say(s, 'card', 'tac.log.breach', v); loud(LOUD.breach); }
     } else if (ab === 'boost') {
       let n = 0;
       for (const o of live(t)) if (o !== u && !o.escort && manh(o.x, o.y, u.x, u.y) <= 2) { o.ap++; n++; }
@@ -722,8 +737,7 @@
       } else {
         obj.done = true;
         api.say(s, 'gain', 'tac.log.obj.' + obj.kind, v);
-        if (a.ap >= 2) loud(4); // 沒有對應專長的人慢慢弄，會發出聲音
-        else if (obj.kind === 'box' && !c.hack) loud(3);
+        loud(useNoise(obj, c, a.ap));
       }
     }
     if (s.phase !== 'tac') return true;
@@ -887,16 +901,21 @@
         continue;
       }
       if (f.state === 'alert') {
-        // 追過去：一回合兩格。到了沒看到人，再找兩回合就回去巡邏。
+        // 追過去：一回合兩格。
         const target = f.chase ? nearestUnit(t, f) : f.target;
         if (target) step(t, f, path(t, f, target[0], target[1]).slice(0, 2));
-        if (!f.chase && f.target && f.x === f.target[0] && f.y === f.target[1] && ++f.timer >= 2) { f.state = 'patrol'; f.target = null; }
       } else {
         let [tx, ty] = f.route[f.ri];
         if (f.x === tx && f.y === ty) { f.ri = (f.ri + 1) % f.route.length; [tx, ty] = f.route[f.ri]; }
         step(t, f, path(t, f, tx, ty).slice(0, 1));
       }
       if (catchUp(s, api, f)) return true;
+      // 到了沒看到人，再找兩回合就回去巡邏。那一格有人（別的守衛、躲在藏身處的人）走不進去：走到旁邊就算到了。
+      if (f.state === 'alert' && !f.chase && f.target) {
+        const [tx, ty] = f.target;
+        const there = (f.x === tx && f.y === ty) || (manh(f.x, f.y, tx, ty) === 1 && occupied(t, tx, ty, f));
+        if (there && ++f.timer >= 2) { f.state = 'patrol'; f.target = null; }
+      }
     }
     // 駭客鎖上的門，兩回合後會被撞開。
     for (const k of Object.keys(t.locks)) {
@@ -1006,7 +1025,7 @@
   }
 
   E.tactics = {
-    AP, CARDS, UNLOCKS, build, prepare, vision, caps, abilities, cards, reach, risky, move, use, endTurn, undo, tile, objsLeft, live,
+    AP, CARDS, UNLOCKS, canHack, build, prepare, vision, caps, abilities, cards, reach, risky, move, use, endTurn, undo, tile, objsLeft, live,
     // 地圖檢查用：不管敵人，看每個目標和撤離點是不是都走得到（上鎖的門、圍欄當作可以通過）。
     reachable(t) {
       const ok = (x, y) => tile(t, x, y) !== '#' && !OBJ.includes(tile(t, x, y));

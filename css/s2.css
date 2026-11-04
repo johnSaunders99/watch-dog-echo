@@ -64,7 +64,10 @@ body.s2 { overflow: auto; }
 .banner-loc { font-size: 34px; font-weight: 800; letter-spacing: 0.08em; color: #fff; }
 
 .ops { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.op-card { display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 14px !important; background: var(--panel-2) !important; border-radius: 8px !important; transition: transform 0.15s ease, border-color 0.15s ease; }
+.op-card { display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 14px !important; background: var(--panel-2) !important; border: 1px solid var(--line); border-radius: 8px !important; transition: transform 0.15s ease, border-color 0.15s ease; }
+/* 卡片的上半部是按鈕；好處在按鈕外面，才能各自點開說明 */
+.op-hit { flex: 1; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.s2 button.op-hit { padding: 0; border: 0; border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .op-card:hover { transform: translateY(-2px); border-color: var(--accent) !important; }
 .op-card.kind-rescue { border-color: rgba(255, 93, 108, 0.6) !important; }
 .op-card.kind-recruit { border-color: rgba(108, 214, 226, 0.4) !important; }
@@ -80,12 +83,17 @@ body.s2 { overflow: auto; }
 .op-card.kind-job .kind { color: var(--sys); }
 .stash { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 10px; font-size: 13px; }
 .stash b { color: var(--ok); font-weight: 600; margin-right: 2px; }
-.stash span { padding: 1px 8px; border: 1px solid var(--ok); border-radius: 3px; color: var(--ok); }
+.s2 .stash .info-link { padding: 1px 8px; border: 1px solid var(--ok); border-radius: 3px; color: var(--ok); text-decoration: none; }
 .op-main { display: flex; gap: 10px; align-items: flex-start; }
 .op-face svg { width: 48px; height: 48px; border-radius: 6px; display: block; }
 .op-name { font-size: 16px; font-weight: 700; color: #fff; }
 .op-desc { margin-top: 3px; font-size: 13px; line-height: 1.55; color: var(--muted); }
-.op-reward { font-size: 13px; font-weight: 700; color: var(--ok); }
+.op-reward { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; font-weight: 700; color: var(--ok); }
+/* 點得開的字：虛線底線；對話框裡是一小段說明 */
+.s2 .info-link { padding: 0; border: 0; border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
+.s2 .info-link.q { width: 16px; height: 16px; margin-left: 6px; border: 1px solid var(--line); border-radius: 50%; font-size: 10.5px; line-height: 14px; text-align: center; text-decoration: none; color: var(--muted); }
+.s2-meter[data-act] { cursor: help; }
+.modal-card.info p { line-height: 1.7; }
 .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .chain span { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #1a1f2b; color: var(--muted); }
 .chain span.done { color: var(--ok); }
@@ -559,10 +567,12 @@ body.alarm::after { content: ""; position: fixed; inset: 0; z-index: 30; pointer
 @media (max-width: 560px) {
   .panel.tac { padding: 8px; }
   .tac-map { max-height: none; }
+  /* 手機上一格只有二十出頭像素：地圖盡量撐滿整個畫面寬，比較點得準 */
+  .panel.tac .tac-stage { max-width: none !important; margin-inline: -14px; }
 }
 
 /* ===== 戰術地圖：地圖上的操作、說明、圖解 ===== */
-.tac-stage { position: relative; }
+.tac-stage { position: relative; margin: 0 auto; }
 .tac-badge { pointer-events: none; animation: tac-bob 1.4s ease-in-out infinite; }
 @keyframes tac-bob { 50% { transform: translateY(-1px); } }
 .tac-badge circle:first-child { filter: drop-shadow(0 0 3px rgba(255, 46, 136, 0.6)); }
@@ -571,17 +581,22 @@ body.alarm::after { content: ""; position: fixed; inset: 0; z-index: 30; pointer
 .tac-tx.dim { fill: #9aa6c0; font-size: 10px; }
 .tac-tx.cyan { fill: #6cd6e2; font-size: 15px; }
 .tac-tx.small { font-size: 8px; }
-.tac-pop, .tac-tip { position: absolute; z-index: 5; transform: translate(-50%, 4px); min-width: 180px; max-width: min(280px, 90%); padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(12, 15, 22, 0.97); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); }
+.tac-pop, .tac-tip { --half: min(115px, 46%); position: absolute; z-index: 5; transform: translate(-50%, 4px); width: calc(var(--half) * 2); padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(12, 15, 22, 0.97); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); }
 .tac-pop { display: flex; flex-direction: column; gap: 4px; }
 .s2 .tac-pop button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; text-align: left; }
 .tac-pop button span { display: flex; flex-direction: column; }
 .tac-pop button small { font-size: 11px; color: var(--muted); }
 .tp-ic, .tc-ic { flex: none; width: 22px; height: 22px; }
 .tc-ic { width: 16px; height: 16px; margin-right: 5px; vertical-align: -3px; }
-.tac-tip { display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.5; cursor: pointer; }
+.tac-pop.up, .tac-tip.up { transform: translate(-50%, calc(-100% - 4px)); }
+.tac-tip { --half: min(135px, 46%); display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.5; cursor: pointer; }
 .tac-tip b { color: #fff; }
 .tac-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(8, 11, 16, 0.85); position: sticky; bottom: 0; z-index: 4; }
 .tac-bar .tac-squad { margin: 0; }
+/* 沒有人有行動點了：輕輕提醒該結束回合 */
+.tac-turn .primary.nudge { animation: tac-nudge 1.3s ease-in-out infinite; }
+@keyframes tac-nudge { 50% { box-shadow: 0 0 0 5px rgba(255, 46, 136, 0.35); } }
+@media (prefers-reduced-motion: reduce) { .tac-turn .primary.nudge { animation: none; } }
 .tac-turn { display: flex; gap: 6px; margin-left: auto; }
 .tac-turn .primary { padding: 10px 18px; font-size: 15px; }
 .tac-guide { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 8px; background: rgba(4, 6, 10, 0.82); overflow-y: auto; }
@@ -589,6 +604,7 @@ body.alarm::after { content: ""; position: fixed; inset: 0; z-index: 30; pointer
 .tg-card h3 { margin: 0 0 6px; }
 .tg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 10px 0; }
 .tg-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; line-height: 1.4; }
+.tg-item.wide { grid-column: 1 / -1; }
 .tg-item span { display: flex; flex-direction: column; }
 .tg-item small { color: var(--muted); }
 .tg-ic { flex: none; width: 40px; height: 40px; border-radius: 6px; background: #0f1622; overflow: hidden; }

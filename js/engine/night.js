@@ -743,6 +743,12 @@
     return called;
   }
 
+  // 這一隊用不用得上器材：快速結算只要有人會一點駭入；戰術地圖的條件高一點（見 tactics.canHack）。
+  function gearGoes(s, ids, onMap) {
+    if (!s.gear) return false;
+    return ids.some((id) => (onMap ? E.tactics.canHack(categoryOf(s, id), person(s, id).skills, perkId(s, id)) : (person(s, id).skills.hack || 0) >= 1));
+  }
+
   function launch(s, ids, laneMap = {}, mode) {
     if (s.phase !== 'squad' || !squadCheck(s, ids, laneMap).ok) return false;
     const e = picked(s);
@@ -752,8 +758,11 @@
     say(s, 'op', 's2.log.opStart', { op: { l: e.name } });
     // 機會只有一次：不管成敗，出發了就從列表上拿掉。
     if (e.job) s.jobs = s.jobs.filter((j) => j.id !== e.job);
-    // 搶來的器材：每次出門自動帶一份，頻寬 +1。
-    if (s.gear > 0) {
+    // 第二段直接進文字冒險的話用不到頻寬。
+    const story = e.story && e.part !== 0;
+    const plan = !story && mode === 'tac' && tacPlan(s, e);
+    // 搶來的器材：隊上有人會駭入才帶一份，頻寬 +1；沒有的話留到下次。
+    if (!story && gearGoes(s, ids, !!plan)) {
       s.gear--;
       s.op.bw++;
       say(s, 'gain', 's2.log.gearUsed', { n: s.gear });
@@ -780,11 +789,10 @@
       say(s, 'warn', 's2.log.calledIn', { name: nameOf(s, id) });
     }
     if (e.family) say(s, 'gain', 's2.log.familyHelp', { name: nameOf(s, e.family), target: nameOf(s, e.target) });
-    if (e.story && e.part !== 0) {
+    if (story) {
       beginMission(s);
       return true;
     }
-    const plan = mode === 'tac' && tacPlan(s, e);
     if (plan) {
       beginTac(s, e, plan, ids);
       return true;
@@ -1684,7 +1692,7 @@
     stage, options, combos, cards, useCard, act, react, answer, retreat, nextDay,
     networkWith, puzzleSpec, hackable, clinic, travel, mainNow,
     // 今晚的機會
-    JOBS, JOB_NIGHTS, refreshJobs, jobOpen,
+    JOBS, JOB_NIGHTS, refreshJobs, jobOpen, gearGoes,
     // 白天
     dayCheck: (s, act, ids) => E.days.check(s, dayApi, act, ids),
     dayCanPick: (s, act, i, id) => E.days.canPick(s, dayApi, act, i, id),

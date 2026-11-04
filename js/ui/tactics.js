@@ -20,6 +20,7 @@
   let guide = null; // 圖解有沒有打開（null：還沒決定，看這個瀏覽器有沒有看過）
   let aim = null;   // 用招式卡選目標中：能力的 id
   let tutAt = null; // 教學關：上一次畫面時在第幾步（換步驟時幫玩家選好要動手的人）
+  let spots = {};   // 上一次畫面時每個人和敵人的位置（移動的動畫用）
 
   const unitsOf = (s) => s.op.tac.units;
   const liveUnits = (s) => unitsOf(s).filter((u) => !u.out && !u.taken);
@@ -30,7 +31,7 @@
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 存不了就算了 */ } }
 
-  function reset() { sel = null; pop = null; tip = null; aim = null; tutAt = null; }
+  function reset() { sel = null; pop = null; tip = null; aim = null; tutAt = null; spots = {}; }
 
   // 選中的人沒有行動點了，就換下一個還能動的人。
   function autoSelect(s) {
@@ -197,6 +198,15 @@
   }
 
   // 守衛犬：俯視的狗，尾巴、耳朵、項圈。叫的時候頭上有聲波；交上朋友的狗坐著，頭上一顆愛心。
+  // 守衛要去查看的那一格：問號，和一條從守衛拉過去的虛線。
+  function checkMark(cx, cy) {
+    return `<circle cx="${cx}" cy="${cy}" r="17" fill="rgba(255,71,87,0.1)" stroke="#ff4757" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="${cx - 13}" cy="${cy - 13}" r="7" fill="#ff4757"/><text x="${cx - 13}" y="${cy - 9}" class="tac-tx dark">?</text>`;
+  }
+  function checkSvg(f) {
+    const cx = f.target[0] * TS + TS / 2, cy = f.target[1] * TS + TS / 2;
+    return `<line x1="${f.x * TS + TS / 2}" y1="${f.y * TS + TS / 2}" x2="${cx}" y2="${cy}" stroke="#ff4757" stroke-width="1.5" stroke-dasharray="3 4" opacity="0.7"/>` + checkMark(cx, cy);
+  }
+
   function dogSvg(f) {
     const cx = f.x * TS + TS / 2, cy = f.y * TS + TS / 2;
     const fur = '#8a5a36', dark = '#5a3820';
@@ -251,7 +261,7 @@
   const GOLD = '#ffd23f'; // 招式卡一律金色
   const AB_COLOR = { hack: '#2ff3e0', climb: '#ff9a3d', takedown: '#ff9a3d', force: '#ff9a3d', breach: '#ff9a3d', talk: '#c2b3ff', disguise: GOLD, unlock: '#5cf29a', heal: '#5cf29a', cab: GOLD, use: '#ff2e88', pet: '#5cf29a',
     summon: GOLD, code: GOLD, ghost: GOLD, soothe: GOLD, lift: GOLD, boost: GOLD, cover: GOLD, radio: GOLD, pigeon: GOLD, sergei: GOLD };
-  const colorOf = (ab, card) => (card ? GOLD : AB_COLOR[ab] || '#ff2e88');
+  const colorOf = (ab, card) => (card ? GOLD : { move: '#6cd6e2', select: '#9aa6c0' }[ab] || AB_COLOR[ab] || '#ff2e88');
   function glyph(ab) {
     const w = '#0b0f1c';
     switch (ab) {
@@ -276,6 +286,8 @@
       case 'pigeon': return `<path d="M-6 1 q3 -6 8 -3 l4 -1 l-3 3 q-1 5 -6 4 Z" fill="${w}"/><circle cx="3" cy="-2.5" r=".9" fill="#fff"/>`;
       // 謝爾蓋：四個旋翼的小無人機
       case 'sergei': return `<rect x="-2.5" y="-2" width="5" height="4" rx="1" fill="${w}"/><path d="M-2 -1.5 L-5 -4.5 M2 -1.5 L5 -4.5 M-2 1.5 L-5 4.5 M2 1.5 L5 4.5" stroke="${w}" stroke-width="1.4"/>${[[-5, -4.5], [5, -4.5], [-5, 4.5], [5, 4.5]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="1.1" fill="${w}"/>`).join('')}`;
+      case 'move': return `<path d="M-6 0 H3 M-1 -5 L5 0 L-1 5" stroke="${w}" stroke-width="2.4" fill="none"/>`;
+      case 'select': return `<circle cy="-2.5" r="3" fill="${w}"/><path d="M-5.5 6 q5.5 -8 11 0" fill="${w}"/>`;
       case 'pet': return `<circle cx="0" cy="2" r="3.2" fill="${w}"/>${[[-4.5, -2], [-1.5, -4.5], [1.5, -4.5], [4.5, -2]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${w}"/>`).join('')}`;
       default: return `<circle r="4" stroke="${w}" stroke-width="2" fill="none"/><circle r="1.5" fill="${w}"/>`;
     }
@@ -293,9 +305,24 @@
     if (!sel) return out;
     for (const a of N.tacAbilities(s, sel)) {
       if (aim && a.id !== aim) continue;
-      for (const [x, y] of a.targets) (out[x + ',' + y] = out[x + ',' + y] || []).push({ ab: a.id, x, y, kind: a.kind, ap: a.ap, bw: a.bw || 0, card: !!a.card });
+      for (const [x, y] of a.targets) (out[x + ',' + y] = out[x + ',' + y] || []).push({ ab: a.id, x, y, kind: a.kind, ap: a.ap, bw: a.bw || 0, card: !!a.card, noise: a.noise || 0 });
     }
     return out;
+  }
+
+  // 會移動的東西：畫完之後比對位置，換了位置的滑過去（motion）。
+  const mover = (id, o, inner) => `<g data-mv="${id}" data-mx="${o.x}" data-my="${o.y}">${inner}</g>`;
+  function motion(root) {
+    const now = {};
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (const el of root.querySelectorAll('[data-mv]')) {
+      const x = Number(el.dataset.mx), y = Number(el.dataset.my), was = spots[el.dataset.mv];
+      now[el.dataset.mv] = [x, y];
+      if (still || !was || !el.animate || (was[0] === x && was[1] === y)) continue;
+      const dist = Math.abs(was[0] - x) + Math.abs(was[1] - y);
+      el.animate([{ transform: `translate(${(was[0] - x) * TS}px, ${(was[1] - y) * TS}px)` }, { transform: 'translate(0, 0)' }], { duration: Math.min(320, 100 + 40 * dist), easing: 'ease-out' });
+    }
+    spots = now;
   }
 
   // ===== 整張地圖 =====
@@ -342,9 +369,11 @@
       const risky = new Set(N.tacRisky(s, u.id));
       g += Object.keys(r).map((k) => { const [x, y] = k.split(',').map(Number); return `<rect class="tac-reach${risky.has(k) ? ' risky' : ''}" x="${x * TS + 4}" y="${y * TS + 4}" width="${TS - 8}" height="${TS - 8}" rx="5"/>`; }).join('');
     }
-    for (const f of tac.foes) g += f.kind === 'cam' ? camSvg(s, f) : f.kind === 'drone' ? '' : f.kind === 'dog' ? dogSvg(f) : guardSvg(f);
-    g += liveUnits(s).map((x) => unitSvg(s, x)).join('');
-    for (const f of tac.foes) if (f.kind === 'drone') g += droneSvg(f); // 無人機飛在最上層
+    for (const f of tac.foes) g += f.kind === 'cam' ? camSvg(s, f) : f.kind === 'drone' ? '' : mover('f:' + f.id, f, f.kind === 'dog' ? dogSvg(f) : guardSvg(f));
+    g += liveUnits(s).map((x) => mover('u:' + x.id, x, unitSvg(s, x))).join('');
+    // 問號畫在人上面：查看的那一格可能還站著人。
+    g += tac.foes.filter((f) => f.kind === 'guard' && !f.down && f.state === 'alert' && f.target && !f.chase).map(checkSvg).join('');
+    for (const f of tac.foes) if (f.kind === 'drone') g += mover('f:' + f.id, f, droneSvg(f)); // 無人機飛在最上層
     // 可以動手的格子：畫上能力的小圖示
     const acts = actionsByTile(s);
     for (const k of Object.keys(acts)) {
@@ -361,17 +390,35 @@
   }
 
   // ===== 地圖上的小選單和說明 =====
-  const at = (s, x, y) => `left:${((x + 0.5) / s.op.tac.w * 100).toFixed(2)}%;top:${((y + 1) / s.op.tac.h * 100).toFixed(2)}%`;
+  function at(s, x, y) {
+    const t = s.op.tac, up = y >= t.h * 0.6;
+    return { cls: up ? ' up' : '', style: `left:clamp(var(--half), ${((x + 0.5) / t.w * 100).toFixed(2)}%, calc(100% - var(--half)));top:${((up ? y : y + 1) / t.h * 100).toFixed(2)}%` };
+  }
+  // 選單上的字：駭入要說清楚會發生什麼（鎖門和開門差很多）。
+  function abLabel(s, a) {
+    if (a.ab === 'use') return T('tac.obj.' + a.kind);
+    if (a.ab === 'select') return T('tac.ab.select', { name: { l: E.people.name(N.person(s, a.id)) } });
+    if (a.ab !== 'hack') return T('tac.ab.' + a.ab);
+    const f = s.op.tac.foes.find((v) => v.x === a.x && v.y === a.y && !v.down);
+    const c = tileAt(s, a.x, a.y);
+    return T('tac.ab.' + (f ? (f.kind === 'cam' ? 'hackCam' : 'hackDrone') : c === 'd' ? 'lockDoor' : c === 'D' ? 'hackDoor' : 'hack'));
+  }
+  function costText(a) {
+    if (a.ab === 'select') return '';
+    return [a.ap ? T('tac.cost', { n: a.ap }) : T('tac.card.free'), a.bw ? T('tac.costBw', { n: a.bw }) : '', a.noise ? T('tac.costNoise', { n: a.noise }) : '', a.seen ? T('tac.costSeen') : ''].filter(Boolean).join(' · ');
+  }
   function popHtml(s) {
     if (!pop) return '';
-    return `<div class="tac-pop" style="${at(s, pop.x, pop.y)}">`
-      + pop.items.map((a) => `<button data-act="tacPick" data-ab="${a.ab}" data-x="${a.x}" data-y="${a.y}"${a.kind ? ` data-kind="${a.kind}"` : ''}>`
-        + `<svg viewBox="-11 -11 22 22" class="tp-ic"><circle r="10" fill="${colorOf(a.ab, a.card)}"/>${glyph(a.ab)}</svg><span><b>${T(a.ab === 'use' ? 'tac.obj.' + a.kind : 'tac.ab.' + a.ab)}</b><small>${a.ap ? T('tac.cost', { n: a.ap }) : T('tac.card.free')}${a.bw ? ' · ' + T('tac.costBw', { n: a.bw }) : ''}</small></span></button>`).join('')
+    const p = at(s, pop.x, pop.y);
+    return `<div class="tac-pop${p.cls}" style="${p.style}">`
+      + pop.items.map((a) => `<button data-act="tacPick" data-ab="${a.ab}" data-x="${a.x}" data-y="${a.y}"${a.kind ? ` data-kind="${a.kind}"` : ''}${a.id ? ` data-id="${a.id}"` : ''}>`
+        + `<svg viewBox="-11 -11 22 22" class="tp-ic"><circle r="10" fill="${colorOf(a.ab, a.card)}"/>${glyph(a.ab)}</svg><span><b>${abLabel(s, a)}</b><small>${costText(a)}</small></span></button>`).join('')
       + `<button class="ghost" data-act="tacClose">${T('tac.cancel')}</button></div>`;
   }
   function tipHtml(s) {
     if (!tip) return '';
-    return `<div class="tac-tip" style="${at(s, tip.x, tip.y)}" data-act="tacClose" role="button"><b>${T(tip.title)}</b><span>${T(tip.k, tip.v)}</span></div>`;
+    const p = at(s, tip.x, tip.y);
+    return `<div class="tac-tip${p.cls}" style="${p.style}" data-act="tacClose" role="button"><b>${T(tip.title)}</b><span>${T(tip.k, tip.v)}</span></div>`;
   }
 
   // 點到敵人或目標：說明它是什麼、正在做什麼。
@@ -382,7 +429,7 @@
       if (f.kind === 'cam') return { title: 'tac.leg.cam', k: f.off > 0 ? 'tac.tip.camOff' : 'tac.leg.cam.d', v: { n: f.off } };
       if (f.kind === 'drone') return { title: 'tac.leg.drone', k: f.down ? 'tac.tip.down' : f.loop > 0 ? 'tac.tip.droneLoop' : 'tac.leg.drone.d' };
       if (f.kind === 'dog') return { title: 'tac.leg.dog', k: f.friend ? 'tac.tip.dogFriend' : f.state === 'alert' ? 'tac.tip.dogAlert' : 'tac.leg.dog.d' };
-      return { title: 'tac.leg.guard', k: f.down ? 'tac.tip.down' : f.state === 'alert' ? 'tac.tip.alert' : f.state === 'distracted' ? 'tac.tip.distracted' : 'tac.tip.patrol' };
+      return { title: 'tac.leg.guard', k: f.down ? 'tac.tip.down' : f.state === 'alert' ? (f.chase ? 'tac.tip.hunt' : 'tac.tip.alert') : f.state === 'distracted' ? 'tac.tip.distracted' : 'tac.tip.patrol' };
     }
     const o = tac.objs.find((v) => v.x === x && v.y === y);
     if (o) return { title: 'tac.obj.' + o.kind, k: o.done ? 'tac.tip.objDone' : 'tac.tip.obj' };
@@ -528,9 +575,10 @@
       ['vision', `<rect width="40" height="40" fill="url(#tx-asphalt)"/><rect x="1" y="1" width="38" height="38" fill="rgba(255,80,95,0.3)"/>`],
       ['route', `<rect width="40" height="40" fill="url(#tx-asphalt)"/><rect x="4" y="4" width="32" height="32" rx="5" fill="rgba(108,214,226,0.2)" stroke="#6cd6e2" stroke-width="1.5"/><rect x="12" y="12" width="16" height="16" rx="3" fill="rgba(255,154,61,0.3)" stroke="#ff9a3d" stroke-width="1.5"/>`],
       ['badge', `<rect width="40" height="40" fill="url(#tx-asphalt)"/>` + badge('hack', 0, 0, 1).replace('translate(31 9)', 'translate(20 20)')],
+      ['noise', `<rect width="40" height="40" fill="url(#tx-asphalt)"/>` + checkMark(20, 20)],
     ];
     return `<div class="tac-guide"><div class="tg-card"><h3>${T('tac.guide.title')}</h3><p class="hint">${T('tac.guide.intro')}</p><div class="tg-grid">`
-      + items.map(([k, svg]) => `<div class="tg-item">${sample(svg)}<span><b>${T('tac.guide.' + k)}</b><small>${T('tac.guide.' + k + '.d')}</small></span></div>`).join('')
+      + items.map(([k, svg]) => `<div class="tg-item${k === 'noise' ? ' wide' : ''}">${sample(svg)}<span><b>${T('tac.guide.' + k)}</b><small>${T('tac.guide.' + k + '.d')}</small></span></div>`).join('')
       + `</div><div class="bar-actions"><button class="primary" data-act="tacGuideOk">${T('tac.guide.ok')}</button></div></div></div>`;
   }
 
@@ -562,6 +610,7 @@
     autoSelect(s);
     const lvl = s.op.alert >= 60 ? 'hot' : s.op.alert >= 30 ? 'warm' : 'cool';
     const left = tac.objs.filter((o) => !o.done).length;
+    const spent = !ready(s).length;
     let h = `<section class="op-head tac-head"><div class="tac-top"><div class="op-title">${P(s.op.name)}</div>`
       + `<span class="chip">${tac.limit ? T('tac.turnOf', { n: tac.turn, max: tac.limit }) : T('tac.turn', { n: tac.turn })}</span>`
       + `<span class="chip">${T('s2.op.bandwidth')} <b class="pips">${'▮'.repeat(Math.max(0, s.op.bw))}</b></span>`
@@ -571,7 +620,7 @@
     if (ui.tutorial) h += coachHtml(s, tut);
     // 這次潛入的特殊狀況（大霧、換班……）
     if (tac.event) h += `<section class="tac-event ev-${tac.event}"><em>${T('tac.ev.label')}</em><b>${T('tac.ev.' + tac.event)}</b><span>${T('tac.ev.' + tac.event + '.d')}</span></section>`;
-    h += `<section class="panel tac"><div class="tac-stage">${mapSvg(s, tut && tut.mark ? tut.mark(tac) : [])}${popHtml(s)}${tipHtml(s)}${guide ? guideHtml(s) : ''}</div>`;
+    h += `<section class="panel tac"><div class="tac-stage" style="max-width:calc(62vh * ${tac.w} / ${tac.h})">${mapSvg(s, tut && tut.mark ? tut.mark(tac) : [])}${popHtml(s)}${tipHtml(s)}${guide ? guideHtml(s) : ''}</div>`;
     // 地圖正下方：隊員、撤回、結束回合
     h += `<div class="tac-bar"><div class="tac-squad">${unitsOf(s).map((u, i) => {
       const off = u.out || u.taken;
@@ -580,10 +629,10 @@
         + `<span class="tm-face">${E.faces.of(N.person(s, u.id))}</span><span class="tm-txt"><b>${nm(s, u.id)}</b><small>${st}</small></span></button>`;
     }).join('')}</div><div class="tac-turn">`
       + (tac.undo ? `<button class="ghost" data-act="tacUndo" title="U">↶ ${T('tac.undo')}</button>` : '')
-      + `<button class="primary${tut && tut.ui === 'end' ? ' tut-glow' : ''}" data-act="tacEnd" title="Space">${T('tac.end')} ⏎</button></div></div>`;
+      + `<button class="primary${tut && tut.ui === 'end' ? ' tut-glow' : spent ? ' nudge' : ''}" data-act="tacEnd" title="Space">${T('tac.end')} ⏎</button></div></div>`;
     const u = unitsOf(s).find((x) => x.id === sel);
     if (u) h += cardsHtml(s, u.id);
-    h += `<p class="hint tac-hint${aim ? ' aim' : ''}">${T(aim ? 'tac.card.aim' : pop ? 'tac.pickOne' : 'tac.help')}</p>`;
+    h += `<p class="hint tac-hint${aim ? ' aim' : ''}">${T(aim ? 'tac.card.aim' : pop ? (pop.items[0].ab === 'move' ? 'tac.pickMove' : 'tac.pickOne') : spent ? 'tac.noAp' : 'tac.help')}</p>`;
     if (u) {
       h += `<div class="tac-caps"><label>${T('tac.caps', { name: { l: E.people.name(N.person(s, u.id)) } })}</label>${capList(s, u.id).map((c) => `<span class="tcap ${c.cls || ''}">`
         + (c.ab ? `<svg viewBox="-11 -11 22 22" class="tc-ic"><circle r="10" fill="${colorOf(c.ab)}"/>${glyph(c.ab)}</svg>` : '')
@@ -611,7 +660,12 @@
     if (k === 'tacSel') { sel = d.id; pop = null; aim = null; return; }
     if (k === 'tacEnd') { pop = null; aim = null; N.tacEnd(s); sel = null; return; }
     if (k === 'tacUndo') { pop = null; aim = null; N.tacUndo(s); return; }
-    if (k === 'tacPick') { act(s, { ab: d.ab, x: Number(d.x), y: Number(d.y) }); return; }
+    if (k === 'tacPick') {
+      if (d.ab === 'select') { sel = d.id; pop = null; return; }
+      if (d.ab === 'move') { pop = null; N.tacMove(s, sel, Number(d.x), Number(d.y)); return; }
+      act(s, { ab: d.ab, x: Number(d.x), y: Number(d.y) });
+      return;
+    }
     // 招式卡：只有一個目標（通常是自己腳下）就直接用；好幾個目標就讓玩家在地圖上選。
     if (k === 'tacCard') {
       const a = N.tacAbilities(s, sel).find((x) => x.id === d.ab);
@@ -623,7 +677,13 @@
     }
     if (k !== 'tacTile') return;
     const x = Number(d.x), y = Number(d.y);
-    if (pop) { pop = null; return; }
+    // 選單開著的時候：再點同一格就走過去（逃命的時候不用瞄準選單），點別的地方就關掉。
+    if (pop) {
+      const again = pop.x === x && pop.y === y && pop.items[0].ab === 'move';
+      pop = null;
+      if (again) N.tacMove(s, sel, x, y);
+      return;
+    }
     const here = actionsByTile(s)[x + ',' + y] || [];
     if (aim) {
       // 選目標中：點到可以選的格子就用，點到別的地方就取消。
@@ -635,11 +695,24 @@
     // 點自己：有偽裝、叫車之類的就打開選單；點別的隊員：換人（除非是要急救他）
     if (u && u.id === sel) { if (here.length) pop = { x, y, items: here }; return; }
     if (u && !here.some((a) => a.ab === 'heal')) { sel = u.id; return; }
-    if (here.length === 1) return act(s, here[0]);
-    if (here.length > 1) { pop = { x, y, items: here }; return; }
-    if (sel && N.tacReach(s, sel)[x + ',' + y] !== undefined) { N.tacMove(s, sel, x, y); return; }
+    // 隊友身上可以急救：也要能換人，不替玩家決定。
+    if (u) { pop = { x, y, items: here.concat([{ ab: 'select', id: u.id, x, y }]) }; return; }
+    const walk = !!sel && N.tacReach(s, sel)[x + ',' + y] !== undefined;
+    // 走得到又能動手的格子（例如突襲時開著的門、飛過去的無人機）：先問，走路排第一個。
+    if (walk && here.length) {
+      const seen = N.tacRisky(s, sel).includes(x + ',' + y);
+      pop = { x, y, items: [{ ab: 'move', x, y, ap: 1, seen }].concat(here) };
+      return;
+    }
+    // 只有一件事可以做就直接做；聲音傳三格以上、或要把開著的門鎖上（可能是自己的退路），先跳選單，讓玩家看到代價。
+    const lock = here.length === 1 && here[0].ab === 'hack' && tileAt(s, x, y) === 'd';
+    if (here.length === 1 && here[0].noise < 3 && !lock) return act(s, here[0]);
+    if (here.length) { pop = { x, y, items: here }; return; }
+    if (walk) { N.tacMove(s, sel, x, y); return; }
     const info = describe(s, x, y);
-    if (info) tip = Object.assign({ x, y }, info);
+    if (info) { tip = Object.assign({ x, y }, info); return; }
+    // 走不到的地板：說一聲，不要什麼反應都沒有。
+    if (sel && '.d'.includes(tileAt(s, x, y))) tip = { x, y, title: 'tac.far.t', k: 'tac.far' };
   }
 
   // 空白鍵或 Enter：結束回合；Tab：下一個人；數字：選第幾個人；U：撤回；Esc：關掉選單。
@@ -666,5 +739,5 @@
     return false;
   }
 
-  E.tacUI = { render, click, key, reset };
+  E.tacUI = { render, click, key, reset, motion, state: () => ({ sel, pop, tip }) };
 })(window.ECHO = window.ECHO || {});
