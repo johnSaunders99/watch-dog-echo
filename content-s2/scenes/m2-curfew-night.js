@@ -95,6 +95,11 @@
         go: { lines: [L('narr', 'm2.s.go')], goto: 's2.m2.fence' },
       },
     },
+    // 目標清單（畫面上的「目標」）：第一次玩的人知道現在要做什麼、為什麼。
+    goals: (s) => [
+      { k: 'm2.goal.brief', how: 'm2.goal.brief.how', done: !!s.flags.briefed, opt: true },
+      { k: 'm2.goal.site', how: 'm2.goal.site.how', done: false },
+    ],
     suggest(s) {
       const out = [];
       if (!s.flags.briefed) out.push(['talk', 'team']);
@@ -146,6 +151,7 @@
         wait: { lines: [L('narr', 'm2.f.wait')] },
       },
     },
+    goals: () => [{ k: 'm2.goal.fence', how: 'm2.goal.fence.how', done: false }],
     suggest(s) {
       const out = [];
       if (helper(s, 'fence')) out.push(['talk', 'team']);
@@ -198,6 +204,10 @@
         },
       },
     },
+    goals: (s) => [
+      { k: 'm2.goal.drone', how: 'm2.goal.drone.how', done: !!(s.flags.droneDown || s.flags.covered) },
+      { k: 'm2.goal.tower', how: 'm2.goal.tower.how', done: false },
+    ],
     suggest(s) {
       const out = [];
       if (!s.flags.droneDown) {
@@ -259,6 +269,10 @@
         look: { lines: [L('narr', 'm2.top.look')] },
       },
     },
+    goals: (s) => [
+      { k: 'm2.goal.box', how: 'm2.goal.box.how', done: opened(s) },
+      { k: 'm2.goal.choose', how: 'm2.goal.choose.how', done: false },
+    ],
     suggest(s) {
       if (opened(s)) return [['hack', 'cameras'], ['hack', 'grid']];
       const out = [];
@@ -325,6 +339,7 @@
         talk: { lines: (s) => [L('narr', 'm2.odoor.talk', { name: s.flags.extraName })] },
       },
     },
+    goals: (s) => [{ k: 'm2.goal.escape', how: dark(s) ? 'm2.goal.escape.howDark' : 'm2.goal.escape.how', done: false }],
     suggest(s) {
       const out = [];
       if (dark(s)) out.push(['go', 'opendoor']);
@@ -363,6 +378,7 @@
         look: { lines: (s) => [L('narr', dark(s) ? 'm2.c.dark' : 'm2.c.quiet')] },
       },
     },
+    goals: (s) => [{ k: 'm2.goal.end', how: 'm2.goal.end.how', done: !!s.flags.m2done }],
     suggest() {
       return [['talk', 'bagley'], ['look', 'window']];
     },

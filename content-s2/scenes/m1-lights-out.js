@@ -79,6 +79,13 @@
         },
       },
     },
+    // 目標清單（畫面上的「目標」）：第一次玩的人知道現在要做什麼、為什麼。
+    goals: (s) => [
+      { k: 'm1.goal.phone', how: 'm1.goal.phone.how', done: !!s.flags.called },
+      { k: 'm1.goal.agree', how: 'm1.goal.agree.how', done: !!s.flags.agreed },
+      { k: 'm1.goal.hood', how: 'm1.goal.hood.how', done: !!s.flags.hood, opt: true },
+      { k: 'm1.goal.out', how: 'm1.goal.out.how', done: false },
+    ],
     suggest(s) {
       const out = [];
       if (!s.flags.called) out.push(['read', 'phone']);
@@ -147,6 +154,12 @@
         },
       },
     },
+    goals: (s) => [
+      { k: 'm1.goal.sweep', note: true },
+      { k: 'm1.goal.dark', how: 'm1.goal.dark.how', done: !!s.flags.dark },
+      { k: 'm1.goal.hide', how: 'm1.goal.hide.how', done: !!s.flags.hidden },
+      { k: 'm1.goal.door', how: 'm1.goal.door.how', done: false },
+    ],
     suggest(s) {
       const out = [];
       if (!s.flags.dark) out.push(['hack', 'light']);
@@ -213,6 +226,10 @@
         look: { lines: [L('narr', 'm1.mask.look')] },
       },
     },
+    goals: (s) => [
+      { k: 'm1.goal.core', how: 'm1.goal.core.how', done: !!s.flags.core },
+      { k: 'm1.goal.hatch', how: 'm1.goal.hatch.how', done: false },
+    ],
     suggest(s) {
       const out = [];
       if (!s.flags.core) {
@@ -254,6 +271,7 @@
         look: { lines: [L('narr', 'm1.c.canal')] },
       },
     },
+    goals: (s) => [{ k: 'm1.goal.end', how: 'm1.goal.end.how', done: !!s.flags.m1done }],
     suggest() {
       return [['talk', 'bagley'], ['look', 'sky'], ['look', 'canal']];
     },

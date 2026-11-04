@@ -19,6 +19,7 @@
   let tip = null;   // 點敵人或目標時的說明：{ x, y, k, v }
   let guide = null; // 圖解有沒有打開（null：還沒決定，看這個瀏覽器有沒有看過）
   let aim = null;   // 用招式卡選目標中：能力的 id
+  let tutAt = null; // 教學關：上一次畫面時在第幾步（換步驟時幫玩家選好要動手的人）
 
   const unitsOf = (s) => s.op.tac.units;
   const liveUnits = (s) => unitsOf(s).filter((u) => !u.out && !u.taken);
@@ -29,7 +30,7 @@
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 存不了就算了 */ } }
 
-  function reset() { sel = null; pop = null; tip = null; aim = null; }
+  function reset() { sel = null; pop = null; tip = null; aim = null; tutAt = null; }
 
   // 選中的人沒有行動點了，就換下一個還能動的人。
   function autoSelect(s) {
@@ -43,7 +44,7 @@
 
   // ===== 地板、牆、圍欄、門、藏身處 =====
   // 每種主題一種地板材質（SVG pattern），牆有立體的頂面和正面。
-  const FLOOR = { site: 'tx-gravel', office: 'tx-carpet', yard: 'tx-concrete', home: 'tx-wood', street: 'tx-asphalt' };
+  const FLOOR = { site: 'tx-gravel', office: 'tx-carpet', yard: 'tx-concrete', home: 'tx-wood', street: 'tx-asphalt', tunnel: 'tx-brick' };
   function defs() {
     const p = (id, base, body) => `<pattern id="${id}" width="${TS}" height="${TS}" patternUnits="userSpaceOnUse"><rect width="${TS}" height="${TS}" fill="${base}"/>${body}</pattern>`;
     return `<defs>`
@@ -52,6 +53,7 @@
       + p('tx-concrete', '#262a31', '<path d="M4 30 l7 -4 l5 3 l9 -6" stroke="#1d2027" stroke-width="1" fill="none"/><circle cx="30" cy="8" r="1" fill="#2e333b"/>')
       + p('tx-wood', '#2c221c', '<path d="M0 10 H40 M0 20 H40 M0 30 H40 M14 0 V10 M30 10 V20 M8 20 V30 M24 30 V40" stroke="#221a15" stroke-width="1.2"/>')
       + p('tx-asphalt', '#1b1f27', '<circle cx="7" cy="9" r="1" fill="#262b35"/><circle cx="29" cy="24" r="1.2" fill="#242934"/><circle cx="17" cy="33" r="0.8" fill="#2a303b"/>')
+      + p('tx-brick', '#241c1a', '<path d="M0 10 H40 M0 20 H40 M0 30 H40 M10 0 V10 M30 0 V10 M0 10 V20 M20 10 V20 M10 20 V30 M30 20 V30 M0 30 V40 M20 30 V40" stroke="#181210" stroke-width="1.4"/>')
       + `<linearGradient id="tx-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff1b8" stop-opacity="0.45"/><stop offset="1" stop-color="#fff1b8" stop-opacity="0"/></linearGradient>`
       + `<radialGradient id="tx-exit"><stop offset="0" stop-color="#5cf29a" stop-opacity="0.5"/><stop offset="1" stop-color="#5cf29a" stop-opacity="0"/></radialGradient>`
       + `</defs>`;
@@ -145,6 +147,16 @@
         + `<rect x="${px + 12}" y="${py + 11}" width="16" height="18" rx="2" fill="#3b4256" stroke="${on ? '#ffd23f' : '#5a6684'}" stroke-width="2"/>`
         + `<path d="M${cx + 1} ${py + 14} l-5 7 h5 l-3 6" stroke="${on ? '#ffd23f' : '#5a6684'}" stroke-width="2" fill="none"/>`
         + (on ? `<circle cx="${cx}" cy="${py + 8}" r="3" fill="#ff4757" class="blink"/>` : '');
+    } else if (o.kind === 'crate') {
+      // 物資箱：金色框的木箱，上面印著獅心防務的盾牌（和藏身用的木箱分得出來）
+      g = on ? `<rect x="${px + 7}" y="${py + 10}" width="26" height="22" rx="2" fill="#8a6a3e" stroke="#ffd23f" stroke-width="2"/><path d="M${px + 7} ${py + 21} H${px + 33} M${cx} ${py + 10} V${py + 32}" stroke="#4e3a20" stroke-width="2"/>`
+        + `<path d="M${cx - 5} ${py + 14} h10 v4 q0 4 -5 6 q-5 -2 -5 -6 Z" fill="#ffd23f" opacity="0.85"/><circle cx="${px + 33}" cy="${py + 9}" r="3" fill="#ff4757" class="blink"/>`
+        : `<rect x="${px + 9}" y="${py + 18}" width="22" height="14" rx="2" fill="none" stroke="#5a6684" stroke-width="2" stroke-dasharray="3 2"/>`;
+    } else if (o.kind === 'wall') {
+      // 要噴漆的牆：噴完之後是 DedSec 的笑臉
+      g = `<rect x="${px + 3}" y="${py + 5}" width="${TS - 6}" height="${TS - 10}" fill="#4a3a3e" stroke="#2e1c1f" stroke-width="2"/><path d="M${px + 3} ${py + 15} H${px + TS - 3} M${px + 3} ${py + 25} H${px + TS - 3} M${cx} ${py + 5} V${py + 15} M${px + 12} ${py + 15} V${py + 25} M${px + 28} ${py + 15} V${py + 25}" stroke="#2e1c1f" stroke-width="1.2"/>`
+        + (on ? `<circle cx="${cx}" cy="${cy}" r="6" fill="none" stroke="#ff2e88" stroke-width="2" stroke-dasharray="2 2"/>`
+          : `<circle cx="${cx}" cy="${cy}" r="8" fill="none" stroke="#ff2e88" stroke-width="2.5"/><circle cx="${cx - 3}" cy="${cy - 2}" r="1.4" fill="#ff2e88"/><circle cx="${cx + 3}" cy="${cy - 2}" r="1.4" fill="#ff2e88"/><path d="M${cx - 4} ${cy + 3} q4 3 8 0" stroke="#ff2e88" stroke-width="1.8" fill="none"/>`);
     } else if (o.kind === 'antenna') {
       g = `<rect x="${cx - 2}" y="${py + 14}" width="4" height="22" fill="#8a94ad"/><path d="M${cx - 13} ${py + 14} a13 9 0 0 0 26 0 Z" fill="#c8cfdf" stroke="#5a6684"/><path d="M${cx} ${py + 14} L${cx + 7} ${py + 6}" stroke="#c8cfdf" stroke-width="2"/>`
         + (on ? `<circle cx="${cx + 8}" cy="${py + 5}" r="3" fill="#ff4757" class="blink"/>` : '');
@@ -238,7 +250,7 @@
   // ===== 能力的小圖示（畫在可以動手的格子上） =====
   const GOLD = '#ffd23f'; // 招式卡一律金色
   const AB_COLOR = { hack: '#2ff3e0', climb: '#ff9a3d', takedown: '#ff9a3d', force: '#ff9a3d', breach: '#ff9a3d', talk: '#c2b3ff', disguise: GOLD, unlock: '#5cf29a', heal: '#5cf29a', cab: GOLD, use: '#ff2e88', pet: '#5cf29a',
-    summon: GOLD, code: GOLD, ghost: GOLD, soothe: GOLD, lift: GOLD, boost: GOLD, cover: GOLD, radio: GOLD, pigeon: GOLD };
+    summon: GOLD, code: GOLD, ghost: GOLD, soothe: GOLD, lift: GOLD, boost: GOLD, cover: GOLD, radio: GOLD, pigeon: GOLD, sergei: GOLD };
   const colorOf = (ab, card) => (card ? GOLD : AB_COLOR[ab] || '#ff2e88');
   function glyph(ab) {
     const w = '#0b0f1c';
@@ -262,6 +274,8 @@
       case 'cover': return `<path d="M-6 5 l6 -10 l6 10 Z" fill="${w}"/><path d="M0 -5 v10" stroke="#fff" stroke-width="1"/>`;
       case 'radio': return `<rect x="-5" y="-1" width="10" height="7" rx="1.5" fill="${w}"/><path d="M-3 -1 l6 -5" stroke="${w}" stroke-width="1.6"/><circle cx="2" cy="2.5" r="1.8" fill="#fff"/>`;
       case 'pigeon': return `<path d="M-6 1 q3 -6 8 -3 l4 -1 l-3 3 q-1 5 -6 4 Z" fill="${w}"/><circle cx="3" cy="-2.5" r=".9" fill="#fff"/>`;
+      // 謝爾蓋：四個旋翼的小無人機
+      case 'sergei': return `<rect x="-2.5" y="-2" width="5" height="4" rx="1" fill="${w}"/><path d="M-2 -1.5 L-5 -4.5 M2 -1.5 L5 -4.5 M-2 1.5 L-5 4.5 M2 1.5 L5 4.5" stroke="${w}" stroke-width="1.4"/>${[[-5, -4.5], [5, -4.5], [-5, 4.5], [5, 4.5]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="1.1" fill="${w}"/>`).join('')}`;
       case 'pet': return `<circle cx="0" cy="2" r="3.2" fill="${w}"/>${[[-4.5, -2], [-1.5, -4.5], [1.5, -4.5], [4.5, -2]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${w}"/>`).join('')}`;
       default: return `<circle r="4" stroke="${w}" stroke-width="2" fill="none"/><circle r="1.5" fill="${w}"/>`;
     }
@@ -285,7 +299,8 @@
   }
 
   // ===== 整張地圖 =====
-  function mapSvg(s) {
+  // marks：教學關要亮起來的格子。
+  function mapSvg(s, marks = []) {
     const tac = s.op.tac;
     let g = defs();
     for (let y = 0; y < tac.h; y++) {
@@ -338,6 +353,8 @@
       g += `<rect class="tac-target${aim ? ' aim' : ''}" x="${x * TS + 2}" y="${y * TS + 2}" width="${TS - 4}" height="${TS - 4}" rx="5"/>` + badge(acts[k][0].ab, x, y, acts[k].length, acts[k][0].card);
     }
     if (u && acts[u.x + ',' + u.y]) g += badge(acts[u.x + ',' + u.y][0].ab, u.x, u.y, acts[u.x + ',' + u.y].length, acts[u.x + ',' + u.y][0].card);
+    // 教學關：這一步要點的地方，一圈會呼吸的光
+    g += marks.map(([x, y]) => `<circle class="tut-mark" cx="${x * TS + TS / 2}" cy="${y * TS + TS / 2}" r="${TS * 0.62}"/>`).join('');
     // 點擊用的透明格子
     for (let y = 0; y < tac.h; y++) for (let x = 0; x < tac.w; x++) g += `<rect class="tac-hit" data-act="tacTile" data-x="${x}" data-y="${y}" x="${x * TS}" y="${y * TS}" width="${TS}" height="${TS}"/>`;
     return `<svg class="tac-map" viewBox="0 0 ${tac.w * TS} ${tac.h * TS}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
@@ -422,7 +439,10 @@
     if (c.perk === 'unsuspicious') add('tac.cap.plain', {}, perk);
     if (c.perk === 'master_keys') add('tac.cap.cleaner', {}, perk);
     // 被動的特質和小習慣
-    if (c.quiet) add('tac.cap.quiet', {}, tr('careful'));
+    if (c.quiet && has('careful')) add('tac.cap.quiet', {}, tr('careful'));
+    // 天賦（隊友事件送的）
+    if (c.gifts.includes('quietstep')) add('tac.cap.soft', {}, { t: 's2.p.gifts' }, 'good');
+    if (c.sergei) add('tac.cap.sergei', {}, { t: 's2.p.gifts' }, tac.used['sergei:' + id] ? 'dim' : '', 'sergei');
     if (has('calm')) add('tac.cap.calm', {}, tr('calm'), tac.used['calm:' + id] ? 'dim' : '');
     if (c.slip) add('tac.cap.fast', {}, has('fast') ? tr('fast') : perk, tac.used['fast:' + id] ? 'dim' : '');
     if (has('unremarkable')) add('tac.cap.unremarkable', {}, tr('unremarkable'));
@@ -454,6 +474,7 @@
       const fan = (hq('man_utd') && oq.includes('liverpool')) ? 'man_utd' : (hq('liverpool') && oq.includes('man_utd')) ? 'liverpool' : null;
       if (fan) add('tac.cap.derby', { other: { l: E.people.name(N.person(s, o.id)) } }, qk(fan), 'bad');
       else if (rivals.includes(o.id)) add('tac.cap.derby', { other: { l: E.people.name(N.person(s, o.id)) } }, { l: D.relations.rival.name }, 'bad');
+      if (N.relationsOf(s, id).some((r) => r.type === 'friend' && r.other === o.id)) add('tac.cap.friend', { other: { l: E.people.name(N.person(s, o.id)) } }, { l: D.relations.friend.name }, 'good');
     }
     return out;
   }
@@ -469,6 +490,7 @@
       const c = N.tacCaps(s, id);
       return { src: job.perk === 'disguise' ? E.i18n.pick(D.perks.disguise.name) : t('s2.p.cat.' + job.category), desc: t('tac.cap.disguise', { n: c.disguiseTurns }) };
     }
+    if (d.src === 'gift') return { src: t('s2.p.gifts'), desc: E.i18n.pick(E.s2.days.gifts[d.key].tac) };
     if (d.src === 'perk' || (d.perk && job.perk === d.perk)) return { src: E.i18n.pick(D.perks[job.perk].name), desc: E.i18n.pick(D.perks[job.perk].tac) };
     const trait = D.traits.find((x) => x.id === d.key);
     return { src: E.i18n.pick(trait.name), desc: E.i18n.pick(trait.card.tac) };
@@ -512,10 +534,31 @@
       + `</div><div class="bar-actions"><button class="primary" data-act="tacGuideOk">${T('tac.guide.ok')}</button></div></div></div>`;
   }
 
+  // ===== 教學關：Bagley 在地圖上方說這一步要做什麼 =====
+  function coachHtml(s, st) {
+    if (!st) return '';
+    const steps = E.s2.tutorial.steps;
+    const i = steps.indexOf(st);
+    const role = st.who || st.name;
+    const v = role ? { name: { l: E.people.name(N.person(s, s.tutorial.roles[role])) } } : {};
+    return `<section class="tut-coach"><div class="bagley-face">${E.art.avatar('bagley')}</div>`
+      + `<div class="tut-txt"><b>BAGLEY · ${T('tac.tut.stepOf', { i: i + 1, n: steps.length })}</b><p>${T('tac.tut.step.' + st.id, v)}</p></div>`
+      + (i < steps.length - 1 ? `<button class="ghost" data-act="tutSkip">${T('tac.tut.skip')}</button>` : '') + `</section>`;
+  }
+
   // ===== 整個畫面 =====
+  // ui.tutorial：這是教學關（s 是教學用的沙盒）。
   function render(s, ui) {
     const tac = s.op.tac;
-    if (guide === null) guide = !lsGet(GUIDE_KEY);
+    const tut = ui.tutorial ? N.tutorialStep(s) : null;
+    // 教學關不自動跳出圖解（教學本身就在教），要看再按「圖解」。
+    if (guide === null && !ui.tutorial) guide = !lsGet(GUIDE_KEY);
+    // 教學換到下一步（或剛結束回合、還沒選人）：先幫玩家選好這一步要動手的人。
+    if (tut && (tut.id !== tutAt || !sel)) {
+      tutAt = tut.id;
+      const wu = tut.who && unitsOf(s).find((x) => x.id === s.tutorial.roles[tut.who]);
+      if (wu && !wu.out && !wu.taken && wu.ap > 0) { sel = wu.id; pop = null; aim = null; }
+    }
     autoSelect(s);
     const lvl = s.op.alert >= 60 ? 'hot' : s.op.alert >= 30 ? 'warm' : 'cool';
     const left = tac.objs.filter((o) => !o.done).length;
@@ -525,7 +568,10 @@
       + `<span class="chip ${left ? '' : 'good'}">${left ? T('tac.objLeft', { n: left }) : T('tac.objDone')}</span></div>`
       + `<div class="alert alert-${lvl}"><div class="alert-top"><span>${T('s2.op.alert')}</span><b>${s.op.alert}</b><em>${T(ui.alertStatus(s.op.alert))}</em></div>`
       + `<div class="alert-bar"><i style="width:${s.op.alert}%"></i><u style="left:30%"></u><u style="left:60%"></u></div></div></section>`;
-    h += `<section class="panel tac"><div class="tac-stage">${mapSvg(s)}${popHtml(s)}${tipHtml(s)}${guide ? guideHtml(s) : ''}</div>`;
+    if (ui.tutorial) h += coachHtml(s, tut);
+    // 這次潛入的特殊狀況（大霧、換班……）
+    if (tac.event) h += `<section class="tac-event ev-${tac.event}"><em>${T('tac.ev.label')}</em><b>${T('tac.ev.' + tac.event)}</b><span>${T('tac.ev.' + tac.event + '.d')}</span></section>`;
+    h += `<section class="panel tac"><div class="tac-stage">${mapSvg(s, tut && tut.mark ? tut.mark(tac) : [])}${popHtml(s)}${tipHtml(s)}${guide ? guideHtml(s) : ''}</div>`;
     // 地圖正下方：隊員、撤回、結束回合
     h += `<div class="tac-bar"><div class="tac-squad">${unitsOf(s).map((u, i) => {
       const off = u.out || u.taken;
@@ -534,7 +580,7 @@
         + `<span class="tm-face">${E.faces.of(N.person(s, u.id))}</span><span class="tm-txt"><b>${nm(s, u.id)}</b><small>${st}</small></span></button>`;
     }).join('')}</div><div class="tac-turn">`
       + (tac.undo ? `<button class="ghost" data-act="tacUndo" title="U">↶ ${T('tac.undo')}</button>` : '')
-      + `<button class="primary" data-act="tacEnd" title="Space">${T('tac.end')} ⏎</button></div></div>`;
+      + `<button class="primary${tut && tut.ui === 'end' ? ' tut-glow' : ''}" data-act="tacEnd" title="Space">${T('tac.end')} ⏎</button></div></div>`;
     const u = unitsOf(s).find((x) => x.id === sel);
     if (u) h += cardsHtml(s, u.id);
     h += `<p class="hint tac-hint${aim ? ' aim' : ''}">${T(aim ? 'tac.card.aim' : pop ? 'tac.pickOne' : 'tac.help')}</p>`;
@@ -543,7 +589,9 @@
         + (c.ab ? `<svg viewBox="-11 -11 22 22" class="tc-ic"><circle r="10" fill="${colorOf(c.ab)}"/>${glyph(c.ab)}</svg>` : '')
         + `${T(c.k, c.v)}${c.src ? `<small>${esc(t('tac.src', { src: c.src }))}</small>` : ''}</span>`).join('')}</div>`;
     }
-    h += `<div class="bar-actions"><button class="ghost" data-act="retreat">${T('s2.op.retreat')}</button><button class="ghost" data-act="tacGuide">${T('tac.legend')}</button></div></section>`;
+    h += `<div class="bar-actions">` + (ui.tutorial ? `<button class="ghost" data-act="tutExit">${T('tac.tut.exit')}</button>`
+      : `<button class="ghost" data-act="retreat">${T('s2.op.retreat')}</button><button class="ghost" data-act="tutorial">${T('tac.tut.open')}</button>`)
+      + `<button class="ghost" data-act="tacGuide">${T('tac.legend')}</button></div></section>`;
     return h;
   }
 

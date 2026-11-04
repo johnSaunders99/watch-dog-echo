@@ -1,7 +1,9 @@
 // 第二季《宵禁》的整個戰役：五個行政區，一區一區解放。
 // 康登是起點，西敏是最後一區；中間三區（唐人街與蘇豪、狗島、羅瑟希德）的順序由玩家決定。
 // 每一區都有自己的民心和晚上數：民心到 100、而且這一區的主線任務完成，就算解放；晚上用完還沒解放，宵禁就永久化（長夜）。
-// 白天在街上掃描路人、管理隊伍、決定今晚的行動；晚上派人走一串關卡。
+// 白天分成早上、中午、傍晚三個時段（js/engine/days.js）：一起混、練弱點、照顧傷員、幫街坊、踩點；也在街上掃描路人、管理隊伍、決定今晚的行動。
+// 晚上派人走一串關卡；主線任務分成兩段（先潛入，再打主要目標），中間可以喘口氣。
+// 除了固定的行動，每天還會冒出幾件「今晚的機會」（content-s2/ops.js 的 jobs）：搶器材、洗評分、搶藥、放假線索、監聽、偷部署圖……
 // 每一關挑「解法 × 隊員」執行，成功率由能力、專長、特質、弱點、小習慣、關係和傷疤一起決定。
 // 警戒累積到 30、60 會讓所有動作變難，武裝無人機也會開火；到 100 就有人被捕。重傷沒人照顧，可能撐不過這一夜。
 // 行動有三種形態：一般的直線關卡、限時（只有幾步可以用）、分頭（主力和佯攻兩條線同時進行）。
@@ -16,7 +18,7 @@
   // 行政區：順序、每區的晚上數、每區的主線任務、第一次出現主線任務的晚上。
   const ORDER = ['camden', 'soho', 'isle_of_dogs', 'rotherhithe', 'westminster'];
   const ACT2 = ['soho', 'isle_of_dogs', 'rotherhithe'];
-  const NIGHTS = { camden: 10, soho: 9, isle_of_dogs: 9, rotherhithe: 9, westminster: 8 };
+  const NIGHTS = { camden: 12, soho: 11, isle_of_dogs: 11, rotherhithe: 11, westminster: 10 };
   const MAIN = { camden: 'm2', soho: 'm3', isle_of_dogs: 'm4', rotherhithe: 'm5', westminster: 'm7' };
   const MAIN_NIGHT = 2;       // 每一區從第二晚起才有主線任務
   const M7_SUPPORT = 40;      // 西敏的民心要到這裡，斷電才有意義
@@ -39,6 +41,11 @@
   const CLINIC_HEAT = 8;      // 送去地下診所的熱度代價
   const HUNTED_CHANCE = 0.35; // 名單上的隊員每個早上被上門抓走的機率
   const TAC_BONUS = 5;        // 親自指揮（戰術地圖）成功時多給的民心
+  const TIRED_RISK = 0.1;     // 白天做了兩件事的人，晚上的失敗率
+  const JOBS = 2;             // 「今晚的機會」同時最多幾件
+  const JOB_NIGHTS = 2;       // 每件機會留幾晚
+  const TAP_COUNTER = 0.25;   // 監聽獅心防務的頻道時，反擊的機率少多少
+  const INTEL_ALERT = 10;     // 偷到部署圖：主線任務的起始警戒少多少
   const LANGS = ['en', 'tc', 'sc'];
 
   // ===== 小工具 =====
@@ -92,6 +99,13 @@
   const categoryOf = (s, id) => E.people.occupationOf(person(s, id)).category;
   const scarsOf = (s, id) => (member(s, id) && member(s, id).scars) || [];
   const tonight = (s, type) => !!s.tonight && s.tonight.type === type;
+  const giftsOf = (s, id) => (member(s, id) && member(s, id).gifts) || [];
+  // 改一個人的資料（練掉弱點、換小習慣）：存檔讀回來之後，路人表和隊伍裡是兩份，兩份都要改。
+  function setPerson(s, id, fn) {
+    fn(person(s, id));
+    const m = member(s, id);
+    if (m && m.person !== s.people[id]) fn(m.person);
+  }
 
   // 外圍網路裡有沒有某種專長的人（被動效果）。
   function networkWith(s, perk) {
@@ -118,7 +132,7 @@
       v: 3, seed: String(seed), night: 1, dnight: 1, phase: 'start', district: 'camden', visited: ['camden'], liberated: [],
       support: 0, heat: 10, towers: 4, expands: 0, raids: 0, step: 0, helperCount: 0,
       roster: E.roster.create({ ironman: !!opts.ironman }),
-      people: {}, relations: {}, scanned: {}, owed: {},
+      people: {}, relations: {}, bonds: {}, scanned: {}, owed: {}, mainPart: {}, jobs: [], gear: 0, tap: 0, intel: null,
       volunteers: [], featured: null, pick: null, op: null, queue: [], event: null, react: null, result: null, ended: null,
       tonight: null, legacy: null, perks: {}, mains: {}, storyOff: {}, told: {}, ally: null, list: null, endLines: null,
       log: [], stats: { ops: 0, wins: 0, recruited: [], lost: [], retired: [], dead: [], arrests: 0 },
@@ -271,7 +285,7 @@
   // 任務裡會遇到的路人（收留你們的人、被救的外送員）在這裡先生成好。
   function beginMission(s) {
     const id = s.op.main;
-    const team = membersOf(s).filter((x) => x !== s.hero)
+    const team = membersOf(s).filter((x) => x !== s.hero && !s.op.taken[x])
       .map((x) => ({ id: x, cat: categoryOf(s, x), perk: perkId(s, x), traits: traitIds(s, x), name: nameOf(s, x) }));
     // 任務三要救的是一個外送員：往後找到第一個外送員，把威脅評分設成劇情裡的 91。
     let extra = person(s, s.district + '-' + (HELPERS + s.helperCount++));
@@ -418,6 +432,7 @@
     say(s, 'night', 's2.log.district', { district: { l: people().districts[d].name } });
     say(s, 'night', 's2.log.night', { n: s.dnight });
     say(s, 'bagley', 's2.bagley.arrive.' + d);
+    morning(s, true);
   }
 
   // 結局：西敏的空域控制中心打下來時，依盟友決定。長夜（curfew、wiped）是壞結局。
@@ -472,6 +487,7 @@
     s.phase = 'day';
     say(s, 'night', 's2.log.night', { n: s.night });
     say(s, 'bagley', 's2.bagley.first');
+    morning(s, true);
     return true;
   }
 
@@ -569,20 +585,75 @@
       if (m.status === 'arrested') list.push({ key: 'rescue:' + m.person.id, op: 'rescue', target: m.person.id, left: E.roster.TRANSFER_AFTER - (s.night - m.since) });
     }
     for (const id of street(s)) if (kept(s, id)) list.push({ key: 'recruit:' + id, op: 'recruit', target: id });
+    for (const j of s.jobs) list.push({ key: 'job:' + j.id, op: 'job', job: j.id, jobLeft: j.until - s.dnight + 1 });
     return list.map((e) => Object.assign(e, info(s, e)));
+  }
+
+  // ===== 今晚的機會 =====
+  // 每天早上換一次：過期的拿掉，空出來的位置從 content-s2/ops.js 的 jobs 抽（亂數另外算，不影響其他事情）。
+  const JOB_NEED = {
+    threat: (s) => s.roster.members.some((m) => ['active', 'injured', 'network'].includes(m.status) && m.threat >= 25),
+    heat: (s) => s.heat >= 20,
+    hurt: (s) => s.roster.members.some((m) => m.status === 'injured'),
+    main: (s) => { const id = mainNow(s); return !!id && s.dnight >= MAIN_NIGHT && s.intel !== id; },
+  };
+  function jobOpen(s, id) {
+    const j = content().jobs[id];
+    return (j.minRank || 0) <= rank(s.district) && (!j.need || JOB_NEED[j.need](s));
+  }
+  function jobWeight(s, id) {
+    const j = content().jobs[id];
+    return (j.weight || 1) * ((j.where || {})[s.district] || 1) * (j.boost && JOB_NEED[j.boost](s) ? 3 : 1);
+  }
+  function refreshJobs(s) {
+    s.jobs = (s.jobs || []).filter((j) => j.district === s.district && j.until >= s.dnight && jobOpen(s, j.id));
+    const r = E.rng.derive(s.seed, 'jobs', s.district, s.dnight);
+    while (s.jobs.length < JOBS) {
+      const pool = Object.keys(content().jobs).filter((id) => !s.jobs.some((j) => j.id === id) && jobOpen(s, id));
+      if (!pool.length) break;
+      const id = r.weighted(pool, (x) => jobWeight(s, x));
+      s.jobs.push({ id, district: s.district, until: s.dnight + JOB_NIGHTS - 1 });
+    }
+  }
+  function morning(s, quiet) {
+    refreshJobs(s);
+    E.days.begin(s, dayApi, quiet);
+  }
+
+  // 機會打成功之後的好處（民心在 finish 裡和其他行動一起算）。
+  function jobReward(s, id, res) {
+    const r = content().jobs[id].reward;
+    if (r.cool) { res.heat -= r.cool; say(s, 'gain', 's2.log.job.cool', { n: r.cool }); }
+    if (r.wipe) {
+      for (const m of s.roster.members) if (m.threat) m.threat = Math.max(0, m.threat - r.wipe);
+      say(s, 'gain', 's2.log.job.wipe', { n: r.wipe });
+    }
+    if (r.heal) {
+      for (const m of s.roster.members) {
+        if (m.status !== 'injured') continue;
+        m.critical = 0;
+        if (m.injuredFor > 1) m.injuredFor -= r.heal;
+        say(s, 'gain', 's2.log.job.heal', { name: nameOf(s, m.person.id) });
+      }
+    }
+    if (r.gear) { s.gear += r.gear; say(s, 'gain', 's2.log.job.gear', { n: r.gear, total: s.gear }); }
+    if (r.tap) { s.tap = s.night + r.tap; say(s, 'gain', 's2.log.job.tap', { n: r.tap }); }
+    if (r.intel) { s.intel = mainNow(s); say(s, 'gain', 's2.log.job.intel'); }
   }
 
   function info(s, e) {
     const C = content();
-    const def = e.op === 'recruit' ? C.recruitOp : e.op === 'main' ? C.main[e.main] : C.ops[e.op];
+    const def = e.op === 'recruit' ? C.recruitOp : e.op === 'main' ? C.main[e.main] : e.op === 'job' ? C.jobs[e.job] : C.ops[e.op];
+    // 主線任務分兩段：還沒打過第一段就從潛入開始；第一段打完撤退過的話，下次直接從第二段開始。
+    const part = e.op === 'main' ? (s.mainPart[e.main] || 0) : null;
     let stages = e.op === 'recruit' ? C.recruit[people().problems.find((p) => p.id === person(s, e.target).problem).mission]
-      : def.split ? def.lanes.main : def.stages;
+      : def.split ? def.lanes.main : part === 0 ? def.approach : def.stages;
     const names = e.target ? { name: E.people.name(person(s, e.target)) } : {};
     // 家人已經在隊上：家人幫忙說話，第一關不用打。
     const family = e.target && relationsOf(s, e.target).find((r) => r.type === 'family' && member(s, r.other) && member(s, r.other).status === 'active');
     if (family && stages.length > 2) stages = stages.slice(1);
     return {
-      kind: def.kind,
+      kind: e.op === 'job' ? C.jobOp.kind : def.kind,
       name: fill(def.name, names),
       desc: e.op === 'recruit' ? E.people.problemText(person(s, e.target)) : fill(def.desc, names),
       stages,
@@ -593,11 +664,17 @@
       family: family ? family.other : null,
       main: e.main || null,
       story: !!e.story,
+      part,
+      approachName: part === 0 ? def.approachName : null,
+      later: part === 0 ? def.stages : null,
+      job: e.job || null,
+      planned: e.op === 'main' && !!s.intel && s.intel === e.main,
     };
   }
 
+  const eventWaiting = (s) => !!(s.day && s.day.event);
   function pickOp(s, key) {
-    if (s.phase !== 'day' || !ops(s).some((e) => e.key === key)) return false;
+    if (s.phase !== 'day' || eventWaiting(s) || !ops(s).some((e) => e.key === key)) return false;
     s.pick = key;
     s.phase = 'squad';
     return true;
@@ -624,7 +701,8 @@
 
   // 起始警戒：區域熱度，加上有前科、上夜班、叫外圍支援、宵禁提前這類調整。
   function startAlert(s, ids) {
-    let alert = s.heat + (tonight(s, 'early') ? 15 : 0);
+    const e = picked(s);
+    let alert = s.heat + (tonight(s, 'early') ? 15 : 0) - (e && e.planned ? INTEL_ALERT : 0);
     for (const id of ids) {
       alert += flawOf(s, id).startAlert || 0;
       for (const q of E.people.quirksOf(person(s, id))) alert += q.startAlert || 0;
@@ -648,9 +726,8 @@
   const others = (s, id) => membersOf(s).filter((m) => m !== id);
 
   // mode 是 'tac' 時改用戰術地圖（js/engine/tactics.js）；沒有地圖的行動、文字冒險的主線任務照原本的方式。
-  function launch(s, ids, laneMap = {}, mode) {
-    if (s.phase !== 'squad' || !squadCheck(s, ids, laneMap).ok) return false;
-    const e = picked(s);
+  // 一次行動的狀態：警戒、頻寬、這次行動用過的卡、受傷和被抓的人……（出發和戰術教學共用）。
+  function newOp(s, e, ids, laneMap = {}) {
     const called = ids.filter((id) => member(s, id).status === 'network');
     s.op = {
       key: e.key, op: e.op, main: e.main, kind: e.kind, target: e.target || null, name: e.name, reward: e.reward,
@@ -659,17 +736,51 @@
       squad: ids.slice(), temp: [], called, alert: startAlert(s, ids), bw: BANDWIDTH + (s.perks.supply ? 1 : 0),
       used: {}, ghost: null, cover: null, force: null, boost: null, keycard: false, cab: false,
       revealed: {}, hurt: {}, away: {}, stageAway: {}, taken: {}, extraRisk: {}, sulk: {}, backdoor: {}, fired: {},
+      part: e.op === 'main' ? e.part || 0 : null,
+      job: e.job || null,
     };
     for (const id of ids) s.op.laneOf[id] = e.split ? laneMap[id] || 'main' : 'main';
+    return called;
+  }
+
+  function launch(s, ids, laneMap = {}, mode) {
+    if (s.phase !== 'squad' || !squadCheck(s, ids, laneMap).ok) return false;
+    const e = picked(s);
+    const called = newOp(s, e, ids, laneMap);
     s.pick = null;
     s.phase = 'op';
     say(s, 'op', 's2.log.opStart', { op: { l: e.name } });
+    // 機會只有一次：不管成敗，出發了就從列表上拿掉。
+    if (e.job) s.jobs = s.jobs.filter((j) => j.id !== e.job);
+    // 搶來的器材：每次出門自動帶一份，頻寬 +1。
+    if (s.gear > 0) {
+      s.gear--;
+      s.op.bw++;
+      say(s, 'gain', 's2.log.gearUsed', { n: s.gear });
+    }
+    // 偷到這次主線任務的部署圖：起始警戒已經少了（startAlert），巡邏路線和第一關的另一條路也都知道。
+    if (e.planned) {
+      s.op.planned = true;
+      say(s, 'gain', 's2.log.planned', { n: INTEL_ALERT });
+    }
+    // 白天忙了一整天的人：今晚失敗率 +10%（戰術地圖上是第一回合少一個行動點，見 tactics.prepare）。
+    for (const id of ids) {
+      if (!E.days.tired(s, id)) continue;
+      s.op.extraRisk[id] = (s.op.extraRisk[id] || 0) + TIRED_RISK;
+      say(s, 'warn', 's2.log.tired', { name: nameOf(s, id) });
+    }
+    // 白天有人踩過點：起始警戒 −5，地圖上看得到巡邏路線，第一關的隱藏解法也先知道了。
+    if (s.scout && s.scout.night === s.night) {
+      s.op.scouted = true;
+      say(s, 'gain', 's2.log.scouted', { name: nameOf(s, s.scout.by) });
+      s.scout = null;
+    }
     for (const id of called) {
       s.heat = clamp(s.heat + CALL_IN_HEAT, 0, 100);
       say(s, 'warn', 's2.log.calledIn', { name: nameOf(s, id) });
     }
     if (e.family) say(s, 'gain', 's2.log.familyHelp', { name: nameOf(s, e.family), target: nameOf(s, e.target) });
-    if (e.story) {
+    if (e.story && e.part !== 0) {
       beginMission(s);
       return true;
     }
@@ -688,7 +799,8 @@
     const M = E.s2.opMaps;
     if (!E.tactics || !M || !e) return null;
     if (e.op === 'recruit') return M.recruit[people().problems.find((x) => x.id === person(s, e.target).problem).mission] || null;
-    if (e.op === 'main') return M.main[e.main] || null;
+    if (e.op === 'main') return (e.part === 0 ? M.approach && M.approach[e.main] : !e.story && M.main[e.main]) || null;
+    if (e.op === 'job') return (M.jobs && M.jobs[e.job]) || null;
     return M[e.op] || null;
   }
 
@@ -698,17 +810,134 @@
     let escort = null;
     if (E.s2.maps[plan.map].rows.some((r) => r.includes('P'))) escort = e.op === 'rescue' ? e.target : person(s, s.district + '-' + (HELPERS + s.helperCount++)).id;
     s.op.mode = 'tac';
-    s.op.tac = E.tactics.build({ map: plan.map, obj: plan.obj, ids, rank: rank(s.district), limit: e.timer, escort, intel: !!networkWith(s, 'gossip') || s.world === 'stay' });
+    const event = mapEvent(s, plan.map);
+    s.op.tac = E.tactics.build({ map: plan.map, obj: plan.obj, ids, rank: rank(s.district), limit: e.timer, turns: plan.turns, escort, event, rng: E.rng.derive(s.seed, 'mapev', s.step), intel: !!networkWith(s, 'gossip') || s.world === 'stay' || !!s.op.scouted || !!s.op.planned });
     s.phase = 'tac';
     say(s, 'op', 'tac.log.start');
-    if (s.op.tac.intel) say(s, 'gain', networkWith(s, 'gossip') ? 'tac.log.intelGossip' : 'tac.log.intelEcho');
+    if (event) say(s, 'warn', 'tac.ev.' + event + '.d');
+    if (s.op.tac.intel && event !== 'echo') say(s, 'gain', networkWith(s, 'gossip') ? 'tac.log.intelGossip' : s.op.planned ? 'tac.log.intelPlan' : s.op.scouted ? 'tac.log.intelScout' : 'tac.log.intelEcho');
     E.tactics.prepare(s, tacApi);
+  }
+
+  // 這次潛入的特殊狀況（content-s2/maps.js 的 mapEvents）：一半的機會遇到一種，依地圖主題和第幾區挑。
+  const MAP_EVENT_CHANCE = 0.5;
+  function mapEvent(s, map) {
+    const theme = E.s2.maps[map].theme || 'site';
+    const list = (E.s2.mapEvents || []).filter((x) => x.themes.includes(theme) && (x.minRank || 0) <= rank(s.district));
+    const r = rand(s);
+    return list.length && r.chance(MAP_EVENT_CHANCE) ? r.pick(list).id : null;
+  }
+
+  // ===== 主線任務的中場 =====
+  // 第一段（潛入）打完：先停下來，被抓的人留在原地，受的傷也帶著走，警戒也照算。
+  // 玩家選怎麼喘口氣（重新集合：警戒再 −10；包紮：輕傷的人包好、頻寬 +1），再決定第二段怎麼打；也可以先撤退，下次直接從第二段開始。
+  const PART_CHOICES = ['regroup', 'patch', 'retreat'];
+  function interlude(s) {
+    const op = s.op;
+    s.mainPart[op.main] = 1;
+    op.part = 1;
+    op.mode = null;
+    op.tac = null;
+    s.queue = [];
+    s.event = null;
+    s.react = null;
+    say(s, 'gain', 's2.log.partDone', { op: { l: op.name } });
+    s.phase = 'interlude';
+    return true;
+  }
+
+  // 第二段：主角還在的話用文字冒險；不然就照一般關卡或戰術地圖（mode 是 'tac'）。
+  const partStory = (s) => !!s.op && storyable(s, s.op.main) && !s.op.taken[s.hero] && s.op.hurt[s.hero] !== 'serious';
+  function nextPart(s, choice, mode) {
+    if (s.phase !== 'interlude' || !PART_CHOICES.includes(choice)) return false;
+    const op = s.op;
+    s.phase = 'op';
+    if (choice === 'retreat') {
+      op.partRetreat = true;
+      say(s, 'warn', 's2.log.partRetreat');
+      return finish(s, 'retreat');
+    }
+    if (choice === 'regroup') {
+      op.alert = Math.max(0, op.alert - 10);
+      say(s, 'gain', 's2.log.regroup');
+    } else {
+      for (const id of Object.keys(op.hurt)) if (op.hurt[id] === 'light') delete op.hurt[id];
+      op.bw++;
+      say(s, 'gain', 's2.log.patch');
+    }
+    op.lanes = { main: { stages: content().main[op.main].stages, i: 0 } };
+    const ids = op.squad.filter((id) => !op.taken[id]);
+    if (!ids.some((id) => able(s, id))) return finish(s, 'retreat');
+    if (partStory(s)) {
+      beginMission(s);
+      return true;
+    }
+    const plan = mode === 'tac' && E.tactics && E.s2.opMaps.main[op.main];
+    if (plan) {
+      beginTac(s, { op: 'main', target: null, timer: null }, plan, ids);
+      return true;
+    }
+    startStages(s);
+    return true;
+  }
+
+  // ===== 戰術教學 =====
+  // 一份獨立的沙盒（不存檔，也不碰正在玩的這一輪）：開場的三個自願者（駭客、身體、社交）換成教學用的職業和特質，沒有弱點。
+  // 被看到、被追上都不算數（practice），警戒也不會滿。
+  function tutorial() {
+    const T = E.s2.tutorial;
+    const s = create('tutorial', { skipStory: true });
+    const ids = s.volunteers.slice(0, 3);
+    T.people.forEach((d, i) => Object.assign(person(s, ids[i]), { occupation: d.occupation, traits: d.traits.slice(), flaw: null, quirks: [] }));
+    s.relations = {};
+    pickVolunteers(s, [ids[1]]);
+    recruitPerson(s, ids[2]);
+    newOp(s, { key: 'tutorial', op: 'tutorial', kind: 'tutorial', name: T.name, reward: { support: 0 }, stages: [], timer: null }, ids);
+    s.op.mode = 'tac';
+    s.op.practice = true;
+    s.op.tac = E.tactics.build({ map: T.map, ids, rank: 0 });
+    s.op.tac.practice = true;
+    s.phase = 'tac';
+    s.tutorial = { step: 0, roles: {} };
+    T.people.forEach((d, i) => { s.tutorial.roles[d.role] = ids[i]; });
+    s.log = [];
+    say(s, 'op', 'tac.log.start');
+    E.tactics.prepare(s, tacApi);
+    return s;
+  }
+
+  // 教學現在走到哪一步（做完的步驟自動往下走；目標、撤離這種大步驟做完了，前面沒做的就跳過）。教學結束回傳 null。
+  function tutorialStep(s) {
+    const T = E.s2.tutorial;
+    const tut = s.tutorial;
+    const t = s.op && s.op.tac;
+    if (!tut) return null;
+    if (!t) { tut.step = T.steps.length; return null; }
+    const R = {};
+    for (const role in tut.roles) R[role] = t.units.find((u) => u.id === tut.roles[role]);
+    while (tut.step < T.steps.length) {
+      const st = T.steps[tut.step];
+      const later = T.steps.slice(tut.step + 1).some((x) => x.milestone && x.done(t, R, s));
+      if (!st.done(t, R, s) && !later) break;
+      tut.step++;
+    }
+    return T.steps[tut.step] || null;
+  }
+
+  // 玩家卡住了：跳過這一步（最後一步撤離不能跳）。
+  function tutorialSkip(s) {
+    if (!s.tutorial || s.tutorial.step >= E.s2.tutorial.steps.length - 1) return false;
+    s.tutorial.step++;
+    return true;
   }
 
   // 戰術地圖要用到的夜間引擎功能。
   const tacApi = {
     person, perk: perkId, category: categoryOf, traits: traitIds, name: nameOf, say, rand, addAlert,
     rival: (s, a, b) => related(s, a, b, 'rival'),
+    friend: (s, a, b) => related(s, a, b, 'friend'),
+    gifts: giftsOf,
+    tired: (s, id) => E.days.tired(s, id),
     // 人脈廣：叫一個路人來幫忙。行動結束時沒被抓的話，可以直接招募（見 finish）。
     summon(s) {
       const p = person(s, s.district + '-' + (HELPERS + s.helperCount++));
@@ -743,11 +972,26 @@
     },
   };
 
+  // 白天引擎（js/engine/days.js）要用到的夜間引擎功能。
+  const dayApi = {
+    person, member, name: nameOf, say, rand, related, setPerson,
+    flaw: (s, id) => flawOf(s, id).id, category: categoryOf, perk: perkId, traits: traitIds,
+    // 白天受的傷（例如德比戰打起來）：在家的人休息幾晚；本來就受傷的人，休養的時間拉長。
+    injure(s, id, nights) {
+      const m = member(s, id);
+      if (!m || !['active', 'injured'].includes(m.status)) return;
+      if (m.status === 'active') E.roster.injure(s.roster, id, nights);
+      else m.injuredFor = Math.max(m.injuredFor, nights);
+      say(s, 'bad', 's2.day.log.hurt', { name: nameOf(s, id), n: nights });
+    },
+  };
+
   // 走一般關卡：外圍情報、Echo 的提示、會怯場的人，然後進第一關。
   function startStages(s) {
     const first = content().stages[s.op.lanes.main.stages[0]];
     const gossip = networkWith(s, 'gossip');
-    if (gossip && first.hidden) {
+    if ((s.op.scouted || s.op.planned) && first.hidden) s.op.revealed['main:0'] = true;
+    else if (gossip && first.hidden) {
       s.op.revealed['main:0'] = true;
       say(s, 'gain', 's2.log.gossip', { name: nameOf(s, gossip) });
     } else if (s.world === 'stay' && first.hidden) {
@@ -831,6 +1075,7 @@
     if (pair((a) => hasQuirk(s, a, 'cantonese'), (b) => hasQuirk(s, b, 'cantonese'))) out.push('cantonese_pair');
     if (pair((a) => hasQuirk(s, a, 'man_utd'), (b) => hasQuirk(s, b, 'liverpool'))) out.push('derby');
     if (ms.some((a) => ms.some((b) => a < b && related(s, a, b, 'rival')))) out.push('feud');
+    if (ms.some((a) => ms.some((b) => a < b && related(s, a, b, 'friend')))) out.push('friends');
     return out;
   }
 
@@ -897,6 +1142,7 @@
     for (const o of membersOf(s)) {
       if (o === id) continue;
       if (related(s, id, o, 'coworker')) r -= 0.1;
+      if (related(s, id, o, 'friend')) r -= 0.05; // 朋友同隊：互相照應
       if (related(s, id, o, 'ex')) r += 0.1;
       if (related(s, id, o, 'rival')) r += 0.1; // 死對頭同隊：兩個人互相扯後腿
     }
@@ -922,6 +1168,7 @@
     let x = a.exposure === undefined ? 5 : a.exposure;
     if (perk === 'network_access' && tags.has('hack') && tags.has('office')) x = 0;
     x += flawOf(s, id).exposure || 0;
+    if (giftsOf(s, id).includes('quietstep')) x -= 2; // Darcy 教的腳步
     if (combos(s).includes('cantonese_pair')) x -= 1;
     if (lane === 'main' && s.op.screen > 0) x = Math.floor(x / 2);
     return Math.max(0, x);
@@ -958,6 +1205,7 @@
     for (const id of membersOf(s)) {
       for (const t of traitIds(s, id)) out.push(cardState(s, id, t, traitCard(t)));
       if (perkId(s, id) === 'take_over') out.push(cardState(s, id, 'take_over', { kind: 'active', effect: 'jam', name: people().perks.take_over.name, desc: people().perks.take_over.desc }));
+      for (const g of giftsOf(s, id)) out.push(cardState(s, id, g, E.s2.days.gifts[g]));
     }
     return out;
   }
@@ -976,6 +1224,7 @@
       if (card.effect === 'cover') usable = s.op.cover !== owner;
       if (card.effect === 'force') usable = s.op.force !== owner;
       if (card.effect === 'boost') usable = s.op.boost !== spot(s, lane);
+      if (card.effect === 'sergei') usable = s.op.alert > 0 || s.op.boost !== spot(s, lane);
     }
     const inherited = !!(member(s, owner) && member(s, owner).inherited && member(s, owner).inherited.trait === cid);
     return { owner, id: cid, card, used, usable, inherited, sulking: !!s.op.sulk[owner] };
@@ -1004,6 +1253,8 @@
       case 'boost': s.op.boost = spot(s, lane); say(s, 'card', 's2.card.boost', v); break;
       case 'cover': s.op.cover = owner; say(s, 'card', 's2.card.cover', v); break;
       case 'jam': say(s, 'card', 's2.card.jam', v); addAlert(s, -30, owner); break;
+      // 扳手送的小無人機：飛去鬧巡邏隊，警戒 −15，這一關全隊成功率 +15%。
+      case 'sergei': say(s, 'card', 's2.card.sergei', v); s.op.boost = spot(s, lane); addAlert(s, -15, owner); break;
     }
     return true;
   }
@@ -1135,7 +1386,7 @@
     // 回收：Echo 被困在守夜人裡，無人機學得更快。
     if (amount > 0 && s.world === 'recaptured') amount += 1;
     const before = op.alert;
-    op.alert = clamp(before + amount, 0, 100);
+    op.alert = clamp(before + amount, 0, op.practice ? 90 : 100); // 教學關的警戒不會滿
     if (before < 30 && op.alert >= 30) {
       say(s, 'warn', 's2.alert.30');
       // 脾氣差的人在警戒升高時會跟巡邏員吵起來，除非同隊有口才好的人拉住。
@@ -1212,6 +1463,7 @@
   // ===== 結算 =====
   function finish(s, outcome) {
     const op = s.op;
+    if (outcome === 'win' && op.op === 'main' && op.part === 0) return interlude(s);
     const res = { outcome, op: op.op, name: op.name, alert: op.alert, support: 0, heat: 0, beds: 0 };
     s.stats.ops++;
     s.queue = [];
@@ -1231,6 +1483,8 @@
       }
       if (op.op === 'tower') { s.towers--; say(s, 'gain', 's2.log.towerDown', { n: s.towers }); }
       if (op.op === 'main') {
+        delete s.mainPart[op.main];
+        if (s.intel === op.main) s.intel = null;
         const extra = mainReward(s, op.main, op.storyFlags || {});
         support += extra.support;
         res.heat += extra.heat;
@@ -1243,6 +1497,7 @@
         say(s, 'gain', 's2.log.rescued', { name: nameOf(s, op.target) });
       }
       if (op.op === 'recruit') recruitPerson(s, op.target);
+      if (op.op === 'job') jobReward(s, op.job, res);
       for (const id of op.squad) {
         const m = member(s, id);
         m.wins = (m.wins || 0) + 1;
@@ -1256,13 +1511,13 @@
         }
       }
       // 親自指揮成功，民心多 5。
-      if (op.mode === 'tac') { support += TAC_BONUS; say(s, 'gain', 's2.log.tacBonus', { n: TAC_BONUS }); }
+      if (op.mode === 'tac' && !op.practice) { support += TAC_BONUS; say(s, 'gain', 's2.log.tacBonus', { n: TAC_BONUS }); }
       res.support = support;
       res.heat += Math.round(op.alert / 5);
       s.support = Math.min(100, s.support + support);
       if (support) say(s, 'gain', 's2.log.support', { n: support });
     } else {
-      res.heat += 10 + Math.round(op.alert / 10);
+      res.heat += (op.partRetreat ? 3 : 10) + Math.round(op.alert / 10); // 中場撤退：沒有被追著跑，熱度只加一點
       if (op.op === 'raid') res.heat += raidLost(s, op.squad);
     }
     // 出過任務的人，威脅評分會上升；失敗的話升得更多。
@@ -1318,7 +1573,7 @@
 
   // 今晚不出門：讓受傷的人休息，熱度也會退一點。突襲的晚上不出來應戰，安全屋就會被攻破。
   function rest(s) {
-    if (s.phase !== 'day') return false;
+    if (s.phase !== 'day' || eventWaiting(s)) return false;
     const res = { outcome: 'rest', support: 0, heat: 0, beds: 0 };
     if (tonight(s, 'raid')) {
       res.outcome = 'fail';
@@ -1385,7 +1640,9 @@
 
     // 獅心防務的反擊：康登從第三晚起、其他區從第二晚起。越後面的區越頻繁；狗島的內應線可以先看到部署。
     const r = rand(s);
-    const counterChance = 0.4 + 0.04 * rank(s.district) - (s.perks.insider ? 0.15 : 0);
+    const tapped = s.tap >= s.night;
+    if (tapped) say(s, 'gain', 's2.log.tapOn');
+    const counterChance = 0.4 + 0.04 * rank(s.district) - (s.perks.insider ? 0.15 : 0) - (tapped ? TAP_COUNTER : 0);
     if (s.dnight >= (s.district === 'camden' ? 3 : 2) && r.chance(counterChance)) {
       const pool = ['blackout', 'early'];
       if (s.raids < 2 && E.roster.active(s.roster).length >= 1 && s.lastRaid !== s.dnight - 1) pool.push('raid', 'raid');
@@ -1393,6 +1650,7 @@
       s.tonight = { type };
       if (type === 'raid') { s.raids++; s.lastRaid = s.dnight; }
       say(s, 'warn', 's2.counter.' + type);
+      morning(s);
       return true;
     }
     const held = s.roster.members.find((m) => m.status === 'arrested');
@@ -1406,6 +1664,7 @@
     else if (E.roster.active(s.roster).some((m) => m.threat >= WANTED)) say(s, 'bagley', 's2.bagley.wanted');
     else if (s.heat >= 40) say(s, 'bagley', 's2.bagley.heat');
     else say(s, 'bagley', 's2.bagley.d' + r.int(1, 5));
+    morning(s);
     return true;
   }
 
@@ -1424,8 +1683,27 @@
     ops, pickOp, cancel, picked, squadCheck, startAlert, combosFor, launch, rest,
     stage, options, combos, cards, useCard, act, react, answer, retreat, nextDay,
     networkWith, puzzleSpec, hackable, clinic, travel, mainNow,
+    // 今晚的機會
+    JOBS, JOB_NIGHTS, refreshJobs, jobOpen,
+    // 白天
+    dayCheck: (s, act, ids) => E.days.check(s, dayApi, act, ids),
+    dayCanPick: (s, act, i, id) => E.days.canPick(s, dayApi, act, i, id),
+    dayAct: (s, act, ids) => E.days.act(s, dayApi, act, ids),
+    dayAnswer: (s, choice) => E.days.answer(s, dayApi, choice),
+    dayForce: (s, id) => E.days.force(s, dayApi, id),
+    bondUp: (s, a, b, d) => E.days.addBond(s, dayApi, a, b, d),
+    bond: (s, a, b) => E.days.bond(s, dayApi, a, b),
+    goodCoach: (s, flaw, id) => E.days.goodCoach(s, dayApi, flaw, id),
+    trainProgress: (s, id) => E.days.progress(s, dayApi, id),
+    gifts: giftsOf,
+    tired: (s, id) => E.days.tired(s, id),
+    busy: (s, id) => E.days.busyOf(s, id),
     // 戰術地圖
+    tutorial, tutorialStep, tutorialSkip,
     tacPlan: (s) => !!tacPlan(s, picked(s)),
+    // 主線任務的中場
+    nextPart, partStory,
+    partTac: (s) => !!s.op && !partStory(s) && !!E.tactics && !!E.s2.opMaps.main[s.op.main],
     tacMove: (s, id, x, y) => E.tactics.move(s, tacApi, id, x, y),
     tacUse: (s, id, ab, x, y) => E.tactics.use(s, tacApi, id, ab, x, y),
     tacEnd: (s) => E.tactics.endTurn(s, tacApi),

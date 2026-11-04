@@ -252,6 +252,7 @@
     coworker: { name: n('Coworker', '同事', '同事') },
     ex: { name: n('Ex', '前任', '前任') },
     rival: { name: n('Rival', '死對頭', '死对头') },
+    friend: { name: n('Friend', '朋友', '朋友') }, // 白天一起混出來的交情（js/engine/days.js）
   };
 
   // ===== 傷疤：這一輪發生過的事改變這個人 =====
@@ -271,6 +272,8 @@
       desc: n('Two Cantonese speakers: every action raises 1 less alert.', '兩個會講粵語的人：每個動作少 1 點警戒。', '两个会讲粤语的人：每个动作少 1 点警戒。') },
     { id: 'derby', name: n('Derby day', '德比戰', '德比战'),
       desc: n('Man United fan + Liverpool fan: they argue all night. Everyone 10% more likely to fail; on the map they bicker now and then.', '曼聯球迷＋利物浦球迷：吵了一整晚，全隊失敗率 +10%；在地圖上偶爾會吵起來。', '曼联球迷＋利物浦球迷：吵了一整晚，全队失败率 +10%；在地图上偶尔会吵起来。') },
+    { id: 'friends', name: n('Good friends', '好朋友同隊', '好朋友同队'),
+      desc: n('Two friends on one team: each is 10% more likely to succeed, and on the map a friend within 2 squares pulls the other away from a guard once.', '兩個朋友同隊：各自成功率 +10%；在地圖上，朋友在兩格內時會把被追上的人拉開一次。', '两个朋友同队：各自成功率 +10%；在地图上，朋友在两格内时会把被追上的人拉开一次。') },
     { id: 'feud', name: n('Bad blood', '死對頭同隊', '死对头同队'),
       desc: n('Two rivals on one team: each is 10% more likely to fail, and on the map they bicker now and then.', '兩個死對頭同隊：各自失敗率 +10%，在地圖上偶爾會吵起來。', '两个死对头同队：各自失败率 +10%，在地图上偶尔会吵起来。') },
   ];

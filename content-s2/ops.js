@@ -379,6 +379,151 @@
       hidden: { id: 'basement_link', name: n('The connecting cellar', '連通的地窖', '连通的地窖'), tags: [], risk: 0.1, exposure: 1,
         ok: n('The two buildings share a cellar. {name} moves everything underground.', '兩棟樓共用一個地窖，{name}從地下把東西全搬了過去。', '两栋楼共用一个地窖，{name}从地下把东西全搬了过去。') },
     },
+
+    // ----- 今晚的機會（jobs）用的關卡 -----
+    convoy: {
+      art: 'alley', tags: ['patrol'],
+      name: n('The supply van', '獅心的補給車', '狮心的补给车'),
+      desc: n('A Lionheart van does the rounds of the checkpoints every night, full of batteries, radios and drone parts. It stops for nobody.', '獅心防務的補給車每晚繞一圈檢查站，車上裝滿電池、對講機和無人機零件。它不會為任何人停下來。', '狮心防务的补给车每晚绕一圈检查站，车上装满电池、对讲机和无人机零件。它不会为任何人停下来。'),
+      approaches: [
+        { id: 'roadworks', name: n('Fake some roadworks', '擺出假的道路施工', '摆出假的道路施工'), tags: ['social', 'lie'], risk: 0.35, exposure: 4, perkBonus: { site_pass: -0.25, disguise: -0.2 },
+          ok: n('{name} puts out three cones and a sign. The van stops and waits like a good citizen.', '{name}擺了三個三角錐和一塊牌子。補給車乖乖停下來等。', '{name}摆了三个锥桶和一块牌子。补给车乖乖停下来等。') },
+        { id: 'reroute', name: n('Reroute the satnav', '改掉車上的導航', '改掉车上的导航'), needs: { skill: { hack: 1 } }, tags: ['hack'], risk: 0.25, exposure: 6, bandwidth: 1,
+          ok: n('The satnav sends the driver left, down a dead end. {name} is waiting there.', '導航叫司機左轉，開進一條死巷。{name}就在巷子裡等著。', '导航叫司机左转，开进一条死胡同。{name}就在胡同里等着。') },
+        { id: 'stinger', name: n('Lay a stinger', '在路上撒釘子', '在路上撒钉子'), tags: ['hands', 'run'], risk: 0.35, exposure: 8, injure: 0.2, perkBonus: { sprint: -0.15 },
+          ok: n('Two flat tyres. By the time the driver gets out, {name} is gone.', '兩個輪胎都扁了。司機下車的時候，{name}已經不見了。', '两个轮胎都瘪了。司机下车的时候，{name}已经不见了。') },
+      ],
+      hidden: { id: 'chip_shop', name: n('The driver always stops for chips', '司機每天都會停下來買薯條', '司机每天都会停下来买薯条'), tags: [], risk: 0.1, exposure: 2,
+        ok: n("Eleven o'clock, the chip shop on the corner, engine running. {name} just opens the back door.", '十一點，轉角的炸魚薯條店，引擎沒熄。{name}直接打開了後車門。', '十一点，转角的炸鱼薯条店，引擎没熄。{name}直接打开了后车门。') },
+    },
+
+    crates: {
+      art: 'dock', tags: ['door'],
+      name: n('The cargo', '車上的貨', '车上的货'),
+      desc: n('The back of the van is locked and full of crates. Not all of them can come with you.', '車廂鎖著，裡面堆滿了箱子。不可能全部帶走。', '车厢锁着，里面堆满了箱子。不可能全部带走。'),
+      approaches: [
+        { id: 'haul', name: n('Grab and carry', '扛了就走', '扛了就走'), needs: { skill: { physical: 2 } }, tags: ['physical', 'run'], risk: 0.3, exposure: 6, perkBonus: { heavy_lift: -0.25 },
+          ok: n('{name} carries two crates at once and does not stop until the next street.', '{name}一次扛兩箱，一路扛到下一條街才停。', '{name}一次扛两箱，一路扛到下一条街才停。') },
+        { id: 'van_lock', name: n('Pick the van lock', '撬開車廂', '撬开车厢'), tags: ['hands'], risk: 0.4, exposure: 4, perkBonus: { lockpick: -0.3 },
+          ok: n('The lock gives. {name} passes the crates out one by one.', '鎖開了。{name}把箱子一個一個遞出來。', '锁开了。{name}把箱子一个一个递出来。') },
+        { id: 'manifest', name: n('Edit the manifest', '改掉貨單', '改掉货单'), needs: { skill: { hack: 2 } }, tags: ['hack', 'data'], risk: 0.3, exposure: 3, bandwidth: 1,
+          ok: n('{name} changes one line on the manifest. Tomorrow the depot delivers half the van to a community centre down the road.', '{name}改了貨單上的一行字。明天倉庫會把半車的貨送到街尾的社區中心。', '{name}改了货单上的一行字。明天仓库会把半车的货送到街尾的社区中心。') },
+      ],
+      hidden: { id: 'unsigned', name: n('The crates nobody signed for', '沒人簽收的那幾箱', '没人签收的那几箱'), tags: [], risk: 0.1, exposure: 2,
+        ok: n('Three crates were never signed for. Nobody will miss them, and {name} knows it.', '有三箱一直沒人簽收。不會有人發現少了，{name}很清楚。', '有三箱一直没人签收。不会有人发现少了，{name}很清楚。') },
+    },
+
+    score_server: {
+      art: 'server', tags: ['data', 'office'],
+      name: n('The scoring server', '評分伺服器', '评分服务器'),
+      desc: n('One rack in a rented basement keeps the threat scores for half the borough.', '租來的地下室裡有一台機櫃，存著半個行政區的威脅評分。', '租来的地下室里有一台机柜，存着半个行政区的威胁评分。'),
+      approaches: [
+        { id: 'wipe_rows', name: n('Delete our rows', '刪掉我們的紀錄', '删掉我们的记录'), needs: { skill: { hack: 2 } }, tags: ['hack', 'data'], risk: 0.3, exposure: 6, bandwidth: 1,
+          ok: n('{name} deletes forty rows and leaves the other four thousand exactly as they were.', '{name}刪掉了四十行，其他四千行原封不動。', '{name}删掉了四十行，其他四千行原封不动。') },
+        { id: 'backup', name: n('Pull the backup drives', '拔走備份硬碟', '拔走备份硬盘'), tags: ['hands'], risk: 0.35, exposure: 6, perkBonus: { building_access: -0.2, lockpick: -0.15 },
+          ok: n('{name} walks out with the backup drives in a carrier bag. Tonight\'s restore will have nothing to restore.', '{name}把備份硬碟裝進塑膠袋帶走了。今晚的自動還原什麼都還原不了。', '{name}把备份硬盘装进塑料袋带走了。今晚的自动还原什么都还原不了。') },
+        { id: 'cleaner', name: n('Pose as the cleaner', '假扮清潔工', '假扮清洁工'), tags: ['social', 'lie'], risk: 0.3, exposure: 4, perkBonus: { disguise: -0.3, smooth_talk: -0.15 },
+          ok: n('{name} mops the floor, spills a bucket on exactly the right socket, and apologises a lot.', '{name}拖著地，「不小心」把一桶水潑在對的插座上，然後一直道歉。', '{name}拖着地，“不小心”把一桶水泼在对的插座上，然后一直道歉。') },
+      ],
+      hidden: { id: 'sticky_note', name: n('The password on the sticky note', '貼在螢幕上的密碼', '贴在屏幕上的密码'), tags: ['data'], risk: 0.05, exposure: 1,
+        ok: n('The admin password is on a sticky note on the monitor. {name} sighs and types it in.', '管理員密碼就寫在螢幕上的便利貼。{name}嘆了口氣，照著打進去。', '管理员密码就写在屏幕上的便利贴。{name}叹了口气，照着打进去。') },
+    },
+
+    pharmacy: {
+      art: 'basement', tags: ['door'],
+      name: n('The medicine store', '獅心的藥品倉', '狮心的药品仓'),
+      desc: n("Lionheart keep the borough's insulin and antibiotics behind a keypad, for people with a good enough score.", '獅心防務把整區的胰島素和抗生素鎖在一道密碼門後面，只發給分數夠好的人。', '狮心防务把整区的胰岛素和抗生素锁在一道密码门后面，只发给分数够好的人。'),
+      approaches: [
+        { id: 'transfer', name: n('Write a transfer order', '開一張調藥單', '开一张调药单'), needs: { perk: 'heal' }, tags: ['social'], risk: 0.1, exposure: 2,
+          ok: n('{name} fills in the transfer form in perfect doctor\'s handwriting. Nobody can read it, so everybody signs it.', '{name}用標準的醫生字跡填好調藥單。沒人看得懂，所以每個人都簽了。', '{name}用标准的医生字迹填好调药单。没人看得懂，所以每个人都签了。') },
+        { id: 'window', name: n('In through the back window', '從後窗爬進去', '从后窗爬进去'), needs: { ability: 'climb' }, tags: ['physical', 'climb'], risk: 0.3, exposure: 5, injure: 0.2,
+          ok: n('{name} squeezes through a window built for a cat and unlocks the door from the inside.', '{name}從一扇只容得下貓的窗戶擠進去，從裡面把門打開。', '{name}从一扇只容得下猫的窗户挤进去，从里面把门打开。') },
+        { id: 'keypad', name: n('Replay the keypad', '讓密碼鎖重播', '让密码锁重播'), needs: { skill: { hack: 1 } }, tags: ['hack'], risk: 0.3, exposure: 6, bandwidth: 1,
+          ok: n('{name} replays the last code anyone typed. The door clicks.', '{name}把上一個人輸入的密碼重播一次，門喀的一聲開了。', '{name}把上一个人输入的密码重播一次，门咔的一声开了。') },
+      ],
+      hidden: { id: 'expired', name: n('Write it off as expired', '登記成「已過期」', '登记成“已过期”'), tags: ['data'], risk: 0.1, exposure: 2,
+        ok: n('{name} marks the whole shelf as expired. Expired stock gets thrown out, and nobody counts what was thrown out.', '{name}把整個架子登記成「已過期」。過期的藥會被丟掉，而沒有人會去數丟掉了多少。', '{name}把整个架子登记成“已过期”。过期的药会被扔掉，而没有人会去数扔掉了多少。') },
+    },
+
+    mural: {
+      art: 'highstreet', tags: ['climb'],
+      name: n('The wall', '那面牆', '那面墙'),
+      desc: n('The side of a block opposite the high street. By morning, everyone on the bus will see it.', '大街對面那棟樓的側牆。明天早上，每一個搭公車的人都會看到。', '大街对面那栋楼的侧墙。明天早上，每一个坐公交的人都会看到。'),
+      approaches: [
+        { id: 'spray', name: n('Climb up and spray it', '爬上去噴', '爬上去喷'), needs: { skill: { physical: 1 }, ability: 'climb' }, tags: ['physical', 'climb'], risk: 0.3, exposure: 6, injure: 0.2,
+          ok: n('Three storeys up, {name} finishes the last letter as the sky goes grey.', '在三樓高的地方，{name}噴完最後一個字母，天剛好開始亮。', '在三楼高的地方，{name}喷完最后一个字母，天刚好开始亮。') },
+        { id: 'projector', name: n('Project it', '用投影打上去', '用投影打上去'), needs: { skill: { hack: 1 } }, tags: ['hack', 'broadcast'], risk: 0.25, exposure: 6, bandwidth: 1, perkBonus: { broadcast: -0.15 },
+          ok: n('{name} hides a projector in a bin across the road. The DedSec mask is ten metres tall.', '{name}把投影機藏在對街的垃圾桶裡。DedSec 的面具有十米高。', '{name}把投影仪藏在对街的垃圾桶里。DedSec 的面具有十米高。') },
+        { id: 'block_party', name: n('Get the street to paint it', '找街坊一起畫', '找街坊一起画'), needs: { skill: { social: 1 } }, tags: ['social'], risk: 0.3, exposure: 10, perkBonus: { distraction: -0.2, gossip: -0.1 },
+          ok: n('By two in the morning, twenty neighbours are painting. {name} is handing out brushes.', '凌晨兩點，二十個街坊都在畫。{name}在發刷子。', '凌晨两点，二十个街坊都在画。{name}在发刷子。') },
+      ],
+      hidden: { id: 'scaffold', name: n("Lionheart's own scaffolding", '獅心自己搭的鷹架', '狮心自己搭的脚手架'), tags: [], risk: 0.1, exposure: 2,
+        ok: n('Lionheart put up scaffolding to fix their own camera. {name} uses it to reach the top of the wall.', '獅心防務為了修自己的攝影機搭了鷹架。{name}踩著它爬上了牆頂。', '狮心防务为了修自己的摄像头搭了脚手架。{name}踩着它爬上了墙顶。') },
+    },
+
+    false_trail: {
+      art: 'gerrard', tags: ['social', 'data'],
+      name: n('A false trail', '一條假線索', '一条假线索'),
+      desc: n('Lionheart want a name for last week. Give them a wrong one, somewhere far from here.', '獅心防務想為上星期的事找個人負責。給他們一個錯的方向，越遠越好。', '狮心防务想为上星期的事找个人负责。给他们一个错的方向，越远越好。'),
+      approaches: [
+        { id: 'fake_report', name: n('File fake sightings', '在通報系統報假案', '在通报系统报假案'), needs: { skill: { hack: 1 } }, tags: ['hack', 'data'], risk: 0.25, exposure: 4, bandwidth: 1,
+          ok: n('{name} files six sightings from the other end of London. Every patrol in the borough turns north.', '{name}報了六起倫敦另一頭的目擊。整區的巡邏隊都往北邊去了。', '{name}报了六起伦敦另一头的目击。整区的巡逻队都往北边去了。') },
+        { id: 'pub_talk', name: n('Start a rumour in the pub', '在酒吧放話', '在酒吧放话'), needs: { skill: { social: 1 } }, tags: ['social', 'lie'], risk: 0.3, exposure: 3, perkBonus: { gossip: -0.2, smooth_talk: -0.15 },
+          ok: n('By closing time, the whole pub "knows" DedSec moved to Croydon. {name} bought the round that started it.', '打烊前，整間酒吧的人都「知道」DedSec 搬去克羅伊登了。{name}請的那輪酒就是起點。', '打烊前，整间酒吧的人都“知道”DedSec 搬去克罗伊登了。{name}请的那轮酒就是起点。') },
+        { id: 'burner', name: n('Put a burner on the night bus', '把手機丟上夜班公車', '把手机丢上夜班公交'), tags: ['run'], risk: 0.3, exposure: 5, perkBonus: { sprint: -0.15, river_route: -0.2 },
+          ok: n('{name} drops a phone full of our chatter onto the N29. Lionheart follow it all the way to Enfield.', '{name}把一支裝滿我們對話紀錄的手機丟上 N29 夜班公車。獅心防務一路追到了恩菲爾德。', '{name}把一部装满我们聊天记录的手机丢上 N29 夜班公交。狮心防务一路追到了恩菲尔德。') },
+      ],
+      hidden: { id: 'cold_case', name: n('The case they never closed', '他們一直破不了的案子', '他们一直破不了的案子'), tags: ['data'], risk: 0.1, exposure: 2,
+        ok: n('{name} ties last week to a case Lionheart never closed. They are happy to blame a ghost.', '{name}把上星期的事接到獅心防務一直破不了的一件舊案上。他們很樂意怪到一個幽靈頭上。', '{name}把上星期的事接到狮心防务一直破不了的一件旧案上。他们很乐意怪到一个幽灵头上。') },
+    },
+
+    tap_relay: {
+      art: 'station', tags: ['data'],
+      name: n('The radio relay', '無線電中繼站', '无线电中继站'),
+      desc: n('Every Lionheart radio in the borough goes through a grey box on top of the old telephone exchange.', '整區獅心防務的無線電，都經過舊電話交換局樓頂的一個灰箱子。', '整区狮心防务的无线电，都经过旧电话交换局楼顶的一个灰箱子。'),
+      approaches: [
+        { id: 'splice', name: n('Splice in a line', '接一條線上去', '接一条线上去'), needs: { ability: 'climb' }, tags: ['hands', 'climb'], risk: 0.3, exposure: 5,
+          ok: n('{name} splices a line in, wraps it in tape, and makes it look like it has always been there.', '{name}接了一條線上去，纏上膠帶，看起來就像一直都在那裡。', '{name}接了一条线上去，缠上胶带，看起来就像一直都在那里。') },
+        { id: 'clone_key', name: n('Clone the encryption key', '複製加密金鑰', '复制加密密钥'), needs: { skill: { hack: 2 } }, tags: ['hack'], risk: 0.3, exposure: 6, bandwidth: 1,
+          ok: n('{name} copies the key. For the next few nights, their radio is our radio.', '{name}複製了金鑰。接下來幾晚，他們的無線電就是我們的無線電。', '{name}复制了密钥。接下来几晚，他们的无线电就是我们的无线电。') },
+        { id: 'old_radio', name: n('Tune in the old way', '用老收音機慢慢調', '用老收音机慢慢调'), tags: [], risk: 0.4, exposure: 2, perkBonus: { pirate_radio: -0.3, broadcast: -0.15, gossip: -0.1 },
+          ok: n('An old valve radio, an hour of patience, and {name} finds the one channel they forgot to encrypt.', '一台老真空管收音機、一個小時的耐心，{name}找到了他們忘記加密的那個頻道。', '一台老电子管收音机、一个小时的耐心，{name}找到了他们忘记加密的那个频道。') },
+      ],
+      hidden: { id: 'handset', name: n('The radio left in the break room', '休息室裡忘了拿的對講機', '休息室里忘了拿的对讲机'), tags: [], risk: 0.1, exposure: 2,
+        ok: n('A guard left a radio charging in the break room. {name} swaps it for one of ours.', '有個守衛把對講機留在休息室充電。{name}拿我們的一支換走了它。', '有个守卫把对讲机留在休息室充电。{name}拿我们的一部换走了它。') },
+    },
+
+    duty_office: {
+      art: 'arches', tags: ['door', 'data'],
+      name: n('The duty office', '獅心的值班室', '狮心的值班室'),
+      desc: n("The local Lionheart duty office. The draft of next week's deployment plan is pinned to the wall.", '獅心防務在這一區的值班室。下星期部署圖的草稿就釘在牆上。', '狮心防务在这一区的值班室。下星期部署图的草稿就钉在墙上。'),
+      approaches: [
+        { id: 'photo', name: n('Photograph the plan', '拍下部署圖', '拍下部署图'), tags: ['hands'], risk: 0.35, exposure: 4, perkBonus: { lockpick: -0.2, building_access: -0.2 },
+          ok: n('{name} gets one clear photo of the wall and is out of the window before the kettle boils.', '{name}把整面牆清楚拍了一張，水還沒燒開就從窗戶出去了。', '{name}把整面墙清楚拍了一张，水还没烧开就从窗户出去了。') },
+        { id: 'inbox', name: n("Read the duty manager's email", '讀值班主管的信', '读值班主管的邮件'), needs: { skill: { hack: 1 } }, tags: ['hack', 'data'], risk: 0.25, exposure: 5, bandwidth: 1,
+          ok: n('The duty manager replies to everything. {name} reads the whole thread, attachments included.', '值班主管每封信都會回。{name}把整串信讀完，連附件都沒漏掉。', '值班主管每封邮件都会回。{name}把整串邮件读完，连附件都没漏掉。') },
+        { id: 'new_guard', name: n('Pose as a new guard', '假裝是新來的保全', '假装是新来的保安'), needs: { skill: { social: 1 } }, tags: ['social', 'lie'], risk: 0.35, exposure: 4, perkBonus: { disguise: -0.3 },
+          ok: n('{name} asks where the toilets are and gets the full tour, plan included.', '{name}問了一句廁所在哪裡，結果被帶著參觀了一整圈，部署圖也看到了。', '{name}问了一句厕所在哪里，结果被带着参观了一整圈，部署图也看到了。') },
+      ],
+      hidden: { id: 'shredder', name: n('The shredder is broken', '碎紙機壞了', '碎纸机坏了'), tags: ['data'], risk: 0.1, exposure: 1,
+        ok: n('The shredder has been broken for a month. {name} finds three old drafts of the plan in the recycling.', '碎紙機壞了一個月。{name}在回收桶裡找到三份部署圖的舊草稿。', '碎纸机坏了一个月。{name}在回收桶里找到三份部署图的旧草稿。') },
+    },
+
+    checkpoint: {
+      art: 'gerrard', tags: ['patrol'],
+      name: n('The checkpoint', '檢查站', '检查站'),
+      desc: n('A family on the List has to get past the checkpoint at the end of the road before dawn. Their faces are in every scanner.', '一家名單上的人，天亮前要通過路口的檢查站。每一台掃描器裡都有他們的臉。', '一家名单上的人，天亮前要通过路口的检查站。每一台扫描仪里都有他们的脸。'),
+      approaches: [
+        { id: 'swap_faces', name: n('Swap the photos in the scanner', '換掉掃描器裡的照片', '换掉扫描仪里的照片'), needs: { skill: { hack: 2 } }, tags: ['hack', 'data'], risk: 0.3, exposure: 6, bandwidth: 1,
+          ok: n("{name} swaps the family's faces for four people who live in Spain. The scanner waves them through.", '{name}把這一家人的照片換成四個住在西班牙的人。掃描器讓他們過了。', '{name}把这一家人的照片换成四个住在西班牙的人。扫描仪让他们过了。') },
+        { id: 'night_bus', name: n('Get them on the night bus', '混進夜班公車', '混进夜班公交'), needs: { skill: { social: 1 } }, tags: ['social'], risk: 0.35, exposure: 4, perkBonus: { smooth_talk: -0.15, disguise: -0.15 },
+          ok: n('{name} sits the family among the night-shift cleaners. Nobody checks a bus full of tired people.', '{name}讓這一家人坐在上夜班的清潔工中間。沒有人會去查一整車累壞了的人。', '{name}让这一家人坐在上夜班的清洁工中间。没有人会去查一整车累坏了的人。') },
+        { id: 'long_way', name: n('Take them round the long way', '帶他們繞過去', '带他们绕过去'), needs: { ability: 'navigate' }, tags: ['physical', 'navigate', 'run'], risk: 0.35, exposure: 6,
+          ok: n('{name} walks the family through three back gardens and a church car park. The checkpoint never sees them.', '{name}帶這一家人穿過三個後院和一座教堂的停車場，檢查站從頭到尾都沒看到他們。', '{name}带这一家人穿过三个后院和一座教堂的停车场，检查站从头到尾都没看到他们。') },
+      ],
+      hidden: { id: 'shift_gap', name: n('The four-minute gap at shift change', '換班時的四分鐘空檔', '换班时的四分钟空档'), tags: [], risk: 0.1, exposure: 2,
+        ok: n('At shift change the booth is empty for four minutes. {name} has the family across in three.', '換班的時候，崗亭會空四分鐘。{name}三分鐘就把這一家人帶過去了。', '换班的时候，岗亭会空四分钟。{name}三分钟就把这一家人带过去了。') },
+    },
   };
 
   // ===== 行動 =====
@@ -401,25 +546,67 @@
       name: n('Lionheart are at the door', '獅心防務攻進來了', '狮心防务攻进来了'),
       desc: n('Hold the door, wipe the data, get out. Six moves before they are through. Stay in, and someone gets taken.', '堵門、銷毀資料、撤離。六步之內不完成，門就會被撞開。不應戰的話，一定有人被帶走。', '堵门、销毁数据、撤离。六步之内不完成，门就会被撞开。不应战的话，一定有人被带走。') },
   };
-  // 主線任務：用文字冒險的方式進行（content-s2/scenes/），這裡只放行動卡上的名稱和說明。
-  // stages 只是給行動卡顯示的關卡預覽；跳過劇情時，就改用這幾關照一般行動進行。
+  // ===== 今晚的機會 =====
+  // 每天早上從這裡抽，最多同時兩件（js/engine/night.js 的 refreshJobs）。每件留兩晚，打過一次（不管成敗）就沒了。
+  // reward：support 民心、cool 熱度下降、wipe 全隊威脅評分下降、heal 傷員早一晚復原（重傷的人也脫離危險）、
+  //   gear 器材（之後每次出門自動帶一份：頻寬 +1）、tap 監聽獅心防務的頻道幾晚（這幾晚比較不會被反擊）、
+  //   intel 這一區主線任務的情報（之後主線任務的每一段：起始警戒 −10，看得到巡邏路線）。
+  // need：一定要符合才會出現（threat 有人威脅評分 25 以上、heat 熱度 20 以上、main 這一區的主線任務開了）。
+  // boost：符合的話比較常出現（hurt 有人受傷）。weight 權重；where 在某些區更常見（倍數）；minRank 第幾區起才有；timer 限時。
+  const jobs = {
+    convoy: { stages: ['convoy', 'crates', 'getaway'], timer: 7, reward: { gear: 2, support: 5 }, weight: 2, where: { isle_of_dogs: 2, rotherhithe: 2 },
+      name: n('Hit the supply van', '攔下獅心的補給車', '拦下狮心的补给车'),
+      desc: n('Batteries, radios, drone parts. Whatever we take, we carry on the next few operations. The van only stops for so long.', '電池、對講機、無人機零件。搶到的器材，接下來幾次行動都用得上。補給車不會停太久。', '电池、对讲机、无人机零件。抢到的器材，接下来几次行动都用得上。补给车不会停太久。') },
+    erase: { stages: ['side_door', 'score_server', 'getaway'], reward: { wipe: 25 }, need: 'threat', weight: 3,
+      name: n('Wipe our scores', '洗掉我們的威脅評分', '洗掉我们的威胁评分'),
+      desc: n("The borough's threat scores sit on one server. A few of us are getting close to the line.", '整區的威脅評分都存在同一台伺服器上。我們有幾個人的分數已經快到紅線了。', '整区的威胁评分都存在同一台服务器上。我们有几个人的分数已经快到红线了。') },
+    meds: { stages: ['pharmacy', 'getaway'], reward: { heal: 1, support: 8 }, boost: 'hurt', weight: 2,
+      name: n('Free the medicine', '把藥搶出來', '把药抢出来'),
+      desc: n('Insulin and antibiotics for the street, and proper dressings for our own wounded.', '胰島素和抗生素分給街坊，我們自己的傷員也能換上像樣的繃帶。', '胰岛素和抗生素分给街坊，我们自己的伤员也能换上像样的绷带。') },
+    mural: { stages: ['patrol_drone', 'mural'], reward: { support: 10 }, weight: 2, where: { camden: 2, soho: 2 },
+      name: n('Paint the wall', '在牆上噴 DedSec', '在墙上喷 DedSec'),
+      desc: n('A quick one. Lionheart paint over it in a week, but by then everyone has a photo.', '很快就能做完。獅心防務一個星期內就會把它蓋掉，但到時候每個人手機裡都有照片了。', '很快就能做完。狮心防务一个星期内就会把它盖掉，但到时候每个人手机里都有照片了。') },
+    trail: { stages: ['false_trail', 'getaway'], reward: { cool: 15 }, need: 'heat', weight: 3,
+      name: n('Lay a false trail', '放一條假線索', '放一条假线索'),
+      desc: n('Send Lionheart chasing shadows somewhere else, and the streets here cool down.', '讓獅心防務去別的地方追影子，這裡的街頭就能降溫。', '让狮心防务去别的地方追影子，这里的街头就能降温。') },
+    tap: { stages: ['patrol_drone', 'tap_relay', 'getaway'], reward: { tap: 3 }, weight: 2,
+      name: n("Tap Lionheart's radio", '監聽獅心的無線電', '监听狮心的无线电'),
+      desc: n('If we can hear them plan a raid or a blackout, we can move first. Good for a few nights, until they change the key.', '聽得到他們安排突襲或停電，我們就能先動。在他們換金鑰之前，可以聽好幾晚。', '听得到他们安排突袭或停电，我们就能先动。在他们换密钥之前，可以听好几晚。') },
+    intel: { stages: ['side_door', 'duty_office'], reward: { intel: 1 }, need: 'main', weight: 4,
+      name: n('Steal the deployment plan', '偷看部署圖', '偷看部署图'),
+      desc: n("Groundwork for this district's main mission: where the guards stand, when they change, which doors they never check.", '為這一區的主線任務打底：守衛站在哪裡、什麼時候換班、哪幾扇門從來不查。', '为这一区的主线任务打底：守卫站在哪里、什么时候换班、哪几扇门从来不查。') },
+    evac: { stages: ['checkpoint', 'getaway'], timer: 5, reward: { support: 12, cool: 5 }, minRank: 1, weight: 2, where: { westminster: 2 },
+      name: n('Get a family out', '護送一家人出去', '护送一家人出去'),
+      desc: n('A family on the List has one night to get out of the district. Five moves before the morning shift.', '一家名單上的人，只有今晚能離開這一區。早班上工之前，只有五步。', '一家名单上的人，只有今晚能离开这一区。早班上工之前，只有五步。') },
+  };
+  const jobOp = { kind: 'job' };
+
+  // 主線任務分兩段：approach 是第一段（潛入，approachName 是這一段的名字），stages 是第二段（主要目標）。
+  // 主角還在的話，第二段用文字冒險的方式進行（content-s2/scenes/）；跳過劇情、或主角不在了，就照 stages 這幾關進行。
+  // 戰術地圖用哪幾張在 content-s2/maps.js 的 opMaps.approach 和 opMaps.main。
   const main = {
-    m2: { kind: 'main', stages: ['fence', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 20 },
+    m2: { kind: 'main', approach: ['patrol_drone', 'fence'], stages: ['tower_box', 'getaway'], reward: { support: 20 },
+      approachName: n('Through Camden Market', '穿過康登市集', '穿过卡姆登市集'),
       name: n('Main mission 2: Curfew Night', '主線任務二：宵禁之夜', '主线任务二：宵禁之夜'),
       desc: n('The first time we move against the curfew head-on. Take down the first tower in Camden. You have to lead it yourself.', '第一次在宵禁裡正面行動，拆掉康登的第一座監控塔。你必須親自帶隊。', '第一次在宵禁里正面行动，拆掉卡姆登的第一座监控塔。你必须亲自带队。') },
-    m3: { kind: 'main', stages: ['shopfront', 'holding_yard', 'cells', 'getaway'], reward: { support: 25 },
+    m3: { kind: 'main', approach: ['shopfront', 'lockers'], stages: ['holding_yard', 'cells', 'getaway'], reward: { support: 25 },
+      approachName: n('Find where the van went', '查出押送車開去哪裡', '查出押送车开去哪里'),
       name: n('Main mission 3: High Threat', '主線任務三：高威脅', '主线任务三：高威胁'),
       desc: n('A delivery rider scored 91 was taken off Gerrard Street tonight. Get them out, and find out where the number came from.', '一個威脅評分 91 的外送員，今晚在爵祿街被帶走了。把人救出來，查清楚這個分數是怎麼來的。', '一个威胁评分 91 的外卖骑手，今晚在爵禄街被带走了。把人救出来，查清楚这个分数是怎么来的。') },
-    m4: { kind: 'main', stages: ['side_door', 'lobby', 'terminal', 'getaway'], reward: { support: 25 },
+    m4: { kind: 'main', approach: ['canal', 'side_door'], stages: ['lobby', 'terminal', 'getaway'], reward: { support: 25 },
+      approachName: n('Come ashore at the wharf', '從碼頭上岸', '从码头上岸'),
       name: n('Main mission 4: Inside Man', '主線任務四：內應', '主线任务四：内应'),
       desc: n("Dr Hale says he can walk us into Stillwater. Inside is a piece of Lionheart's List.", '黑爾博士說，他能帶我們走進靜域。裡面有獅心防務「名單」的一部分。', '黑尔博士说，他能带我们走进静域。里面有狮心防务“名单”的一部分。') },
-    m5: { kind: 'main', stages: ['canal', 'tunnel', 'terminal', 'getaway'], reward: { support: 25 },
+    m5: { kind: 'main', approach: ['canal', 'tower_box'], stages: ['tunnel', 'terminal', 'getaway'], reward: { support: 25 },
+      approachName: n('Cut the crane lights', '關掉吊車的燈', '关掉吊车的灯'),
       name: n('Main mission 5: The Tunnels', '主線任務五：隧道', '主线任务五：隧道'),
       desc: n("The drone hive sits on top of the old tunnels. Eileen Walsh still has her grandmother's notebook.", '無人機巢蓋在舊隧道的正上方。艾琳・沃什手上還有她祖母的筆記本。', '无人机巢盖在旧隧道的正上方。艾琳·沃什手上还有她祖母的笔记本。') },
-    m7: { kind: 'main', stages: ['side_door', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 30 },
+    m7: { kind: 'main', approach: ['patrol_drone', 'tower_box'], stages: ['side_door', 'terminal', 'getaway'], reward: { support: 30 },
+      approachName: n('Trip the substation', '先關掉變電箱', '先关掉变电箱'),
       name: n('Main mission 7: Blackout', '主線任務七：斷電', '主线任务七：断电'),
       desc: n('Switch off London, one district at a time, and open the way to Whitehall.', '把倫敦一區一區關掉，打開通往白廳的路。', '把伦敦一区一区关掉，打开通往白厅的路。') },
-    m8: { kind: 'main', stages: ['side_door', 'cells', 'terminal', 'back_door'], reward: { support: 0 },
+    m8: { kind: 'main', approach: ['tunnel', 'side_door'], stages: ['cells', 'terminal', 'back_door'], reward: { support: 0 },
+      approachName: n('Under Whitehall by the old tunnels', '走舊隧道到白廳底下', '走旧隧道到白厅底下'),
       name: n('Main mission 8: Airspace Control', '主線任務八：空域控制中心', '主线任务八：空域控制中心'),
       desc: n('Under Whitehall, every Nightwatch drone in London answers to one room. Tonight we walk in.', '白廳底下，全倫敦的守夜人無人機都聽命於一個房間。今晚，我們走進去。', '白厅底下，全伦敦的守夜人无人机都听命于一个房间。今晚，我们走进去。') },
   };
@@ -460,5 +647,5 @@
       ok: n('While the guard laughs at a joke, {name} lifts the card and opens the door.', '守衛還在笑隊友講的笑話，{name}已經摸走門卡，把門打開了。', '守卫还在笑队友讲的笑话，{name}已经摸走门卡，把门打开了。') },
   };
 
-  S2.ops = { stages, ops, main, recruit, recruitOp, special };
+  S2.ops = { stages, ops, main, jobs, jobOp, recruit, recruitOp, special };
 })(window.ECHO = window.ECHO || {});

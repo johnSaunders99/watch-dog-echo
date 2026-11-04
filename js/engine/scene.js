@@ -228,5 +228,11 @@
       const scene = E.scenes[s.scene];
       return scene.suggest ? scene.suggest(s) : [];
     },
+
+    // 這個場景的目標清單（給第一次玩的人看現在要做什麼）：[{ k, v, done, how 提示, opt 可選, note 說明 }]。沒有的場景是空的。
+    goals(s) {
+      const scene = E.scenes[s.scene];
+      return scene.goals ? scene.goals(s) : [];
+    },
   };
 })(window.ECHO = window.ECHO || {});
