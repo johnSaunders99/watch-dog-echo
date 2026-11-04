@@ -11,8 +11,10 @@
   const stages = () => E.s2.ops.stages;
   // 第 4 版存檔：整個戰役（五個行政區、主線任務一到八）。舊版的原型存檔不相容，直接開新的一輪。
   // 第 5 版：白天的時段、交情、主線任務分兩段。第 4 版的存檔補上這些欄位就能接著玩。
-  const slot = E.save.slot('watchdogs-echo.s2.proto', 5, {
+  // 第 6 版：今晚的機會、搶來的器材、監聽、部署圖。舊存檔的機會從下一個早上開始出現。
+  const slot = E.save.slot('watchdogs-echo.s2.proto', 6, {
     4: (d) => Object.assign(d, { bonds: d.bonds || {}, mainPart: d.mainPart || {}, day: d.day || { slot: 0, did: {}, event: null } }),
+    5: (d) => Object.assign(d, { jobs: d.jobs || [], gear: d.gear || 0, tap: d.tap || 0, intel: d.intel || null }),
   });
   const LANG_KEY = 'watchdogs-echo.s2.lang';
 
@@ -139,8 +141,13 @@
     return `<div class="chain">${list.map((id, i) => `<span class="${i < current ? 'done' : i === current ? 'now' : ''}">${P(stages()[id].name)}</span>`).join('<i>›</i>')}</div>`;
   }
 
+  // 行動的好處：民心、床位，還有「今晚的機會」帶來的各種好處（content-s2/ops.js 的 jobs）。
+  const REWARDS = ['cool', 'wipe', 'heal', 'gear', 'tap', 'intel'];
   function rewardText(r) {
-    return r.beds ? T('s2.day.rewardBeds', { n: r.beds }) : T('s2.day.reward', { n: r.support });
+    const out = REWARDS.filter((k) => r[k]).map((k) => T('s2.day.rw.' + k, { n: r[k] }));
+    if (r.beds) out.unshift(T('s2.day.rewardBeds', { n: r.beds }));
+    if (r.support || !out.length) out.push(T('s2.day.reward', { n: r.support || 0 }));
+    return out.join(' · ');
   }
 
   function opCard(e, tag = 'button') {
@@ -151,7 +158,9 @@
       + (e.split ? `<em class="split">${T('s2.day.split')}</em>` : '')
       + (e.left !== undefined ? `<em class="urgent">${T('s2.day.left', { n: e.left })}</em>` : '')
       + (e.family ? `<em class="family">${T('s2.day.familyShort')}</em>` : '')
-      + (e.main ? `<em class="split">${T('s2.day.parts')}</em>` : '') + `</div>`
+      + (e.main ? `<em class="split">${T('s2.day.parts')}</em>` : '')
+      + (e.planned ? `<em class="family">${T('s2.day.planned')}</em>` : '')
+      + (e.jobLeft ? `<em class="${e.jobLeft <= 1 ? 'urgent' : 'job'}">${T(e.jobLeft <= 1 ? 's2.day.jobLast' : 's2.day.jobLeft', { n: e.jobLeft })}</em>` : '') + `</div>`
       + `<div class="op-main">${e.target ? `<div class="op-face">${face(e.target)}</div>` : ''}<div><div class="op-name">${P(e.name)}</div><div class="op-desc">${P(e.desc)}</div></div></div>`
       + partChips(e)
       + (e.decoy ? `<div class="chain-label">${T('s2.op.decoy')}</div>` + stageChips(e.decoy, -1) : '')
@@ -357,7 +366,10 @@
     // 解放的條件：西敏要先有民心才能斷電；其他區民心高了卻還沒打主線任務，提醒一下。
     const main = N.mainNow(s);
     const rule = s.district === 'westminster' ? (s.mains.m7 !== 'done' && !main ? 's2.ui.m7need' : '') : (s.support >= 60 && main ? 's2.ui.mainNeeded' : '');
-    h += `<section class="panel"><h2>${T('s2.day.ops')}</h2><p class="hint">${T('s2.day.opsHint')}</p>${rule ? `<p class="hint warn">${T(rule)}</p>` : ''}<div class="ops">${ops.map((e) => opCard(e)).join('')}</div>`
+    const jobs = ops.filter((e) => e.op === 'job');
+    h += `<section class="panel"><h2>${T('s2.day.ops')}</h2><p class="hint">${T('s2.day.opsHint')}</p>${rule ? `<p class="hint warn">${T(rule)}</p>` : ''}${stashLine()}`
+      + `<div class="ops">${ops.filter((e) => e.op !== 'job').map((e) => opCard(e)).join('')}</div>`
+      + (jobs.length ? `<h3 class="ops-sub">${T('s2.day.jobs')}</h3><p class="hint">${T('s2.day.jobsHint')}</p><div class="ops">${jobs.map((e) => opCard(e)).join('')}</div>` : '')
       + `<div class="bar-actions"><button data-act="rest">${T('s2.day.rest')}</button></div></section>`;
     if (owed.length) {
       h += `<section class="panel"><h2>${T('s2.day.owed')}</h2><p class="hint">${T('s2.day.owedHint')}</p><div class="grid-people">${owed.map((id) => personCard(id, {
@@ -379,6 +391,15 @@
           + `<button class="primary" data-act="keep" data-id="${id}"${full ? ' disabled' : ''}>${full ? T('s2.day.keepFull', { n: N.MAX_KEEP }) : T('s2.day.keep')}</button></div>` });
     }).join('')}</div></section>`;
     return h;
+  }
+
+  // 手上的東西：搶來的器材、還在監聽的頻道、這一區主線任務的部署圖。
+  function stashLine() {
+    const out = [];
+    if (s.gear) out.push(T('s2.day.stash.gear', { n: s.gear }));
+    if (s.tap > s.night) out.push(T('s2.day.stash.tap', { n: s.tap - s.night }));
+    if (s.intel && s.intel === N.mainNow(s)) out.push(T('s2.day.stash.intel'));
+    return out.length ? `<p class="stash"><b>${T('s2.day.stash')}</b>${out.map((x) => `<span>${x}</span>`).join('')}</p>` : '';
   }
 
   // ===== 白天的安排：三個時段，每個時段一件事 =====
@@ -591,7 +612,7 @@
     const lines = s.log.slice(from + 1).filter((e) => e.c !== 'stage');
     return `<section class="panel result res-${r.outcome}"><div class="res-title">${T(title)}</div>${r.name ? `<div class="res-op">${P(r.name)}</div>` : ''}`
       + `<div class="res-nums">${r.support ? `<b class="up">${T('s2.res.support', { n: r.support })}</b>` : ''}${r.beds ? `<b class="up">${T('s2.day.rewardBeds', { n: r.beds })}</b>` : ''}`
-      + `${r.heat ? `<b class="down">${T('s2.res.heat', { n: r.heat })}</b>` : ''}</div>`
+      + `${r.heat > 0 ? `<b class="down">${T('s2.res.heat', { n: r.heat })}</b>` : r.heat < 0 ? `<b class="up">${T('s2.res.heatDown', { n: -r.heat })}</b>` : ''}</div>`
       + `<div class="res-log">${lines.map((e) => `<div class="ln c-${e.c}">${T(e.k, e.v)}</div>`).join('')}</div>`
       + `<div class="bar-actions"><button class="primary" data-act="next">${T('s2.res.next')}</button></div></section>`;
   }

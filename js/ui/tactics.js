@@ -147,6 +147,16 @@
         + `<rect x="${px + 12}" y="${py + 11}" width="16" height="18" rx="2" fill="#3b4256" stroke="${on ? '#ffd23f' : '#5a6684'}" stroke-width="2"/>`
         + `<path d="M${cx + 1} ${py + 14} l-5 7 h5 l-3 6" stroke="${on ? '#ffd23f' : '#5a6684'}" stroke-width="2" fill="none"/>`
         + (on ? `<circle cx="${cx}" cy="${py + 8}" r="3" fill="#ff4757" class="blink"/>` : '');
+    } else if (o.kind === 'crate') {
+      // 物資箱：金色框的木箱，上面印著獅心防務的盾牌（和藏身用的木箱分得出來）
+      g = on ? `<rect x="${px + 7}" y="${py + 10}" width="26" height="22" rx="2" fill="#8a6a3e" stroke="#ffd23f" stroke-width="2"/><path d="M${px + 7} ${py + 21} H${px + 33} M${cx} ${py + 10} V${py + 32}" stroke="#4e3a20" stroke-width="2"/>`
+        + `<path d="M${cx - 5} ${py + 14} h10 v4 q0 4 -5 6 q-5 -2 -5 -6 Z" fill="#ffd23f" opacity="0.85"/><circle cx="${px + 33}" cy="${py + 9}" r="3" fill="#ff4757" class="blink"/>`
+        : `<rect x="${px + 9}" y="${py + 18}" width="22" height="14" rx="2" fill="none" stroke="#5a6684" stroke-width="2" stroke-dasharray="3 2"/>`;
+    } else if (o.kind === 'wall') {
+      // 要噴漆的牆：噴完之後是 DedSec 的笑臉
+      g = `<rect x="${px + 3}" y="${py + 5}" width="${TS - 6}" height="${TS - 10}" fill="#4a3a3e" stroke="#2e1c1f" stroke-width="2"/><path d="M${px + 3} ${py + 15} H${px + TS - 3} M${px + 3} ${py + 25} H${px + TS - 3} M${cx} ${py + 5} V${py + 15} M${px + 12} ${py + 15} V${py + 25} M${px + 28} ${py + 15} V${py + 25}" stroke="#2e1c1f" stroke-width="1.2"/>`
+        + (on ? `<circle cx="${cx}" cy="${cy}" r="6" fill="none" stroke="#ff2e88" stroke-width="2" stroke-dasharray="2 2"/>`
+          : `<circle cx="${cx}" cy="${cy}" r="8" fill="none" stroke="#ff2e88" stroke-width="2.5"/><circle cx="${cx - 3}" cy="${cy - 2}" r="1.4" fill="#ff2e88"/><circle cx="${cx + 3}" cy="${cy - 2}" r="1.4" fill="#ff2e88"/><path d="M${cx - 4} ${cy + 3} q4 3 8 0" stroke="#ff2e88" stroke-width="1.8" fill="none"/>`);
     } else if (o.kind === 'antenna') {
       g = `<rect x="${cx - 2}" y="${py + 14}" width="4" height="22" fill="#8a94ad"/><path d="M${cx - 13} ${py + 14} a13 9 0 0 0 26 0 Z" fill="#c8cfdf" stroke="#5a6684"/><path d="M${cx} ${py + 14} L${cx + 7} ${py + 6}" stroke="#c8cfdf" stroke-width="2"/>`
         + (on ? `<circle cx="${cx + 8}" cy="${py + 5}" r="3" fill="#ff4757" class="blink"/>` : '');

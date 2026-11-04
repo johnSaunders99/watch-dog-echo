@@ -235,5 +235,17 @@
       m7: { map: 'office', obj: 'terminal' },
       m8: { map: 'office', obj: 'terminal' },
     },
+    // 今晚的機會（content-s2/ops.js 的 jobs）。crate 是物資箱（搬重物的人比較快）、wall 是要噴漆的牆。
+    // turns：限時的機會在地圖上有幾回合（沒寫的話等於文字關卡的步數）。
+    jobs: {
+      convoy: { map: 'wharf', obj: 'crate', turns: 9 },
+      erase: { map: 'office', obj: 'terminal' },
+      meds: { map: 'market', obj: 'crate' },
+      mural: { map: 'street', obj: 'wall' },
+      trail: { map: 'market', obj: 'terminal' },
+      tap: { map: 'site', obj: 'antenna' },
+      intel: { map: 'office', obj: 'terminal' },
+      evac: { map: 'tunnels', obj: 'person', turns: 8 },
+    },
   };
 })(window.ECHO = window.ECHO || {});

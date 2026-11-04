@@ -29,12 +29,12 @@
   const active = (f) => !f.down && !(f.off > 0) && !(f.loop > 0) && f.state !== 'distracted';
 
   // ===== 建立地圖 =====
-  // o：{ map, obj（T 格的目標種類；'none' 代表這一段只要穿過去）, ids（出發的隊員）, rank（第幾區，越後面守衛越多）, limit（限時行動：有的話改用地圖的 turns）,
+  // o：{ map, obj（T 格的目標種類；'none' 代表這一段只要穿過去）, ids（出發的隊員）, rank（第幾區，越後面守衛越多）, limit（限時行動：有的話改用 turns 或地圖的 turns）, turns,
   //      escort（被救的人）, intel, event（特殊狀況的 id）, rng（擺放特殊狀況用的亂數） }
   function build(o) {
     const tpl = E.s2.maps[o.map];
     const t = {
-      map: o.obj === 'none' ? tpl.rows.map((r) => r.replace(/T/g, '.')) : tpl.rows.slice(), mapId: o.map, theme: tpl.theme || 'site', w: tpl.rows[0].length, h: tpl.rows.length, turn: 1, limit: o.limit ? tpl.turns || o.limit : null,
+      map: o.obj === 'none' ? tpl.rows.map((r) => r.replace(/T/g, '.')) : tpl.rows.slice(), mapId: o.map, theme: tpl.theme || 'site', w: tpl.rows[0].length, h: tpl.rows.length, turn: 1, limit: o.limit ? o.turns || tpl.turns || o.limit : null,
       keys: tpl.keys !== false, units: [], foes: [], objs: [], used: {}, seen: {}, locks: {}, spotted: {}, undo: null, intel: !!o.intel, escort: o.escort || null, spawns: [], keycard: false,
     };
     const starts = [];
@@ -381,7 +381,7 @@
     // 地下電台：全區守衛的無線電都在播你的節目，兩回合什麼都聽不進去。
     if (perk === 'pirate_radio' && once('radio') && t.foes.some((f) => f.kind === 'guard' && !f.down && f.state !== 'distracted')) push({ id: 'radio', ap: 1, card: true, targets: self });
     // 信鴿：讓鴿子把隨身碟送進去，一個目標不用走過去就完成。
-    if (perk === 'pigeon_post' && once('pigeon')) push({ id: 'pigeon', ap: 1, card: true, targets: t.objs.filter((o) => !o.done && !['prisoner', 'person'].includes(o.kind)).map((o) => [o.x, o.y]) });
+    if (perk === 'pigeon_post' && once('pigeon')) push({ id: 'pigeon', ap: 1, card: true, targets: t.objs.filter((o) => !o.done && !['prisoner', 'person', 'crate', 'wall'].includes(o.kind)).map((o) => [o.x, o.y]) });
     // ----- 天賦 -----
     // 扳手送的謝爾蓋：飛去六格內的守衛或攝影機（牆擋不住），附近的守衛盯著它看，攝影機關機。
     if (c.sergei && once('sergei')) push({ id: 'sergei', ap: 1, card: true, targets: foesAt((f) => (f.kind === 'guard' || (f.kind === 'cam' && !(f.off > 0))) && manh(f.x, f.y, u.x, u.y) <= 6).map((f) => [f.x, f.y]) });
@@ -404,6 +404,8 @@
     if (o.kind === 'terminal') return c.hack ? 1 : 2;
     if (o.kind === 'box') return c.strong || c.hack ? 1 : 2;
     if (o.kind === 'antenna') return ['pirate_radio', 'broadcast', 'press'].includes(c.perk) || c.hack ? 1 : 2;
+    if (o.kind === 'crate') return c.strong ? 1 : 2; // 物資箱很重
+    if (o.kind === 'wall') return 1;                  // 噴漆誰都會
     return 1;
   }
 
