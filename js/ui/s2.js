@@ -9,6 +9,7 @@
   const N = E.night;
   const data = () => E.s2.people;
   const stages = () => E.s2.ops.stages;
+  const bondHelp = `<button type="button" class="info-link q" data-act="info" data-k="bonds">?</button>`;
   // 第 4 版存檔：整個戰役（五個行政區、主線任務一到八）。舊版的原型存檔不相容，直接開新的一輪。
   // 第 5 版：白天的時段、交情、主線任務分兩段。第 4 版的存檔補上這些欄位就能接著玩。
   // 第 6 版：今晚的機會、搶來的器材、監聽、部署圖。舊存檔的機會從下一個早上開始出現。
@@ -30,6 +31,7 @@
   let worldOpen = false; // 正在問玩家第一季的結局
   let tut = null;        // 戰術教學關的沙盒（不存檔；有的話主畫面改畫教學，結束後回到原本的畫面）
   let tutSeen = 0;       // 教學關已經處理過音效的紀錄行數
+  let info = null;       // 正在看哪一項的說明（民心、器材……，文字是 s2.info.<id>）
   const TUT_KEY = 'watchdogs-echo.s2.tutorial'; // 'offered' 問過要不要玩教學、'done' 玩完了
   let goalsOpen = false; // 主線任務的目標清單有沒有展開
   let dayPick = null;    // 白天安排的選人畫面：{ act, ids: [第一個人, 第二個人] }
@@ -98,7 +100,7 @@
     h += `<div class="p-row"><label>${T('s2.p.quirks')}</label><div>${E.people.quirksOf(p).map((q) => `<span class="q"><b>${P(q.name)}</b><small>${P(q.desc)}</small>${q.tac ? `<small class="p-tac"><i>${T('s2.p.tacFx')}</i>${P(q.tac)}</small>` : ''}</span>`).join('')}</div></div>`;
     const rels = N.relationsOf(s, id);
     if (rels.length) {
-      h += `<div class="p-row rels"><label>${T('s2.p.relations')}</label><div>${rels.map((r) => {
+      h += `<div class="p-row rels"><label>${T('s2.p.relations')}${m ? bondHelp : ''}</label><div>${rels.map((r) => {
         const rm = E.roster.get(s.roster, r.other);
         const where = rm ? T('s2.p.status.' + rm.status) : N.street(s).includes(r.other) ? T('s2.p.rel.street') : '';
         const bond = m && rm ? T('s2.day.bond', { n: N.bond(s, id, r.other) }) : '';
@@ -110,7 +112,7 @@
       const named = new Set(rels.map((r) => r.other));
       const bonds = s.roster.members.filter((o) => o.person.id !== id && !['lost', 'dead', 'retired'].includes(o.status) && !named.has(o.person.id))
         .map((o) => ({ id: o.person.id, n: N.bond(s, id, o.person.id) })).filter((x) => x.n).sort((a, b) => b.n - a.n);
-      if (bonds.length) h += `<div class="p-row bonds"><label>${T('s2.p.bonds')}</label><div>${bonds.map((x) => `<span class="bond ${x.n > 0 ? 'up' : 'down'}">${nm(x.id)}<b>${x.n > 0 ? '+' : ''}${x.n}</b></span>`).join('')}</div></div>`;
+      if (bonds.length) h += `<div class="p-row bonds"><label>${T('s2.p.bonds')}${bondHelp}</label><div>${bonds.map((x) => `<span class="bond ${x.n > 0 ? 'up' : 'down'}">${nm(x.id)}<b>${x.n > 0 ? '+' : ''}${x.n}</b></span>`).join('')}</div></div>`;
     }
     if (m && (m.gifts || []).length) {
       h += `<div class="p-row gifts"><label>${T('s2.p.gifts')}</label><div>${m.gifts.map((g) => { const G = E.s2.days.gifts[g]; return `<span class="q"><b>${P(G.name)}</b><small>${P(G.desc)}</small><small class="p-tac"><i>${T('s2.p.tacFx')}</i>${P(G.tac)}</small></span>`; }).join('')}</div></div>`;
@@ -141,18 +143,21 @@
     return `<div class="chain">${list.map((id, i) => `<span class="${i < current ? 'done' : i === current ? 'now' : ''}">${P(stages()[id].name)}</span>`).join('<i>›</i>')}</div>`;
   }
 
-  // 行動的好處：民心、床位，還有「今晚的機會」帶來的各種好處（content-s2/ops.js 的 jobs）。
-  const REWARDS = ['cool', 'wipe', 'heal', 'gear', 'tap', 'intel'];
-  function rewardText(r) {
-    const out = REWARDS.filter((k) => r[k]).map((k) => T('s2.day.rw.' + k, { n: r[k] }));
-    if (r.beds) out.unshift(T('s2.day.rewardBeds', { n: r.beds }));
-    if (r.support || !out.length) out.push(T('s2.day.reward', { n: r.support || 0 }));
-    return out.join(' · ');
+  // 點得開的字：點了跳出一小段說明。
+  const infoLink = (k, text) => `<button type="button" class="info-link" data-act="info" data-k="${k}">${text}</button>`;
+
+  // 行動的好處：民心、床位，還有「今晚的機會」帶來的各種好處（content-s2/ops.js 的 jobs），每一項都點得開。
+  const REWARDS = [['cool', 'heat'], ['wipe', 'threat'], ['heal', 'heal'], ['gear', 'gear'], ['tap', 'tap'], ['intel', 'intel']];
+  function rewardRow(r) {
+    const out = REWARDS.filter(([k]) => r[k]).map(([k, id]) => infoLink(id, T('s2.day.rw.' + k, { n: r[k] })));
+    if (r.beds) out.unshift(infoLink('beds', T('s2.day.rewardBeds', { n: r.beds })));
+    if (r.support || !out.length) out.push(infoLink('support', T('s2.day.reward', { n: r.support || 0 })));
+    return `<div class="op-reward">${out.join('')}</div>`;
   }
 
   function opCard(e, tag = 'button') {
     const attrs = tag === 'button' ? ` data-act="op" data-key="${esc(e.key)}"` : '';
-    return `<${tag} class="op-card kind-${e.kind}"${attrs}>`
+    return `<div class="op-card kind-${e.kind}"><${tag} class="op-hit"${attrs}>`
       + `<div class="op-top"><em class="kind">${T('s2.day.kind.' + e.kind)}</em>`
       + (e.timer ? `<em class="urgent">${T('s2.day.timed', { n: e.timer })}</em>` : '')
       + (e.split ? `<em class="split">${T('s2.day.split')}</em>` : '')
@@ -164,7 +169,7 @@
       + `<div class="op-main">${e.target ? `<div class="op-face">${face(e.target)}</div>` : ''}<div><div class="op-name">${P(e.name)}</div><div class="op-desc">${P(e.desc)}</div></div></div>`
       + partChips(e)
       + (e.decoy ? `<div class="chain-label">${T('s2.op.decoy')}</div>` + stageChips(e.decoy, -1) : '')
-      + `<div class="op-reward">${rewardText(e.reward)}</div></${tag}>`;
+      + `</${tag}>${rewardRow(e.reward)}</div>`;
   }
 
   // 主線任務分兩段：第一段（潛入）的關卡，接著第二段（劇情或關卡）；第一段打完撤退過的，直接從第二段開始。
@@ -396,10 +401,10 @@
   // 手上的東西：搶來的器材、還在監聽的頻道、這一區主線任務的部署圖。
   function stashLine() {
     const out = [];
-    if (s.gear) out.push(T('s2.day.stash.gear', { n: s.gear }));
-    if (s.tap > s.night) out.push(T('s2.day.stash.tap', { n: s.tap - s.night }));
-    if (s.intel && s.intel === N.mainNow(s)) out.push(T('s2.day.stash.intel'));
-    return out.length ? `<p class="stash"><b>${T('s2.day.stash')}</b>${out.map((x) => `<span>${x}</span>`).join('')}</p>` : '';
+    if (s.gear) out.push(infoLink('gear', T('s2.day.stash.gear', { n: s.gear })));
+    if (s.tap > s.night) out.push(infoLink('tap', T('s2.day.stash.tap', { n: s.tap - s.night })));
+    if (s.intel && s.intel === N.mainNow(s)) out.push(infoLink('intel', T('s2.day.stash.intel')));
+    return out.length ? `<p class="stash"><b>${T('s2.day.stash')}</b>${out.join('')}</p>` : '';
   }
 
   // ===== 白天的安排：三個時段，每個時段一件事 =====
@@ -512,6 +517,7 @@
     }).join('')}</div>`;
     h += `<div class="bar-actions"><div class="squad-info">`
       + (chosen.length ? `<span class="chip">${T('s2.squad.startAlert', { n: N.startAlert(s, chosen) })}</span>` : '')
+      + (N.gearGoes(s, chosen, false) && !(e.story && e.part !== 0) ? `<span class="chip good">${T('s2.squad.gear')}</span>` : '')
       + combos.map((c) => { const def = data().combos.find((x) => x.id === c); return `<span class="chip combo${BAD_COMBOS.includes(c) ? ' bad' : ''}" title="${P(def.desc)}">${T('s2.squad.combos')}：${P(def.name)}</span>`; }).join('')
       + (reason ? `<span class="warn">${esc(reason)}</span>` : '')
       + `</div><button data-act="back">${T('s2.squad.back')}</button>`
@@ -611,8 +617,8 @@
     while (from > 0 && s.log[from].c !== 'op' && s.log[from].c !== 'night') from--;
     const lines = s.log.slice(from + 1).filter((e) => e.c !== 'stage');
     return `<section class="panel result res-${r.outcome}"><div class="res-title">${T(title)}</div>${r.name ? `<div class="res-op">${P(r.name)}</div>` : ''}`
-      + `<div class="res-nums">${r.support ? `<b class="up">${T('s2.res.support', { n: r.support })}</b>` : ''}${r.beds ? `<b class="up">${T('s2.day.rewardBeds', { n: r.beds })}</b>` : ''}`
-      + `${r.heat > 0 ? `<b class="down">${T('s2.res.heat', { n: r.heat })}</b>` : r.heat < 0 ? `<b class="up">${T('s2.res.heatDown', { n: -r.heat })}</b>` : ''}</div>`
+      + `<div class="res-nums">${r.support ? `<b class="up">${infoLink('support', T('s2.res.support', { n: r.support }))}</b>` : ''}${r.beds ? `<b class="up">${infoLink('beds', T('s2.day.rewardBeds', { n: r.beds }))}</b>` : ''}`
+      + `${r.heat > 0 ? `<b class="down">${infoLink('heat', T('s2.res.heat', { n: r.heat }))}</b>` : r.heat < 0 ? `<b class="up">${infoLink('heat', T('s2.res.heatDown', { n: -r.heat }))}</b>` : ''}</div>`
       + `<div class="res-log">${lines.map((e) => `<div class="ln c-${e.c}">${T(e.k, e.v)}</div>`).join('')}</div>`
       + `<div class="bar-actions"><button class="primary" data-act="next">${T('s2.res.next')}</button></div></section>`;
   }
@@ -743,7 +749,10 @@
   function renderModal() {
     const el = $('s2-modal');
     let h = '';
-    if (hack) {
+    if (info) {
+      h = `<div class="modal-card info"><h3>${T('s2.info.' + info + '.t')}</h3><p>${T('s2.info.' + info + '.d')}</p>`
+        + `<div class="modal-actions"><button class="primary" data-act="infoClose">${T('s2.ui.close')}</button></div></div>`;
+    } else if (hack) {
       h = renderHack();
     } else if (s.phase === 'event' && s.event) {
       const ev = s.event;
@@ -828,6 +837,7 @@
     if (tut) {
       main.dataset.phase = 'tac';
       main.innerHTML = tut.phase === 'tac' ? E.tacUI.render(tut, { alertStatus, tutorial: true }) : renderTutDone();
+      E.tacUI.motion(main);
       renderModal();
       return;
     }
@@ -835,6 +845,7 @@
     main.dataset.phase = phase;
     const renderTac = () => E.tacUI.render(s, { alertStatus });
     main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, tac: renderTac, result: renderResult, end: renderEnd, interlude: renderInterlude }[phase]();
+    E.tacUI.motion(main);
     renderModal();
     if (phase === 'story') {
       const log2 = $('story-log');
@@ -894,6 +905,8 @@
   };
 
   const actions = {
+    info(d) { info = d.k; },
+    infoClose() { info = null; },
     // 有主角時只要再挑一個人：點另一個人就直接換掉。
     vol(d) {
       if (d.id === s.hero) return;
@@ -1047,7 +1060,7 @@
   }
 
   // 這些操作只換對話框，不關掉人物檔案。
-  const KEEP_PROFILE = ['profile', 'close', 'home', 'callBack', 'lowkey', 'retire', 'retirePick', 'retireCancel', 'teamToggle', 'dayPerson'];
+  const KEEP_PROFILE = ['profile', 'close', 'home', 'callBack', 'lowkey', 'retire', 'retirePick', 'retireCancel', 'teamToggle', 'dayPerson', 'info', 'infoClose'];
 
   function onClick(ev) {
     const el = ev.target.closest('[data-act]');
@@ -1141,6 +1154,7 @@
     const saved = slot.read();
     $('s2-continue').hidden = !saved;
     document.addEventListener('click', (ev) => {
+      if (ev.target.id === 's2-modal' && info) { info = null; return renderModal(); }
       if (ev.target.id === 's2-modal' && (profileId || dayPick) && !hack) { profileId = null; dayPick = null; return renderModal(); }
       const lang = ev.target.closest('[data-lang]');
       if (lang) return setLang(lang.dataset.lang);
@@ -1157,11 +1171,12 @@
     document.addEventListener('keydown', (ev) => {
       // 戰術地圖的快捷鍵（對話框打開的時候不算）。
       const play = tut || s;
-      if (play && play.phase === 'tac' && !profileId && !hack) {
+      if (play && play.phase === 'tac' && !profileId && !hack && !info) {
         const before = s.phase;
         const tutBefore = tut && tut.phase;
         if (E.tacUI.key(play, ev)) { ev.preventDefault(); if (tut) tutCard(tutBefore); else resultCard(before); commit(); return; }
       }
+      if (ev.key === 'Escape' && info) { info = null; return renderModal(); }
       if (ev.key === 'Escape' && (profileId || dayPick)) { profileId = null; dayPick = null; renderModal(); }
       if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('article[data-act]')) { ev.preventDefault(); onClick(ev); }
     });

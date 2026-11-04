@@ -43,10 +43,10 @@ function sandbox(list) {
 // 第一季：照 index.html 的順序載入（介面相關的檔案除外）。
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]).filter((f) => !/ui\/|main\.js/.test(f));
-// 第二季：照 s2.html 的順序載入。介面只載入頭像（純字串，不碰畫面）。
+// 第二季：照 s2.html 的順序載入。介面只載入頭像和戰術地圖（都是純字串，不碰畫面）。
 const s2html = fs.readFileSync(path.join(root, 's2.html'), 'utf8');
 const S2_SCRIPTS = [...s2html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1])
-  .filter((f) => !/ui\//.test(f) || f.endsWith('faces.js'));
+  .filter((f) => !/ui\//.test(f) || f.endsWith('faces.js') || f.endsWith('ui/tactics.js'));
 const S1 = sandbox(scripts);
 const S2 = sandbox(S2_SCRIPTS);
 let E = S1.E; // 第一季的段落用第一季的沙盒；第二季的段落開始前換成 S2
@@ -98,6 +98,7 @@ function checkTexts(label, page, htmlText, sources, families = {}, topics = fals
   console.log(`${label}: ${all.size} keys × ${codes.length} languages`);
 }
 // 第二季介面用字串拼出來的 key（例如 's2.p.cat.' + 類別），逐一列出來檢查。
+const INFO = ['support', 'heat', 'towers', 'beds', 'threat', 'gear', 'heal', 'tap', 'intel', 'bonds'];
 const families = {
   's2.p.tier.': ['common', 'uncommon', 'rare', 'special'],
   's2.p.cat.': ['hacker', 'physical', 'social', 'specialist'],
@@ -110,6 +111,8 @@ const families = {
   's2.counter.': ['raid', 'blackout', 'early', 'raid.title', 'blackout.title', 'early.title'],
   's2.day.kind.': ['district', 'rescue', 'recruit', 'base', 'defense', 'main', 'job'],
   's2.day.rw.': ['cool', 'wipe', 'heal', 'gear', 'tap', 'intel'],
+  // 點得開的說明（畫面上的 data-k 和 infoLink）
+  's2.info.': INFO.flatMap((k) => [k + '.t', k + '.d']),
   's2.res.': ['win', 'fail', 'retreat', 'rest'],
   's2.fail.': ['hack', 'physical', 'social', 'hands', 'other'],
   's2.bagley.d': ['1', '2', '3', '4', '5'],
@@ -167,11 +170,11 @@ const families = {
   'm8.last.': ['cage', 'wild', 'deal', 'dawn'],
   // 戰術地圖
   'tac.obj.': ['box', 'terminal', 'antenna', 'prisoner', 'files', 'person', 'crate', 'wall'],
-  'tac.ab.': ['hack', 'climb', 'takedown', 'talk', 'disguise', 'unlock', 'force', 'heal', 'cab', 'sergei'],
+  'tac.ab.': ['hack', 'climb', 'takedown', 'talk', 'disguise', 'unlock', 'force', 'heal', 'cab', 'sergei', 'move', 'select', 'lockDoor', 'hackDoor', 'hackCam', 'hackDrone'],
   'tac.log.obj.': ['box', 'terminal', 'antenna', 'prisoner', 'files', 'person', 'crate', 'wall'],
   'tac.log.spotted.': ['guard', 'cam', 'drone'],
   'tac.log.unlock.': ['lockpick', 'master_keys', 'site_pass', 'building_access'],
-  'tac.guide.': ['you', 'guard', 'cam', 'drone', 'door', 'fence', 'hide', 'dark', 'exit', 'objective', 'vision', 'route', 'badge', 'you.d', 'guard.d', 'cam.d', 'drone.d', 'door.d', 'fence.d', 'hide.d', 'dark.d', 'exit.d', 'objective.d', 'vision.d', 'route.d', 'badge.d'],
+  'tac.guide.': ['you', 'guard', 'cam', 'drone', 'door', 'fence', 'hide', 'dark', 'exit', 'objective', 'vision', 'route', 'badge', 'you.d', 'guard.d', 'cam.d', 'drone.d', 'door.d', 'fence.d', 'hide.d', 'dark.d', 'exit.d', 'objective.d', 'vision.d', 'route.d', 'badge.d', 'noise', 'noise.d'],
   'tac.leg.': ['wall', 'dark', 'fence', 'door', 'hide', 'exit', 'guard', 'cam', 'drone', 'vision', 'wall.d', 'dark.d', 'fence.d', 'door.d', 'hide.d', 'exit.d', 'guard.d', 'cam.d', 'drone.d', 'vision.d'],
   // 白天：時段、安排、選人、做不到的原因、一起混的句子、隊友事件；主線任務的中場；地圖上的特殊狀況
   's2.day.slot.': S2.E.s2.days.SLOTS.concat(['night']),
@@ -189,6 +192,9 @@ const families = {
   'tac.tut.step.': S2.E.s2.tutorial.steps.map((x) => x.id),
   'tac.tut.tip.': S2.E.s2.tutorial.tips,
 };
+for (const m of (s2html + fs.readFileSync(path.join(root, 'js/ui/s2.js'), 'utf8')).matchAll(/data-k="(\w+)"|infoLink\('(\w+)'/g)) {
+  if (!INFO.includes(m[1] || m[2])) fail(`S2 info link ${m[1] || m[2]} has no explanation`);
+}
 checkTexts('S1', S1, html, ['js/main.js', 'js/ui/terminal.js', ...scripts.filter((f) => !f.includes('locales'))]);
 // 第二季借用第一季的指令別名（content/commands.js），但每個場景都有自己的說明，用不到第一季的預設說明。
 checkTexts('S2', S2, s2html, ['js/ui/s2.js', ...S2_SCRIPTS.filter((f) => !f.includes('locales') && f !== 'content/commands.js')], families, true);
@@ -1119,6 +1125,128 @@ section('戰術地圖');
     const out = ghost(s);
     if (out !== 'win') fail(`${label}: a squad with no enemies ended in ${out}`);
   }
+  // 聲音：畫面上怎麼說，這裡就怎麼測。傳得到的守衛走到出聲的那一格查看（兩個人聽到也一樣），不會跟著人走，查完就回去巡邏；
+  // 聽不到的守衛、狗、無人機都不理；聲音本身不加警戒（撞門的 +5 是撞門的代價）。動作的選單會寫聲音傳幾格。
+  {
+    const { s, ids } = squadFor('noise', []);
+    const [hero] = ids;
+    Object.assign(N.person(s, hero), { flaw: null, quirks: [], traits: [] });
+    N.pickOp(s, 'tower');
+    N.launch(s, ids, {}, 'tac');
+    const t = s.op.tac;
+    const u = t.units[0];
+    t.event = null;
+    t.spawns = [];
+    Object.assign(u, { x: 4, y: 3 });
+    const mk = (id, kind, x, y) => ({ id, kind, x, y, face: [1, 0], route: [[x, y]], ri: 0, state: 'patrol', timer: 0, target: null, down: false });
+    t.foes = [mk('near1', 'guard', 8, 4), mk('near2', 'guard', 7, 5), mk('far', 'guard', 12, 8), mk('dog', 'dog', 8, 2), mk('drone', 'drone', 7, 2)];
+    const foe = (id) => s.op.tac.foes.find((x) => x.id === id);
+    const force = () => N.tacAbilities(s, hero).find((a) => a.id === 'force');
+    if (TT.tile(t, 5, 3) !== 'D' || !force()) fail('noise: no door to force on the site map');
+    else {
+      if (force().noise !== 5) fail(`noise: forcing a door by hand carries ${force().noise} squares`);
+      t.event = 'rain';
+      if (force().noise !== 4) fail('noise: rain did not cover the sound');
+      N.person(s, hero).flaw = 'loudmouth';
+      if (force().noise !== 6) fail('noise: a loudmouth is not louder');
+      N.person(s, hero).flaw = null;
+      t.event = null;
+      s.op.alert = 0;
+      N.tacUse(s, hero, 'force', 5, 3);
+      if (s.op.alert !== 5) fail(`noise: alert ${s.op.alert} after forcing a door unseen`);
+      for (const id of ['near1', 'near2']) if (foe(id).state !== 'alert' || foe(id).target.join() !== '4,3') fail(`noise: ${id} did not head for the noise`);
+      for (const id of ['far', 'dog', 'drone']) if (foe(id).state !== 'patrol') fail(`noise: ${id} reacted`);
+      Object.assign(s.op.tac.units[0], { x: 2, y: 9 }); // 人走了，躲到別的地方
+      let turns = 0;
+      for (; turns < 10 && s.phase === 'tac' && ['near1', 'near2'].some((id) => foe(id).state === 'alert'); turns++) {
+        for (const id of ['near1', 'near2']) if (foe(id).state === 'alert' && foe(id).target.join() !== '4,3') fail(`noise: ${id} followed the person instead of checking the spot`);
+        N.tacEnd(s);
+      }
+      if (s.phase !== 'tac' || turns > 7 || ['near1', 'near2'].some((id) => foe(id).state !== 'patrol')) fail(`noise: guards still searching after ${turns} turns (${s.phase})`);
+      if (Math.abs(foe('near1').x - 4) + Math.abs(foe('near1').y - 3) > 2) fail('noise: a guard never got to the spot');
+    }
+  }
+  // 地圖的操作：點下去會發生的事不能出乎意料。
+  {
+    const UI = E.tacUI;
+    const tap = (s, x, y) => UI.click(s, { act: 'tacTile', x, y });
+    const go = (seed, tests, op, prep) => {
+      const r = squadFor(seed, tests);
+      if (prep) prep(r.s);
+      N.pickOp(r.s, op);
+      N.launch(r.s, r.ids, {}, 'tac');
+      const t = r.s.op.tac;
+      t.foes = [];
+      t.spawns = [];
+      t.event = null;
+      UI.reset();
+      return Object.assign(r, { t });
+    };
+    // 1. 突襲時開著的門：駭客走得到也鎖得了。點一下只跳選單，不動手；再點一次就走過去，門還是開著的。
+    {
+      const { s, ids, t } = go('feel-door', [], 'raid', (x) => { x.tonight = { type: 'raid' }; });
+      const u = t.units[0];
+      Object.assign(u, { x: 10, y: 7, ap: 2 });
+      const bw = s.op.bw;
+      UI.click(s, { act: 'tacSel', id: ids[0] });
+      tap(s, 11, 8);
+      const pop = UI.state().pop;
+      if (!pop || pop.items[0].ab !== 'move' || !pop.items.some((a) => a.ab === 'hack')) fail('feel: an open door the hacker can reach did not ask what to do');
+      if (TT.tile(t, 11, 8) !== 'd' || u.ap !== 2 || s.op.bw !== bw) fail('feel: one tap on an open door already did something');
+      const page = UI.render(s, { alertStatus: () => 's2.op.alert.0' });
+      if (unresolved(page) || !page.includes(E.i18n.t('tac.ab.move')) || !page.includes(E.i18n.t('tac.ab.lockDoor'))) fail('feel: the menu does not say walk or lock');
+      tap(s, 11, 8);
+      if (u.x !== 11 || u.y !== 8 || TT.tile(t, 11, 8) !== 'd' || s.op.bw !== bw) fail(`feel: a second tap did not walk through the door (${u.x},${u.y})`);
+      N.tacUndo(s);
+      // 走不到的開著的門：鎖門一樣要先問。
+      Object.assign(s.op.tac.units[0], { x: 10, y: 6 });
+      tap(s, 6, 6);
+      if (TT.tile(s.op.tac, 6, 6) !== 'd' || !UI.state().pop || UI.state().pop.items[0].ab !== 'hack') fail('feel: a far open door locked on one tap');
+      UI.click(s, { act: 'tacClose' });
+      Object.assign(s.op.tac.units[0], { x: 10, y: 7 });
+      // 2. 真的選了鎖門也可以撤回：駭入只加一點固定的警戒。
+      const alert = s.op.alert;
+      tap(s, 11, 8);
+      UI.click(s, { act: 'tacPick', ab: 'hack', x: '11', y: '8' });
+      if (TT.tile(s.op.tac, 11, 8) !== 'D' || s.op.bw !== bw - 1) fail('feel: picking the lock from the menu did not lock the door');
+      if (!s.op.tac.undo || !N.tacUndo(s)) fail('feel: a hack cannot be undone');
+      else if (TT.tile(s.op.tac, 11, 8) !== 'd' || s.op.bw !== bw || s.op.alert !== alert || s.op.tac.units[0].ap !== 2) fail('feel: undoing a hack did not put everything back');
+    }
+    // 3. 只有一件事可以做、但聲音很大：先跳選單；普通的目標照樣一點就做。
+    {
+      const { s, ids, t } = go('feel-loud', [job('bartender')], 'tower');
+      Object.assign(N.person(s, ids[1]), { flaw: null, quirks: [], traits: [] });
+      const u = t.units.find((x) => x.id === ids[1]);
+      Object.assign(u, { x: 4, y: 3, ap: 2 });
+      UI.click(s, { act: 'tacSel', id: ids[1] });
+      tap(s, 5, 3);
+      if (TT.tile(t, 5, 3) !== 'D' || !UI.state().pop) fail('feel: forcing a door went off without showing the noise');
+      else if (!UI.render(s, { alertStatus: () => 's2.op.alert.0' }).includes(E.i18n.t('tac.costNoise', { n: 5 }))) fail('feel: the menu does not show how far the noise carries');
+      UI.click(s, { act: 'tacClose' });
+      // 4. 走不到的地板：有回應。
+      tap(s, 12, 2);
+      if (!UI.state().tip || UI.state().tip.k !== 'tac.far') fail('feel: tapping a square out of reach gave no answer');
+    }
+    // 5. 急救的人點到受傷的隊友：可以急救，也可以換人。
+    {
+      const { s, ids, t } = go('feel-heal', [job('nurse')], 'tower');
+      const [hero, nurse] = ids;
+      const a = t.units.find((x) => x.id === nurse), b = t.units.find((x) => x.id === hero);
+      Object.assign(a, { x: 2, y: 2, ap: 2 });
+      Object.assign(b, { x: 3, y: 2, ap: 2 });
+      s.op.hurt[hero] = 'light';
+      UI.click(s, { act: 'tacSel', id: nurse });
+      tap(s, 3, 2);
+      const pop = UI.state().pop;
+      if (!pop || !pop.items.some((x) => x.ab === 'heal') || !pop.items.some((x) => x.ab === 'select')) fail('feel: a medic could not choose between healing and selecting');
+      else {
+        if (unresolved(UI.render(s, { alertStatus: () => 's2.op.alert.0' }))) fail('feel: unresolved text in the heal menu');
+        UI.click(s, { act: 'tacPick', ab: 'select', id: hero, x: '3', y: '2' });
+        if (UI.state().sel !== hero || s.op.hurt[hero] !== 'light') fail('feel: picking a teammate healed them or did not select them');
+      }
+    }
+    UI.reset();
+  }
   // 今晚的機會：每一件都有地圖，目標的種類和限時的回合數照 opMaps.jobs，沒有敵人的時候都打得完。
   for (const [id, plan] of Object.entries(E.s2.opMaps.jobs)) {
     const label = `tac job ${id}`;
@@ -1521,7 +1649,7 @@ section('戰術地圖');
       if (unresolved(text)) { fail(`tac-rand-${i} (${lang}): ${(text.match(/⟦[^⟧]+⟧|\{\w+\}/g) || []).join(' ')}`); break; }
     }
   }
-  console.log(`abilities by category / perk / trait / flaw, ${PLANS.length + 1} maps × 3 squads cleared with no enemies, ${Object.keys(E.s2.opMaps.jobs).length} opportunity maps cleared, ${evMaps} map × event pairs cleared, two-part main mission on maps, ${runs} random operations (${wins} won)`);
+  console.log(`noise rules, map taps, abilities by category / perk / trait / flaw, ${PLANS.length + 1} maps × 3 squads cleared with no enemies, ${Object.keys(E.s2.opMaps.jobs).length} opportunity maps cleared, ${evMaps} map × event pairs cleared, two-part main mission on maps, ${runs} random operations (${wins} won)`);
 }
 
 // ===== 7f. 白天：三個時段、交情、練弱點、照顧、幫街坊、踩點、派對、每一件隊友事件 =====
@@ -1777,6 +1905,13 @@ section('今晚的機會');
       const w = done.convoy;
       if (w.gear !== 2) fail(`jobs convoy: ${w.gear} gear`);
       w.phase = 'day'; w.result = null;
+      // 隊上沒有人會駭入：器材留到下次。
+      const idle = JSON.parse(JSON.stringify(w));
+      for (const id of squad) N.person(idle, id).skills.hack = 0;
+      N.pickOp(idle, 'broadcast');
+      if (N.gearGoes(idle, squad, false)) fail('jobs convoy: a squad with no hacker would take the gear');
+      N.launch(idle, squad);
+      if (idle.gear !== 2 || idle.op.bw !== N.BANDWIDTH || idle.log.some((x) => x.k === 's2.log.gearUsed')) fail('jobs convoy: gear was spent on a squad with no hacker');
       N.pickOp(w, 'broadcast');
       N.launch(w, squad);
       if (w.gear !== 1 || w.op.bw !== N.BANDWIDTH + 1 || !w.log.some((x) => x.k === 's2.log.gearUsed')) fail('jobs convoy: the gear did not go out with the next operation');

@@ -38,7 +38,7 @@ ECHO.i18n.register('zh-Hant', {
   's2.start.picked': '已選 {n}/2',
 
   's2.day.ops': '今晚的行動',
-  's2.day.opsHint': '一晚只能做一件事。',
+  's2.day.opsHint': '一晚只能做一件事。有虛線底線的字，點一下可以看說明。',
   's2.day.street': '街上',
   's2.day.streetHint': '掃描只是看看檔案。想招募的人按「保留」（最多三個人）：保留的人會一直留在街上，今晚的行動裡也會出現招募他們的任務。沒保留的人過一兩晚就會離開，換新的人。',
   's2.day.scan': '掃描',
@@ -347,7 +347,7 @@ ECHO.i18n.register('zh-Hans', {
   's2.start.picked': '已选 {n}/2',
 
   's2.day.ops': '今晚的行动',
-  's2.day.opsHint': '一晚只能做一件事。',
+  's2.day.opsHint': '一晚只能做一件事。有虚线底线的字，点一下可以看说明。',
   's2.day.street': '街上',
   's2.day.streetHint': '扫描只是看看档案。想招募的人按“保留”（最多三个人）：保留的人会一直留在街上，今晚的行动里也会出现招募他们的任务。没保留的人过一两晚就会离开，换新的人。',
   's2.day.scan': '扫描',
@@ -656,7 +656,7 @@ ECHO.i18n.register('en', {
   's2.start.picked': '{n}/2 picked',
 
   's2.day.ops': "Tonight's operation",
-  's2.day.opsHint': 'One operation per night.',
+  's2.day.opsHint': 'One operation per night. Tap anything with a dotted underline for an explanation.',
   's2.day.street': 'On the street',
   's2.day.streetHint': 'Scanning just reads the file. Keep the people you want (up to three): they stay on the street, and a mission to recruit them appears in tonight\'s operations. Anyone you don\'t keep moves on after a night or two, and new faces turn up.',
   's2.day.scan': 'Scan',
