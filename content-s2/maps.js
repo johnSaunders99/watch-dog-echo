@@ -1,7 +1,7 @@
 // 第二季戰術地圖的格子圖（15×11）和每種行動用哪一張。
 // 符號：# 牆　. 地板　, 暗處（只有貼身才看得到）　= 圍欄（可以翻，不擋視線）　D 上鎖的門　d 開著的門
 //       H 藏身處（貨櫃、樹叢）　S 出發點　X 撤離點　E 增援點　T 目標　P 被關的人　F 要燒的檔案
-// theme 決定地板和藏身處長什麼樣子（工地、辦公室、院子、住家、街道）。
+// theme 決定地板和藏身處長什麼樣子（工地、辦公室、院子、住家、街道、隧道）。
 // guards／drones／dogs 的 route 是巡邏路線；cams 是牆上的攝影機和它輪流看的方向；minRank 是從第幾區起才出現（康登是 0）。
 // dogs 是守衛犬：靠鼻子找人（暗處、藏身處都沒用），不抓人，只會叫來守衛。
 // turns：限時行動（救人、突襲）在這張圖上有幾回合（地圖比文字關卡的步數大，所以另外算）。
@@ -121,7 +121,86 @@
       cams: [{ x: 14, y: 3, faces: [[-1, 0]] }, { x: 14, y: 9, faces: [[-1, 0]], minRank: 2 }],
       dogs: [{ route: [[7, 9], [12, 9]], minRank: 1 }],
     },
+    // 市集：收攤之後的攤位巷子，篷布底下很暗、堆著貨箱。從左上角進來，穿過三排攤位，從右下角的停車場出去。
+    // 中間那排攤位的倉庫裡有一台終端（主線任務三要先從這裡查出押送車往哪裡開；不需要的時候這一格只是地板）。
+    market: {
+      theme: 'street',
+      rows: [
+        '###############',
+        '#S.,,#..H..,,.#',
+        '#S.,,D..#..,..#',
+        '#...###.#.##=##',
+        '#.H.,...=.....#',
+        '#...#,,.#.,,H.#',
+        '#E..#,T.#.,,..#',
+        '#####.###...D.#',
+        '#,,...H...#,,.#',
+        '#..H..,,..#..X#',
+        '###############',
+      ],
+      guards: [{ route: [[9, 1], [13, 1], [13, 2], [9, 2]] }, { route: [[5, 8], [9, 8]], minRank: 1 }, { route: [[10, 4], [13, 4]], minRank: 3 }],
+      drones: [{ route: [[2, 4], [7, 4], [7, 8], [2, 8]], minRank: 2 }],
+      cams: [{ x: 6, y: 3, faces: [[0, 1]] }, { x: 14, y: 6, faces: [[-1, 0]], minRank: 1 }],
+      dogs: [{ route: [[11, 9], [12, 9], [12, 8]], minRank: 2 }],
+    },
+    // 碼頭：一排一排的貨櫃（牆）和吊車軌道。從左下角上岸，撤離點是右上角等著的小船。
+    // 右下角的貨櫃區有一扇鎖著的門；吊車底下的控制箱（主線任務五）在中間。
+    wharf: {
+      theme: 'yard',
+      rows: [
+        '###############',
+        '#..H...,,...#X#',
+        '#.####.,,.#.#.#',
+        '#.#..#....#...#',
+        '#.#..D..H.##=##',
+        '#...,,........#',
+        '###=###.###.#.#',
+        '#S..,,#.#T#.#.#',
+        '#S..H.d.....#.#',
+        '#S....#..,,..E#',
+        '###############',
+      ],
+      guards: [{ route: [[7, 5], [13, 5], [13, 8], [11, 8]] }, { route: [[1, 1], [9, 1]], minRank: 1 }, { route: [[3, 3], [4, 3]], minRank: 3 }],
+      drones: [{ route: [[2, 5], [12, 5], [12, 2], [2, 2]], minRank: 1 }],
+      cams: [{ x: 6, y: 9, faces: [[0, -1]], minRank: 2 }, { x: 14, y: 3, faces: [[-1, 0]] }],
+      dogs: [{ route: [[8, 8], [11, 8]], minRank: 2 }],
+    },
+    // 舊隧道：二戰時挖的防空隧道，大半沒有燈。從左上角的井口下去，撤離點在右下角的排水口。
+    // 暗處很多，守衛只有貼身才看得到人，但狗鼻子不怕暗；手電筒照得到的那幾段（地板）要小心。
+    tunnels: {
+      theme: 'tunnel',
+      rows: [
+        '###############',
+        '#S,,.#..,,,#,,#',
+        '#S,,.D..,H,D,,#',
+        '#,,#####.###.,#',
+        '#,.#,,....,#.,#',
+        '#,H#,,T,,H.=.,#',
+        '#,.#..,,,,.#.,#',
+        '#,.###D#####.,#',
+        '#,,...,,,..,..#',
+        '#E.,H,,,..,,.X#',
+        '###############',
+      ],
+      guards: [{ route: [[6, 8], [12, 8], [12, 4]] }, { route: [[7, 1], [10, 1]], minRank: 1 }, { route: [[5, 4], [10, 4]], minRank: 2 }],
+      cams: [{ x: 14, y: 8, faces: [[-1, 0]] }],
+      dogs: [{ route: [[2, 8], [9, 8]], minRank: 1 }],
+    },
   };
+
+  // 地圖上的特殊狀況：每次潛入有一半的機會遇到一種（themes 是會出現的地圖主題，minRank 是從第幾區起）。
+  // 效果在 js/engine/tactics.js 的 build／endTurn；文字是 tac.ev.<id>（標題）和 tac.ev.<id>.d（說明）。
+  S2.mapEvents = [
+    { id: 'fog', themes: ['street', 'site', 'yard'] },          // 大霧：守衛和攝影機少看一格
+    { id: 'rain', themes: ['street', 'site', 'yard'] },         // 大雨：聲音傳得近一格，無人機少看一格
+    { id: 'drill', themes: ['office'] },                         // 停電演練：攝影機前三回合都關著
+    { id: 'shift', themes: ['office', 'yard', 'site', 'tunnel'] }, // 換班：第三回合結束時，守衛聚在一起聊兩回合
+    { id: 'crowd', themes: ['street'] },                         // 散場人潮：街上多了三個藏身的地方
+    { id: 'trolley', themes: ['office', 'home'] },               // 清潔推車：多一個藏身處
+    { id: 'kennel', themes: ['yard', 'site', 'street'], minRank: 1 }, // 加派警犬
+    { id: 'sweep', themes: ['street', 'site', 'yard', 'office', 'tunnel'], minRank: 2 }, // 加強巡邏：多一架無人機
+    { id: 'echo', themes: ['street', 'site', 'yard', 'office', 'tunnel'] }, // Echo 的低語：開場就看得到巡邏路線
+  ];
 
   // 每種行動用哪一張地圖、T 格是什麼目標。擴充安全屋（談租約）沒有地圖，只能快速結算。
   S2.opMaps = {
@@ -132,17 +211,27 @@
     recruit: {
       rescue: { map: 'compound' },
       erase_score: { map: 'office', obj: 'terminal' },
-      recover: { map: 'street', obj: 'terminal' },
+      recover: { map: 'market', obj: 'terminal' },
       debt: { map: 'office', obj: 'terminal' },
       broadcast: { map: 'office', obj: 'antenna' },
       protect: { map: 'street', obj: 'terminal' },
-      search: { map: 'street', obj: 'person' },
+      search: { map: 'tunnels', obj: 'person' },
+    },
+    // 主線任務分兩段：approach 是第一段（潛入：穿過街區、碼頭、隧道），main 是第二段（主要目標；用文字冒險的時候不用地圖）。
+    // obj: 'none' 代表這一段只要穿過去，地圖上的 T 格當成地板。
+    approach: {
+      m2: { map: 'market', obj: 'none' },
+      m3: { map: 'market', obj: 'terminal' },
+      m4: { map: 'wharf', obj: 'none' },
+      m5: { map: 'wharf', obj: 'box' },
+      m7: { map: 'street', obj: 'box' },
+      m8: { map: 'tunnels', obj: 'none' },
     },
     main: {
       m2: { map: 'site', obj: 'box' },
       m3: { map: 'compound' },
       m4: { map: 'office', obj: 'terminal' },
-      m5: { map: 'street', obj: 'terminal' },
+      m5: { map: 'tunnels', obj: 'terminal' },
       m7: { map: 'office', obj: 'terminal' },
       m8: { map: 'office', obj: 'terminal' },
     },

@@ -44,7 +44,7 @@
 
   // ===== 地板、牆、圍欄、門、藏身處 =====
   // 每種主題一種地板材質（SVG pattern），牆有立體的頂面和正面。
-  const FLOOR = { site: 'tx-gravel', office: 'tx-carpet', yard: 'tx-concrete', home: 'tx-wood', street: 'tx-asphalt' };
+  const FLOOR = { site: 'tx-gravel', office: 'tx-carpet', yard: 'tx-concrete', home: 'tx-wood', street: 'tx-asphalt', tunnel: 'tx-brick' };
   function defs() {
     const p = (id, base, body) => `<pattern id="${id}" width="${TS}" height="${TS}" patternUnits="userSpaceOnUse"><rect width="${TS}" height="${TS}" fill="${base}"/>${body}</pattern>`;
     return `<defs>`
@@ -53,6 +53,7 @@
       + p('tx-concrete', '#262a31', '<path d="M4 30 l7 -4 l5 3 l9 -6" stroke="#1d2027" stroke-width="1" fill="none"/><circle cx="30" cy="8" r="1" fill="#2e333b"/>')
       + p('tx-wood', '#2c221c', '<path d="M0 10 H40 M0 20 H40 M0 30 H40 M14 0 V10 M30 10 V20 M8 20 V30 M24 30 V40" stroke="#221a15" stroke-width="1.2"/>')
       + p('tx-asphalt', '#1b1f27', '<circle cx="7" cy="9" r="1" fill="#262b35"/><circle cx="29" cy="24" r="1.2" fill="#242934"/><circle cx="17" cy="33" r="0.8" fill="#2a303b"/>')
+      + p('tx-brick', '#241c1a', '<path d="M0 10 H40 M0 20 H40 M0 30 H40 M10 0 V10 M30 0 V10 M0 10 V20 M20 10 V20 M10 20 V30 M30 20 V30 M0 30 V40 M20 30 V40" stroke="#181210" stroke-width="1.4"/>')
       + `<linearGradient id="tx-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff1b8" stop-opacity="0.45"/><stop offset="1" stop-color="#fff1b8" stop-opacity="0"/></linearGradient>`
       + `<radialGradient id="tx-exit"><stop offset="0" stop-color="#5cf29a" stop-opacity="0.5"/><stop offset="1" stop-color="#5cf29a" stop-opacity="0"/></radialGradient>`
       + `</defs>`;
@@ -239,7 +240,7 @@
   // ===== 能力的小圖示（畫在可以動手的格子上） =====
   const GOLD = '#ffd23f'; // 招式卡一律金色
   const AB_COLOR = { hack: '#2ff3e0', climb: '#ff9a3d', takedown: '#ff9a3d', force: '#ff9a3d', breach: '#ff9a3d', talk: '#c2b3ff', disguise: GOLD, unlock: '#5cf29a', heal: '#5cf29a', cab: GOLD, use: '#ff2e88', pet: '#5cf29a',
-    summon: GOLD, code: GOLD, ghost: GOLD, soothe: GOLD, lift: GOLD, boost: GOLD, cover: GOLD, radio: GOLD, pigeon: GOLD };
+    summon: GOLD, code: GOLD, ghost: GOLD, soothe: GOLD, lift: GOLD, boost: GOLD, cover: GOLD, radio: GOLD, pigeon: GOLD, sergei: GOLD };
   const colorOf = (ab, card) => (card ? GOLD : AB_COLOR[ab] || '#ff2e88');
   function glyph(ab) {
     const w = '#0b0f1c';
@@ -263,6 +264,8 @@
       case 'cover': return `<path d="M-6 5 l6 -10 l6 10 Z" fill="${w}"/><path d="M0 -5 v10" stroke="#fff" stroke-width="1"/>`;
       case 'radio': return `<rect x="-5" y="-1" width="10" height="7" rx="1.5" fill="${w}"/><path d="M-3 -1 l6 -5" stroke="${w}" stroke-width="1.6"/><circle cx="2" cy="2.5" r="1.8" fill="#fff"/>`;
       case 'pigeon': return `<path d="M-6 1 q3 -6 8 -3 l4 -1 l-3 3 q-1 5 -6 4 Z" fill="${w}"/><circle cx="3" cy="-2.5" r=".9" fill="#fff"/>`;
+      // 謝爾蓋：四個旋翼的小無人機
+      case 'sergei': return `<rect x="-2.5" y="-2" width="5" height="4" rx="1" fill="${w}"/><path d="M-2 -1.5 L-5 -4.5 M2 -1.5 L5 -4.5 M-2 1.5 L-5 4.5 M2 1.5 L5 4.5" stroke="${w}" stroke-width="1.4"/>${[[-5, -4.5], [5, -4.5], [-5, 4.5], [5, 4.5]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="1.1" fill="${w}"/>`).join('')}`;
       case 'pet': return `<circle cx="0" cy="2" r="3.2" fill="${w}"/>${[[-4.5, -2], [-1.5, -4.5], [1.5, -4.5], [4.5, -2]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="${w}"/>`).join('')}`;
       default: return `<circle r="4" stroke="${w}" stroke-width="2" fill="none"/><circle r="1.5" fill="${w}"/>`;
     }
@@ -426,7 +429,10 @@
     if (c.perk === 'unsuspicious') add('tac.cap.plain', {}, perk);
     if (c.perk === 'master_keys') add('tac.cap.cleaner', {}, perk);
     // 被動的特質和小習慣
-    if (c.quiet) add('tac.cap.quiet', {}, tr('careful'));
+    if (c.quiet && has('careful')) add('tac.cap.quiet', {}, tr('careful'));
+    // 天賦（隊友事件送的）
+    if (c.gifts.includes('quietstep')) add('tac.cap.soft', {}, { t: 's2.p.gifts' }, 'good');
+    if (c.sergei) add('tac.cap.sergei', {}, { t: 's2.p.gifts' }, tac.used['sergei:' + id] ? 'dim' : '', 'sergei');
     if (has('calm')) add('tac.cap.calm', {}, tr('calm'), tac.used['calm:' + id] ? 'dim' : '');
     if (c.slip) add('tac.cap.fast', {}, has('fast') ? tr('fast') : perk, tac.used['fast:' + id] ? 'dim' : '');
     if (has('unremarkable')) add('tac.cap.unremarkable', {}, tr('unremarkable'));
@@ -458,6 +464,7 @@
       const fan = (hq('man_utd') && oq.includes('liverpool')) ? 'man_utd' : (hq('liverpool') && oq.includes('man_utd')) ? 'liverpool' : null;
       if (fan) add('tac.cap.derby', { other: { l: E.people.name(N.person(s, o.id)) } }, qk(fan), 'bad');
       else if (rivals.includes(o.id)) add('tac.cap.derby', { other: { l: E.people.name(N.person(s, o.id)) } }, { l: D.relations.rival.name }, 'bad');
+      if (N.relationsOf(s, id).some((r) => r.type === 'friend' && r.other === o.id)) add('tac.cap.friend', { other: { l: E.people.name(N.person(s, o.id)) } }, { l: D.relations.friend.name }, 'good');
     }
     return out;
   }
@@ -473,6 +480,7 @@
       const c = N.tacCaps(s, id);
       return { src: job.perk === 'disguise' ? E.i18n.pick(D.perks.disguise.name) : t('s2.p.cat.' + job.category), desc: t('tac.cap.disguise', { n: c.disguiseTurns }) };
     }
+    if (d.src === 'gift') return { src: t('s2.p.gifts'), desc: E.i18n.pick(E.s2.days.gifts[d.key].tac) };
     if (d.src === 'perk' || (d.perk && job.perk === d.perk)) return { src: E.i18n.pick(D.perks[job.perk].name), desc: E.i18n.pick(D.perks[job.perk].tac) };
     const trait = D.traits.find((x) => x.id === d.key);
     return { src: E.i18n.pick(trait.name), desc: E.i18n.pick(trait.card.tac) };
@@ -551,6 +559,8 @@
       + `<div class="alert alert-${lvl}"><div class="alert-top"><span>${T('s2.op.alert')}</span><b>${s.op.alert}</b><em>${T(ui.alertStatus(s.op.alert))}</em></div>`
       + `<div class="alert-bar"><i style="width:${s.op.alert}%"></i><u style="left:30%"></u><u style="left:60%"></u></div></div></section>`;
     if (ui.tutorial) h += coachHtml(s, tut);
+    // 這次潛入的特殊狀況（大霧、換班……）
+    if (tac.event) h += `<section class="tac-event ev-${tac.event}"><em>${T('tac.ev.label')}</em><b>${T('tac.ev.' + tac.event)}</b><span>${T('tac.ev.' + tac.event + '.d')}</span></section>`;
     h += `<section class="panel tac"><div class="tac-stage">${mapSvg(s, tut && tut.mark ? tut.mark(tac) : [])}${popHtml(s)}${tipHtml(s)}${guide ? guideHtml(s) : ''}</div>`;
     // 地圖正下方：隊員、撤回、結束回合
     h += `<div class="tac-bar"><div class="tac-squad">${unitsOf(s).map((u, i) => {

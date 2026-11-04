@@ -10,7 +10,10 @@
   const data = () => E.s2.people;
   const stages = () => E.s2.ops.stages;
   // 第 4 版存檔：整個戰役（五個行政區、主線任務一到八）。舊版的原型存檔不相容，直接開新的一輪。
-  const slot = E.save.slot('watchdogs-echo.s2.proto', 4);
+  // 第 5 版：白天的時段、交情、主線任務分兩段。第 4 版的存檔補上這些欄位就能接著玩。
+  const slot = E.save.slot('watchdogs-echo.s2.proto', 5, {
+    4: (d) => Object.assign(d, { bonds: d.bonds || {}, mainPart: d.mainPart || {}, day: d.day || { slot: 0, did: {}, event: null } }),
+  });
   const LANG_KEY = 'watchdogs-echo.s2.lang';
 
   let s = null;
@@ -27,6 +30,8 @@
   let tutSeen = 0;       // 教學關已經處理過音效的紀錄行數
   const TUT_KEY = 'watchdogs-echo.s2.tutorial'; // 'offered' 問過要不要玩教學、'done' 玩完了
   let goalsOpen = false; // 主線任務的目標清單有沒有展開
+  let dayPick = null;    // 白天安排的選人畫面：{ act, ids: [第一個人, 第二個人] }
+  let interPrep = 'regroup'; // 主線任務中場：選了哪一種喘口氣的方式
   const teamOpen = {};   // 側欄每一組有沒有展開（玩家自己點過才記下來）
 
   const who = (id) => N.person(s, id);
@@ -83,8 +88,10 @@
     h += `<div class="p-traits">${E.people.traitsOf(p).map((tr) => miniCard(tr.card, E.i18n.pick(tr.name))).join('')}`
       + (m && m.inherited ? miniCard(data().traits.find((x) => x.id === m.inherited.trait).card, t('s2.p.inherited', { name: nameVar(m.inherited.from) })) : '')
       + `</div>`;
+    const prog = m && N.trainProgress(s, id);
     h += `<div class="p-row flaw"><label>${T('s2.p.flaw')}</label><div><b>${P(flaw.name)}</b>`
       + (flaw.level ? `<em class="lvl lvl-${flaw.level}">${T('s2.p.level.' + flaw.level)}</em>` : '')
+      + (prog && prog.n ? `<em class="train">${T('s2.p.training')} ${prog.n}/${prog.need}</em>` : '')
       + `<span>${P(flaw.desc)}</span>${tacLine(flaw.tac)}</div></div>`;
     h += `<div class="p-row"><label>${T('s2.p.quirks')}</label><div>${E.people.quirksOf(p).map((q) => `<span class="q"><b>${P(q.name)}</b><small>${P(q.desc)}</small>${q.tac ? `<small class="p-tac"><i>${T('s2.p.tacFx')}</i>${P(q.tac)}</small>` : ''}</span>`).join('')}</div></div>`;
     const rels = N.relationsOf(s, id);
@@ -92,8 +99,22 @@
       h += `<div class="p-row rels"><label>${T('s2.p.relations')}</label><div>${rels.map((r) => {
         const rm = E.roster.get(s.roster, r.other);
         const where = rm ? T('s2.p.status.' + rm.status) : N.street(s).includes(r.other) ? T('s2.p.rel.street') : '';
-        return `<span class="rel rel-${r.type}"><b>${P(data().relations[r.type].name)}</b>${nm(r.other)}${where ? `<small>${where}</small>` : ''}</span>`;
+        const bond = m && rm ? T('s2.day.bond', { n: N.bond(s, id, r.other) }) : '';
+        return `<span class="rel rel-${r.type}"><b>${P(data().relations[r.type].name)}</b>${nm(r.other)}${where || bond ? `<small>${[where, bond].filter(Boolean).join(' · ')}</small>` : ''}</span>`;
       }).join('')}</div></div>`;
+    }
+    // 交情：和隊上其他人的交情（還沒變成朋友或死對頭的也列出來，看得出誰跟誰比較熟）。
+    if (m) {
+      const named = new Set(rels.map((r) => r.other));
+      const bonds = s.roster.members.filter((o) => o.person.id !== id && !['lost', 'dead', 'retired'].includes(o.status) && !named.has(o.person.id))
+        .map((o) => ({ id: o.person.id, n: N.bond(s, id, o.person.id) })).filter((x) => x.n).sort((a, b) => b.n - a.n);
+      if (bonds.length) h += `<div class="p-row bonds"><label>${T('s2.p.bonds')}</label><div>${bonds.map((x) => `<span class="bond ${x.n > 0 ? 'up' : 'down'}">${nm(x.id)}<b>${x.n > 0 ? '+' : ''}${x.n}</b></span>`).join('')}</div></div>`;
+    }
+    if (m && (m.gifts || []).length) {
+      h += `<div class="p-row gifts"><label>${T('s2.p.gifts')}</label><div>${m.gifts.map((g) => { const G = E.s2.days.gifts[g]; return `<span class="q"><b>${P(G.name)}</b><small>${P(G.desc)}</small><small class="p-tac"><i>${T('s2.p.tacFx')}</i>${P(G.tac)}</small></span>`; }).join('')}</div></div>`;
+    }
+    if (m && (m.overcame || []).length) {
+      h += `<div class="p-row"><label>${T('s2.p.overcame')}</label><div>${m.overcame.map((k) => `<span class="q done"><b>✓ ${P(data().flaws.find((x) => x.id === k).name)}</b></span>`).join('')}</div></div>`;
     }
     if (m && m.scars && m.scars.length) {
       h += `<div class="p-row scars"><label>${T('s2.p.scars')}</label><div>${m.scars.map((k) => `<span class="q"><b>${P(data().scars[k].name)}</b><small>${P(data().scars[k].desc)}</small></span>`).join('')}</div></div>`;
@@ -129,11 +150,23 @@
       + (e.timer ? `<em class="urgent">${T('s2.day.timed', { n: e.timer })}</em>` : '')
       + (e.split ? `<em class="split">${T('s2.day.split')}</em>` : '')
       + (e.left !== undefined ? `<em class="urgent">${T('s2.day.left', { n: e.left })}</em>` : '')
-      + (e.family ? `<em class="family">${T('s2.day.familyShort')}</em>` : '') + `</div>`
+      + (e.family ? `<em class="family">${T('s2.day.familyShort')}</em>` : '')
+      + (e.main ? `<em class="split">${T('s2.day.parts')}</em>` : '') + `</div>`
       + `<div class="op-main">${e.target ? `<div class="op-face">${face(e.target)}</div>` : ''}<div><div class="op-name">${P(e.name)}</div><div class="op-desc">${P(e.desc)}</div></div></div>`
-      + stageChips(e.stages, -1)
+      + partChips(e)
       + (e.decoy ? `<div class="chain-label">${T('s2.op.decoy')}</div>` + stageChips(e.decoy, -1) : '')
       + `<div class="op-reward">${rewardText(e.reward)}</div></${tag}>`;
+  }
+
+  // 主線任務分兩段：第一段（潛入）的關卡，接著第二段（劇情或關卡）；第一段打完撤退過的，直接從第二段開始。
+  function partChips(e) {
+    if (!e.main) return stageChips(e.stages, -1);
+    const second = `<div class="chain-label">${T(e.story ? 's2.day.partStory' : 's2.day.part2')}</div>`;
+    if (e.part === 0) {
+      return `<div class="chain-label">${T('s2.day.part1', { name: { l: e.approachName } })}</div>` + stageChips(e.stages, -1)
+        + second + (e.story ? '' : stageChips(e.later, -1));
+    }
+    return `<div class="chain-label good">${T('s2.day.partSaved')}</div>` + second + (e.story ? '' : stageChips(e.stages, -1));
   }
 
   // ===== 主線任務：文字冒險 =====
@@ -320,6 +353,7 @@
       h += `<section class="counter counter-${s.tonight.type}"><b>${T('s2.counter.' + s.tonight.type + '.title')}</b><p>${T('s2.counter.' + s.tonight.type)}</p>`
         + (s.tonight.type === 'raid' ? `<p class="warn">${T('s2.day.raidHint')}</p>` : '') + `</section>`;
     } else h += bagleyBox();
+    h += dayPlan();
     // 解放的條件：西敏要先有民心才能斷電；其他區民心高了卻還沒打主線任務，提醒一下。
     const main = N.mainNow(s);
     const rule = s.district === 'westminster' ? (s.mains.m7 !== 'done' && !main ? 's2.ui.m7need' : '') : (s.support >= 60 && main ? 's2.ui.mainNeeded' : '');
@@ -347,10 +381,101 @@
     return h;
   }
 
+  // ===== 白天的安排：三個時段，每個時段一件事 =====
+  const DAY_ROLES = { hang: ['person', 'person'], train: ['trainee', 'coach'], care: ['patient', 'carer'], neighbours: ['person'], scout: ['person'], party: [] };
+  const dayPool = () => s.roster.members.filter((m) => ['active', 'injured', 'network'].includes(m.status)).map((m) => m.person.id);
+  // 這件事現在能不能做：選人以外的條件都過了，而且每個位置都找得到人（教練可以不選）。
+  function dayOpen(act) {
+    const c = N.dayCheck(s, act, []);
+    if (!c.ok && c.reason !== 's2.day.need.people') return c;
+    const roles = DAY_ROLES[act];
+    for (let i = 0; i < roles.length; i++) {
+      if (roles[i] === 'coach') continue;
+      const list = dayPool().filter((id) => N.dayCanPick(s, act, i, id));
+      if (list.length < (act === 'hang' ? 2 : 1)) return { ok: false, reason: act === 'train' ? 's2.day.need.flaw' : act === 'care' ? 's2.day.need.injured' : 's2.day.need.people' };
+    }
+    return { ok: true };
+  }
+  function dayPlan() {
+    const D = E.s2.days;
+    const slot = s.day ? s.day.slot : D.SLOTS.length;
+    const pills = D.SLOTS.map((k, i) => `<span class="slot${i < slot ? ' done' : i === slot ? ' now' : ''}">${T('s2.day.slot.' + k)}</span>`).join('<i>›</i>')
+      + `<i>›</i><span class="slot night">${T('s2.day.slot.night')}</span>`;
+    let h = `<section class="panel dayplan"><h2>${T('s2.day.plan')}</h2><div class="slots">${pills}</div>`;
+    if (slot >= D.SLOTS.length) return h + `<p class="hint">${T('s2.day.slotsDone')}</p></section>`;
+    h += `<p class="hint">${T('s2.day.planHint')}</p><div class="day-acts">`;
+    for (const a of D.activities) {
+      const c = dayOpen(a.id);
+      h += `<button class="day-act" data-act="dayOpen" data-a="${a.id}"${c.ok ? '' : ' disabled'}><b>${T('s2.day.act.' + a.id)}</b><small>${T('s2.day.act.' + a.id + '.d')}</small>`
+        + (c.ok ? '' : `<em>${T(c.reason)}</em>`) + `</button>`;
+    }
+    return h + `</div></section>`;
+  }
+  // 選人畫面裡的一個人：要練的人看得到練到哪裡，教練看得到是不是好教練，一起混看得到兩個人的交情。
+  function dayPerson(act, i, id) {
+    const on = dayPick.ids[i] === id;
+    const notes = [];
+    const m = E.roster.get(s.roster, id);
+    if (act === 'train' && i === 0) { const pg = N.trainProgress(s, id); notes.push(T('s2.day.trainOf', { flaw: { l: E.people.flawOf(who(id)).name }, n: pg.n, max: pg.need })); }
+    if (act === 'train' && i === 1 && dayPick.ids[0] && N.goodCoach(s, N.person(s, dayPick.ids[0]).flaw, id)) notes.push(`<b class="good">${T('s2.day.coachGood')}</b>`);
+    if (act === 'hang' && dayPick.ids[1 - i] && dayPick.ids[1 - i] !== id) notes.push(T('s2.day.bond', { n: N.bond(s, id, dayPick.ids[1 - i]) }));
+    if (act === 'care' && i === 0) notes.push(T('s2.p.status.injured') + ' · ' + m.injuredFor + (m.critical ? ' · ' + T('s2.p.critical') : ''));
+    if (m.status !== 'active') notes.push(T('s2.p.status.' + m.status));
+    return `<button class="dp-person${on ? ' sel' : ''}" data-act="dayPerson" data-i="${i}" data-id="${id}">${face(id)}<span><b>${nm(id)}</b><small>${P(E.people.occupationOf(who(id)).name)}</small>${notes.map((x) => `<small>${x}</small>`).join('')}</span></button>`;
+  }
+  const dayChosen = () => (dayPick.ids[1] ? dayPick.ids.slice(0, 2) : dayPick.ids.slice(0, 1).filter(Boolean));
+  function dayPickHtml() {
+    const act = dayPick.act;
+    const roles = DAY_ROLES[act];
+    let h = `<div class="modal-card daypick"><h3>${T('s2.day.act.' + act)}</h3><p class="hint">${T('s2.day.pick.' + act)}</p>`;
+    roles.forEach((r, i) => {
+      const list = dayPool().filter((id) => N.dayCanPick(s, act, i, id) && !dayPick.ids.some((x, j) => j !== i && x === id));
+      h += `<div class="dp-row"><label>${T('s2.day.role.' + r)}</label><div class="dp-people">${list.map((id) => dayPerson(act, i, id)).join('')}</div></div>`;
+    });
+    const c = N.dayCheck(s, act, dayChosen());
+    return h + `<div class="modal-actions">${c.ok ? '' : `<span class="hint warn">${T(c.reason)}</span>`}<button class="ghost" data-act="dayCancel">${T('s2.day.cancel')}</button>`
+      + `<button class="primary" data-act="dayGo"${c.ok ? '' : ' disabled'}>${T('s2.day.go')}</button></div></div>`;
+  }
+
+  // ===== 主線任務的中場 =====
+  function renderInterlude() {
+    const op = s.op;
+    const def = E.s2.ops.main[op.main];
+    const story = N.partStory(s);
+    const tac = N.partTac(s);
+    const ms = N.members(s);
+    const taken = ms.filter((id) => op.taken[id]);
+    const hurt = ms.filter((id) => op.hurt[id] && !op.taken[id]);
+    const names = (list) => ({ l: joinNames(list) });
+    let h = `<section class="panel result interlude"><div class="res-title">${T('s2.inter.done')}</div><div class="res-op">${P(op.name)}</div>`
+      + `<div class="res-nums"><b>${T('s2.inter.alert', { n: op.alert })}</b></div>`
+      + (taken.length ? `<p class="warn">${T('s2.inter.taken', { name: names(taken) })}</p>` : '')
+      + (hurt.length ? `<p class="warn">${T('s2.inter.hurt', { name: names(hurt) })}</p>` : '')
+      + `<div class="bagley"><div class="bagley-face">${E.art.avatar('bagley')}</div><div class="bagley-txt"><b>BAGLEY</b><p>${T('s2.inter.b.' + op.main)}</p></div></div>`
+      + `<p class="hint">${T('s2.inter.hint')}</p><h3>${T('s2.inter.prep')}</h3><div class="inter-prep">`
+      + ['regroup', 'patch'].map((k) => `<button class="prep${interPrep === k ? ' sel' : ''}" data-act="interPrep" data-k="${k}"><b>${T('s2.inter.' + k)}</b><small>${T('s2.inter.' + k + '.d')}</small></button>`).join('')
+      + `</div><h3>${T(story ? 's2.day.partStory' : 's2.inter.next')}</h3>` + (story ? '' : stageChips(def.stages, -1))
+      + `<div class="bar-actions"><button class="ghost" data-act="interGo" data-mode="retreat">${T('s2.inter.retreat')}</button>`
+      + (story ? `<button class="primary" data-act="interGo" data-mode="story">${T('s2.inter.story')}</button>`
+        : tac ? `<button data-act="interGo" data-mode="quick">${T('s2.squad.goQuick')}</button><button class="primary" data-act="interGo" data-mode="tac">${T('s2.squad.goTac')}</button>`
+          : `<button class="primary" data-act="interGo" data-mode="quick">${T('s2.squad.go')}</button>`)
+      + `</div></section>`;
+    return h;
+  }
+  // 「甲、乙和丙」：三種語言各自的接法。
+  function joinNames(list) {
+    const out = {};
+    for (const l of ['en', 'tc', 'sc']) {
+      const ns = list.map((id) => E.people.name(who(id))[l]);
+      out[l] = l === 'en' ? (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns.join('')) : ns.join('、');
+    }
+    return out;
+  }
+
   function renderSquad() {
     const e = N.picked(s);
     // 有戰術地圖的行動（文字冒險的主線任務除外），可以選擇親自潛入。
-    const tac = !e.story && N.tacPlan(s);
+    const tac = N.tacPlan(s);
     const pool = s.roster.members.filter((m) => m.status === 'active' || m.status === 'network').map((m) => m.person.id);
     const chosen = ids();
     const check = N.squadCheck(s, chosen, picks);
@@ -610,6 +735,14 @@
         : t('s2.react.escape.text', { name: nameVar(rc.who) });
       h = `<div class="modal-card react"><div class="modal-face">${face(rc.owner)}</div><h3>${T('s2.react.' + rc.type + '.title')}</h3><p>${esc(text)}</p>`
         + `<div class="modal-actions"><button class="primary" data-act="react" data-use="1">${T('s2.react.' + rc.type + '.use')}</button><button data-act="react" data-use="0">${T('s2.react.' + rc.type + '.skip')}</button></div></div>`;
+    } else if (s.phase === 'day' && s.day && s.day.event) {
+      // 早上的隊友事件：有人的頭像、發生了什麼、怎麼處理。
+      const ev = s.day.event;
+      h = `<div class="modal-card ev dev"><div class="dev-label">${T('s2.dev.label')}</div><div class="modal-faces">${ev.who.map((id) => `<div class="modal-face">${face(id)}</div>`).join('')}</div>`
+        + `<h3>${T('s2.dev.' + ev.id + '.title', ev.v)}</h3><p>${T('s2.dev.' + ev.id + '.text', ev.v)}</p>`
+        + `<div class="modal-actions">${ev.choices.map((c) => `<button data-act="dayAnswer" data-choice="${c}">${T('s2.dev.' + ev.id + '.' + c, ev.v)}</button>`).join('')}</div></div>`;
+    } else if (dayPick && s.phase === 'day') {
+      h = dayPickHtml();
     } else if (retiring) {
       const p = who(retiring);
       h = `<div class="modal-card retire"><div class="modal-face">${face(retiring)}</div><h3>${T('s2.act.retireTitle')}</h3><p class="hint">${T('s2.act.retireHint')}</p>`
@@ -680,7 +813,7 @@
     const phase = s.phase === 'event' ? 'op' : s.phase === 'react' ? (s.op && s.op.mode === 'tac' ? 'tac' : 'op') : s.phase;
     main.dataset.phase = phase;
     const renderTac = () => E.tacUI.render(s, { alertStatus });
-    main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, tac: renderTac, result: renderResult, end: renderEnd }[phase]();
+    main.innerHTML = { story: renderStory, start: renderStart, day: renderDay, travel: renderTravel, squad: renderSquad, op: renderOp, tac: renderTac, result: renderResult, end: renderEnd, interlude: renderInterlude }[phase]();
     renderModal();
     if (phase === 'story') {
       const log2 = $('story-log');
@@ -785,6 +918,24 @@
       E.fx.sfx.play('title');
     },
     rest() { N.rest(s); },
+    // 白天的安排
+    dayOpen(d) { dayPick = { act: d.a, ids: [] }; if (!DAY_ROLES[d.a].length) { N.dayAct(s, d.a, []); dayPick = null; } },
+    dayPerson(d) { const i = Number(d.i); dayPick.ids[i] = dayPick.ids[i] === d.id ? undefined : d.id; },
+    dayGo() { if (N.dayAct(s, dayPick.act, dayChosen())) dayPick = null; },
+    dayCancel() { dayPick = null; },
+    dayAnswer(d) { N.dayAnswer(s, d.choice); },
+    // 主線任務的中場
+    interPrep(d) { interPrep = d.k; },
+    interGo(d) {
+      if (d.mode === 'retreat') { N.nextPart(s, 'retreat'); return; }
+      if (!N.nextPart(s, interPrep, d.mode === 'tac' ? 'tac' : null)) return;
+      interPrep = 'regroup';
+      window.scrollTo(0, 0);
+      if (s.phase === 'story') { storySeen = 0; return; }
+      if (s.phase === 'tac') E.tacUI.reset();
+      cine('title', `<div class="cine-title">${T('s2.inter.next')}</div>`, 1400);
+      E.fx.sfx.play('title');
+    },
     goTac() {
       // 第一次親自潛入：問一次要不要先玩教學關（組好的隊伍留著，玩完回來直接出發）。
       if (!lsGet(TUT_KEY)) {
@@ -875,7 +1026,7 @@
   }
 
   // 這些操作只換對話框，不關掉人物檔案。
-  const KEEP_PROFILE = ['profile', 'close', 'home', 'callBack', 'lowkey', 'retire', 'retirePick', 'retireCancel', 'teamToggle'];
+  const KEEP_PROFILE = ['profile', 'close', 'home', 'callBack', 'lowkey', 'retire', 'retirePick', 'retireCancel', 'teamToggle', 'dayPerson'];
 
   function onClick(ev) {
     const el = ev.target.closest('[data-act]');
@@ -969,7 +1120,7 @@
     const saved = slot.read();
     $('s2-continue').hidden = !saved;
     document.addEventListener('click', (ev) => {
-      if (ev.target.id === 's2-modal' && profileId && !hack) { profileId = null; return renderModal(); }
+      if (ev.target.id === 's2-modal' && (profileId || dayPick) && !hack) { profileId = null; dayPick = null; return renderModal(); }
       const lang = ev.target.closest('[data-lang]');
       if (lang) return setLang(lang.dataset.lang);
       onClick(ev);
@@ -990,7 +1141,7 @@
         const tutBefore = tut && tut.phase;
         if (E.tacUI.key(play, ev)) { ev.preventDefault(); if (tut) tutCard(tutBefore); else resultCard(before); commit(); return; }
       }
-      if (ev.key === 'Escape' && profileId) { profileId = null; renderModal(); }
+      if (ev.key === 'Escape' && (profileId || dayPick)) { profileId = null; dayPick = null; renderModal(); }
       if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('article[data-act]')) { ev.preventDefault(); onClick(ev); }
     });
     $('cine').addEventListener('click', () => $('cine').classList.remove('show'));

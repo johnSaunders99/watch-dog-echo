@@ -6,6 +6,8 @@
 // 每個特質是一張招式卡，在地圖上每次行動能用一次（叫人、順手牽羊、打氣……）；稀有人物的專長是地圖上的王牌（信鴿、地下電台……）。
 // 守衛犬靠鼻子：暗處、藏身處、偽裝都騙不過牠，但牠不會抓人，只會叫，把附近的守衛引過來。
 // 被看到會增加警戒（沿用夜間行動的警戒）：警戒 30 會來增援，60 以上無人機會開火，滿了就有人被捕；被守衛追上也會被捕。
+// 每次潛入可能遇到一種特殊狀況（大霧、大雨、停電演練、換班、散場人潮……，content-s2/maps.js 的 mapEvents），在 build 時套上。
+// 隊友事件送的天賦也在這裡：扳手的謝爾蓋（召喚小無人機）、Darcy 教的無聲腳步；朋友在旁邊時，會把被追上的人拉開一次。
 // 狀態全部放在 s.op.tac，可以直接存檔。這裡不碰隊伍和結算，需要的時候都經由夜間引擎傳進來的 api。
 (function (E) {
   const AP = 2;
@@ -27,11 +29,12 @@
   const active = (f) => !f.down && !(f.off > 0) && !(f.loop > 0) && f.state !== 'distracted';
 
   // ===== 建立地圖 =====
-  // o：{ map, obj（T 格的目標種類）, ids（出發的隊員）, rank（第幾區，越後面守衛越多）, limit（限時行動：有的話改用地圖的 turns）, escort（被救的人）, intel }
+  // o：{ map, obj（T 格的目標種類；'none' 代表這一段只要穿過去）, ids（出發的隊員）, rank（第幾區，越後面守衛越多）, limit（限時行動：有的話改用地圖的 turns）,
+  //      escort（被救的人）, intel, event（特殊狀況的 id）, rng（擺放特殊狀況用的亂數） }
   function build(o) {
     const tpl = E.s2.maps[o.map];
     const t = {
-      map: tpl.rows.slice(), mapId: o.map, theme: tpl.theme || 'site', w: tpl.rows[0].length, h: tpl.rows.length, turn: 1, limit: o.limit ? tpl.turns || o.limit : null,
+      map: o.obj === 'none' ? tpl.rows.map((r) => r.replace(/T/g, '.')) : tpl.rows.slice(), mapId: o.map, theme: tpl.theme || 'site', w: tpl.rows[0].length, h: tpl.rows.length, turn: 1, limit: o.limit ? tpl.turns || o.limit : null,
       keys: tpl.keys !== false, units: [], foes: [], objs: [], used: {}, seen: {}, locks: {}, spotted: {}, undo: null, intel: !!o.intel, escort: o.escort || null, spawns: [], keycard: false,
     };
     const starts = [];
@@ -67,7 +70,38 @@
     for (const d of tpl.drones || []) if ((d.minRank || 0) <= o.rank) t.foes.push({ id: 'd' + n++, kind: 'drone', x: d.route[0][0], y: d.route[0][1], face: [1, 0], route: d.route, ri: 1, state: 'patrol', timer: 0, loop: 0, down: false });
     for (const c of tpl.cams || []) if ((c.minRank || 0) <= o.rank) t.foes.push({ id: 'c' + n++, kind: 'cam', x: c.x, y: c.y, face: c.faces[0], faces: c.faces, fi: 0, off: 0, down: false, state: 'patrol' });
     for (const d of tpl.dogs || []) if ((d.minRank || 0) <= o.rank) t.foes.push(Object.assign(guard(t, 'k' + n++, d.route), { kind: 'dog' }));
+    if (o.event) applyEvent(t, o.event, o.rng || E.rng.create(o.map + ':' + o.event));
     return t;
+  }
+
+  // ===== 特殊狀況 =====
+  // 大霧、大雨在看和聽的時候算（inView、noise）；換班在 endTurn；其他的在這裡直接改地圖和敵人。
+  function applyEvent(t, id, r) {
+    t.event = id;
+    // 可以擺東西的空地：不在出發點、撤離點和敵人旁邊。
+    const open = () => {
+      const out = [];
+      for (let y = 1; y < t.h - 1; y++) {
+        for (let x = 1; x < t.w - 1; x++) {
+          if (t.map[y][x] !== '.') continue;
+          const close = (c) => [[0, 0]].concat(DIRS).some(([dx, dy]) => tile(t, x + dx, y + dy) === c);
+          if (close('S') || close('X') || close('E') || t.foes.some((f) => f.x === x && f.y === y)) continue;
+          out.push([x, y]);
+        }
+      }
+      return out;
+    };
+    if (id === 'drill') for (const f of t.foes) if (f.kind === 'cam') f.off = 3;
+    if (id === 'crowd' || id === 'trolley') for (const [x, y] of r.shuffle(open()).slice(0, id === 'crowd' ? 3 : 1)) setTile(t, x, y, 'H');
+    if (id === 'kennel' && !t.foes.some((f) => f.kind === 'dog')) {
+      const g = t.foes.find((f) => f.kind === 'guard' && f.route.length > 1);
+      if (g) t.foes.push(Object.assign(guard(t, 'k' + t.foes.length, g.route.slice().reverse()), { kind: 'dog' }));
+    }
+    if (id === 'sweep') {
+      const y = Math.floor(t.h / 2);
+      t.foes.push({ id: 'd' + t.foes.length, kind: 'drone', x: t.w - 3, y, face: [-1, 0], route: [[t.w - 3, y], [2, y]], ri: 1, state: 'patrol', timer: 0, loop: 0, down: false });
+    }
+    if (id === 'echo') t.intel = true;
   }
 
   // 出發前：上夜班的人第一回合多一個行動點；過目不忘、酒保在隊上，看得到巡邏路線。
@@ -76,6 +110,8 @@
     for (const u of t.units) {
       if (u.escort) continue;
       if (api.quirks(s, u.id).includes('night_shift')) { u.ap = AP + 1; api.say(s, 'card', 'tac.log.nightShift', { name: api.name(s, u.id) }); }
+      // 白天忙了一整天：第一回合少一個行動點。
+      if (api.tired && api.tired(s, u.id)) { u.ap--; api.say(s, 'warn', 'tac.log.tired', { name: api.name(s, u.id) }); }
       if (!t.intel && caps(s, api, u.id).intel) { t.intel = true; api.say(s, 'card', 'tac.log.intelMemory', { name: api.name(s, u.id) }); }
     }
   }
@@ -120,12 +156,12 @@
 
   // 一個敵人看不看得到某一格（不管那一格上的人有沒有躲好）。range 由呼叫的人調整。
   function inView(t, f, x, y, bonus = 0) {
-    if (f.kind === 'drone') return cheb(f.x, f.y, x, y) <= 2 + bonus;
+    if (f.kind === 'drone') return cheb(f.x, f.y, x, y) <= 2 + bonus - (t.event === 'rain' ? 1 : 0); // 大雨：無人機看不清楚
     const dx = x - f.x, dy = y - f.y;
     if (dx === 0 && dy === 0) return false;
     // 狗用鼻子：四面八方兩格（隔著牆聞不到）。
     if (f.kind === 'dog') return manh(f.x, f.y, x, y) <= 2 + bonus && los(t, f.x, f.y, x, y);
-    const range = (f.kind === 'cam' ? 5 : f.state === 'alert' ? 5 : 4) + bonus;
+    const range = (f.kind === 'cam' ? 5 : f.state === 'alert' ? 5 : 4) + bonus - (t.event === 'fog' ? 1 : 0); // 大霧：少看一格
     // 守衛身邊一格：前面和兩側都看得到，正後方看不到（所以可以從背後摸上去）。
     if (f.kind === 'guard' && cheb(f.x, f.y, x, y) <= 1) return dx * f.face[0] + dy * f.face[1] >= 0;
     if (cheb(f.x, f.y, x, y) > range) return false;
@@ -156,7 +192,8 @@
     const fl = api.flaw(s, u.id), tr = api.traits(s, u.id), q = api.quirks(s, u.id);
     if (f.kind === 'dog') return !q.includes('dogs_love') && inView(t, f, u.x, u.y, q.includes('dogs_fear') ? 1 : 0);
     // 毫不起眼、有前科改變守衛和攝影機的距離；賞鳥的人知道怎麼在天上的眼睛底下不動。
-    const bonus = f.kind === 'drone' ? (q.includes('birdwatcher') ? -1 : 0) : (tr.includes('unremarkable') ? -1 : 0) + (fl === 'record' ? 1 : 0);
+    const soft = (api.gifts(s, u.id) || []).includes('quietstep');
+    const bonus = f.kind === 'drone' ? (q.includes('birdwatcher') ? -1 : 0) : (tr.includes('unremarkable') || soft ? -1 : 0) + (fl === 'record' ? 1 : 0);
     if (!inView(t, f, u.x, u.y, bonus)) return false;
     const adjacent = cheb(f.x, f.y, u.x, u.y) <= 1;
     const c = tile(t, u.x, u.y);
@@ -179,7 +216,8 @@
     const skills = api.person(s, id).skills;
     const has = (x) => tr.includes(x);
     const hq = (x) => q.includes(x);
-    const c = { cat, perk, list: [] };
+    const gifts = api.gifts(s, id) || [];
+    const c = { cat, perk, list: [], gifts };
     // 騎單車通勤：目標都完成之後，騎車走人。
     c.bike = hq('cyclist') && !objsLeft(t);
     c.move = MOVE + (has('fast') ? 1 : 0) + (hq('marathon') ? 1 : 0) + (perk === 'sprint' ? 1 : 0) + (perk === 'rooftops' ? 2 : 0) + (c.bike ? 2 : 0) - (fl === 'bad_knees' ? 1 : 0);
@@ -208,7 +246,8 @@
     c.cab = perk === 'getaway' || has('driver');
     c.strong = cat === 'physical' || has('strong');
     c.lift = perk === 'heavy_lift'; // 搬家工人：撞門、拆圍欄都很安靜
-    c.quiet = has('careful');
+    c.quiet = has('careful') || gifts.includes('quietstep');
+    c.sergei = gifts.includes('sergei');
     c.loud = fl === 'loudmouth';
     c.clumsy = fl === 'clumsy';
     c.dark = fl === 'dark';
@@ -237,6 +276,7 @@
     disguise: { src: 'perk', key: 'disguise' },
     radio: { src: 'perk', key: 'pirate_radio' },
     pigeon: { src: 'perk', key: 'pigeon_post' },
+    sergei: { src: 'gift', key: 'sergei' },
   };
   const usedCard = (t, ab, id) => (ab === 'cab' ? !!t.used.cab : ab === 'lift' ? t.keycard : !!t.used[ab + ':' + id]);
 
@@ -251,7 +291,7 @@
     const out = [];
     for (const ab of Object.keys(CARDS)) {
       const d = CARDS[ab];
-      let mine = d.src === 'trait' ? tr.includes(d.key) || (d.perk && c.perk === d.perk) : c.perk === d.key;
+      let mine = d.src === 'trait' ? tr.includes(d.key) || (d.perk && c.perk === d.perk) : d.src === 'gift' ? c.gifts.includes(d.key) : c.perk === d.key;
       if (ab === 'disguise') mine = c.disguise;
       if (ab === 'summon' && u.helper) mine = false; // 叫來的人不會再叫人
       if (ab === 'breach' && c.lift) mine = false;   // 搬家工人本來就能拆
@@ -342,6 +382,9 @@
     if (perk === 'pirate_radio' && once('radio') && t.foes.some((f) => f.kind === 'guard' && !f.down && f.state !== 'distracted')) push({ id: 'radio', ap: 1, card: true, targets: self });
     // 信鴿：讓鴿子把隨身碟送進去，一個目標不用走過去就完成。
     if (perk === 'pigeon_post' && once('pigeon')) push({ id: 'pigeon', ap: 1, card: true, targets: t.objs.filter((o) => !o.done && !['prisoner', 'person'].includes(o.kind)).map((o) => [o.x, o.y]) });
+    // ----- 天賦 -----
+    // 扳手送的謝爾蓋：飛去六格內的守衛或攝影機（牆擋不住），附近的守衛盯著它看，攝影機關機。
+    if (c.sergei && once('sergei')) push({ id: 'sergei', ap: 1, card: true, targets: foesAt((f) => (f.kind === 'guard' || (f.kind === 'cam' && !(f.off > 0))) && manh(f.x, f.y, u.x, u.y) <= 6).map((f) => [f.x, f.y]) });
     // ----- 小習慣 -----
     // 愛狗：蹲下來摸摸狗，牠就不叫了。
     if (q.includes('dogs_love')) push({ id: 'pet', ap: 1, targets: foesAt((f) => f.kind === 'dog' && manh(f.x, f.y, u.x, u.y) <= 1).map((f) => [f.x, f.y]) });
@@ -494,6 +537,7 @@
   // 發出聲音：附近在巡邏的守衛會過來看看。
   function noise(s, api, x, y, r) {
     const t = s.op.tac;
+    if (t.event === 'rain') r = Math.max(1, r - 1); // 大雨蓋過了聲音
     let heard = false;
     for (const f of t.foes) {
       if (f.kind !== 'guard' || f.down || f.state === 'distracted' || manh(f.x, f.y, x, y) > r) continue;
@@ -649,6 +693,18 @@
       obj.done = true;
       api.say(s, 'card', 'tac.log.pigeon', v);
       api.say(s, 'gain', 'tac.log.obj.' + obj.kind, v);
+    } else if (ab === 'sergei') {
+      let n = 0;
+      for (const f of t.foes) {
+        if (f.down || manh(f.x, f.y, x, y) > 2) continue;
+        if (f.kind === 'guard') {
+          f.state = 'distracted';
+          f.timer = 2;
+          f.target = null;
+          n++;
+        } else if (f.kind === 'cam') { f.off = Math.max(f.off || 0, 2); n++; }
+      }
+      api.say(s, 'card', 'tac.log.sergei', Object.assign({ n }, v));
     } else if (ab === 'pet') {
       foe.down = true;
       foe.friend = true;
@@ -789,6 +845,11 @@
         noise(s, api, w.x, w.y, 2);
       }
     }
+    // 換班：第三回合結束時，守衛聚在一起交接，兩回合不看別的地方。
+    if (t.event === 'shift' && t.turn === 3) {
+      for (const f of t.foes) if (f.kind === 'guard' && !f.down && f.state === 'patrol') { f.state = 'distracted'; f.timer = 2; }
+      api.say(s, 'gain', 'tac.log.ev.shift');
+    }
     for (const f of t.foes) {
       if (f.down) continue;
       if (f.kind === 'cam') {
@@ -895,6 +956,15 @@
         f.state = 'distracted';
         f.timer = 1;
         api.say(s, 'card', 'tac.log.slip', v);
+        continue;
+      }
+      // 朋友就在兩格內：一把把人拉開（每對朋友每次行動一次）。
+      const pal = !u.escort && live(t).find((o) => o !== u && !o.escort && manh(o.x, o.y, u.x, u.y) <= 2 && api.friend(s, o.id, u.id) && !t.used['pal:' + [o.id, u.id].sort().join('|')]);
+      if (pal) {
+        t.used['pal:' + [pal.id, u.id].sort().join('|')] = true;
+        f.state = 'distracted';
+        f.timer = 1;
+        api.say(s, 'card', 'tac.log.friend', { name: api.name(s, pal.id), other: v.name });
         continue;
       }
       // 教學關：被追上也不算數，守衛放人，回去站崗。

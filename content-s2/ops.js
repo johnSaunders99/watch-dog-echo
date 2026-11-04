@@ -401,25 +401,32 @@
       name: n('Lionheart are at the door', '獅心防務攻進來了', '狮心防务攻进来了'),
       desc: n('Hold the door, wipe the data, get out. Six moves before they are through. Stay in, and someone gets taken.', '堵門、銷毀資料、撤離。六步之內不完成，門就會被撞開。不應戰的話，一定有人被帶走。', '堵门、销毁数据、撤离。六步之内不完成，门就会被撞开。不应战的话，一定有人被带走。') },
   };
-  // 主線任務：用文字冒險的方式進行（content-s2/scenes/），這裡只放行動卡上的名稱和說明。
-  // stages 只是給行動卡顯示的關卡預覽；跳過劇情時，就改用這幾關照一般行動進行。
+  // 主線任務分兩段：approach 是第一段（潛入，approachName 是這一段的名字），stages 是第二段（主要目標）。
+  // 主角還在的話，第二段用文字冒險的方式進行（content-s2/scenes/）；跳過劇情、或主角不在了，就照 stages 這幾關進行。
+  // 戰術地圖用哪幾張在 content-s2/maps.js 的 opMaps.approach 和 opMaps.main。
   const main = {
-    m2: { kind: 'main', stages: ['fence', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 20 },
+    m2: { kind: 'main', approach: ['patrol_drone', 'fence'], stages: ['tower_box', 'getaway'], reward: { support: 20 },
+      approachName: n('Through Camden Market', '穿過康登市集', '穿过卡姆登市集'),
       name: n('Main mission 2: Curfew Night', '主線任務二：宵禁之夜', '主线任务二：宵禁之夜'),
       desc: n('The first time we move against the curfew head-on. Take down the first tower in Camden. You have to lead it yourself.', '第一次在宵禁裡正面行動，拆掉康登的第一座監控塔。你必須親自帶隊。', '第一次在宵禁里正面行动，拆掉卡姆登的第一座监控塔。你必须亲自带队。') },
-    m3: { kind: 'main', stages: ['shopfront', 'holding_yard', 'cells', 'getaway'], reward: { support: 25 },
+    m3: { kind: 'main', approach: ['shopfront', 'lockers'], stages: ['holding_yard', 'cells', 'getaway'], reward: { support: 25 },
+      approachName: n('Find where the van went', '查出押送車開去哪裡', '查出押送车开去哪里'),
       name: n('Main mission 3: High Threat', '主線任務三：高威脅', '主线任务三：高威胁'),
       desc: n('A delivery rider scored 91 was taken off Gerrard Street tonight. Get them out, and find out where the number came from.', '一個威脅評分 91 的外送員，今晚在爵祿街被帶走了。把人救出來，查清楚這個分數是怎麼來的。', '一个威胁评分 91 的外卖骑手，今晚在爵禄街被带走了。把人救出来，查清楚这个分数是怎么来的。') },
-    m4: { kind: 'main', stages: ['side_door', 'lobby', 'terminal', 'getaway'], reward: { support: 25 },
+    m4: { kind: 'main', approach: ['canal', 'side_door'], stages: ['lobby', 'terminal', 'getaway'], reward: { support: 25 },
+      approachName: n('Come ashore at the wharf', '從碼頭上岸', '从码头上岸'),
       name: n('Main mission 4: Inside Man', '主線任務四：內應', '主线任务四：内应'),
       desc: n("Dr Hale says he can walk us into Stillwater. Inside is a piece of Lionheart's List.", '黑爾博士說，他能帶我們走進靜域。裡面有獅心防務「名單」的一部分。', '黑尔博士说，他能带我们走进静域。里面有狮心防务“名单”的一部分。') },
-    m5: { kind: 'main', stages: ['canal', 'tunnel', 'terminal', 'getaway'], reward: { support: 25 },
+    m5: { kind: 'main', approach: ['canal', 'tower_box'], stages: ['tunnel', 'terminal', 'getaway'], reward: { support: 25 },
+      approachName: n('Cut the crane lights', '關掉吊車的燈', '关掉吊车的灯'),
       name: n('Main mission 5: The Tunnels', '主線任務五：隧道', '主线任务五：隧道'),
       desc: n("The drone hive sits on top of the old tunnels. Eileen Walsh still has her grandmother's notebook.", '無人機巢蓋在舊隧道的正上方。艾琳・沃什手上還有她祖母的筆記本。', '无人机巢盖在旧隧道的正上方。艾琳·沃什手上还有她祖母的笔记本。') },
-    m7: { kind: 'main', stages: ['side_door', 'patrol_drone', 'tower_box', 'getaway'], reward: { support: 30 },
+    m7: { kind: 'main', approach: ['patrol_drone', 'tower_box'], stages: ['side_door', 'terminal', 'getaway'], reward: { support: 30 },
+      approachName: n('Trip the substation', '先關掉變電箱', '先关掉变电箱'),
       name: n('Main mission 7: Blackout', '主線任務七：斷電', '主线任务七：断电'),
       desc: n('Switch off London, one district at a time, and open the way to Whitehall.', '把倫敦一區一區關掉，打開通往白廳的路。', '把伦敦一区一区关掉，打开通往白厅的路。') },
-    m8: { kind: 'main', stages: ['side_door', 'cells', 'terminal', 'back_door'], reward: { support: 0 },
+    m8: { kind: 'main', approach: ['tunnel', 'side_door'], stages: ['cells', 'terminal', 'back_door'], reward: { support: 0 },
+      approachName: n('Under Whitehall by the old tunnels', '走舊隧道到白廳底下', '走旧隧道到白厅底下'),
       name: n('Main mission 8: Airspace Control', '主線任務八：空域控制中心', '主线任务八：空域控制中心'),
       desc: n('Under Whitehall, every Nightwatch drone in London answers to one room. Tonight we walk in.', '白廳底下，全倫敦的守夜人無人機都聽命於一個房間。今晚，我們走進去。', '白厅底下，全伦敦的守夜人无人机都听命于一个房间。今晚，我们走进去。') },
   };
