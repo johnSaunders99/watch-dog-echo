@@ -1,6 +1,6 @@
 ECHO.i18n.register('zh-Hans', {
   'ui.title': '看门狗：残响',
-  'ui.subtitle': '非官方同人文字冒险·序章试玩',
+  'ui.subtitle': '前传·非官方同人文字冒险·看门狗：军团 外传',
   'ui.disclaimer': '本作为非官方同人创作，与 Ubisoft 无关。《看门狗》相关权利归 Ubisoft 所有。',
   'ui.start': '启动',
   'ui.continue': '继续',

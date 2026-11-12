@@ -506,11 +506,12 @@
   };
 
   // ===== 環境音 =====
-  // 低頻的城市底噪、一點電力的嗡嗡聲、高頻的雜訊；戰術地圖多一層跟著警戒走的脈動。
+  // 低頻的城市底噪、一點電力的嗡嗡聲；戰術地圖多一層跟著警戒走的脈動。
+  // 試玩的回饋是底噪太吵：白天完全安靜；高頻的雜訊（air）整層拿掉，低頻的底噪也調小。
   const LEVELS = {
-    day: { rumble: 0.05, hum: 0.008, air: 0.003, pulse: 0 },
-    city: { rumble: 0.07, hum: 0.012, air: 0.005, pulse: 0 },
-    tac: { rumble: 0.08, hum: 0.014, air: 0.007, pulse: 0.05 },
+    day: { rumble: 0, hum: 0, air: 0, pulse: 0 },
+    city: { rumble: 0.035, hum: 0.01, air: 0, pulse: 0 },
+    tac: { rumble: 0.03, hum: 0.01, air: 0, pulse: 0.05 },
   };
   function buildAmbient() {
     const c = ctx;
@@ -615,6 +616,13 @@
       if (amb) amb.bus.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.05);
       return muted;
     },
+    // 其他頁面可以加自己的聲音（第三季的在 js/s3/sounds.js）：make 拿到合成用的工具，回傳 { 名稱: 函式 }。
+    add(make) {
+      Object.assign(sounds, make({ osc, hiss, burst, rotor, keypad, speak, rnd, pick }));
+      sfx.names = Object.keys(sounds);
+    },
+    // 排音樂用：聲音開著的時候回傳現在的時間，不然是 null。
+    now() { return ctx && !muted && ctx.state === 'running' ? ctx.currentTime : null; },
     // 測試用：在離線的 context 裡合成一個聲音，回傳波形。
     async render(name, secs = 3) {
       const Off = window.OfflineAudioContext || window.webkitOfflineAudioContext;

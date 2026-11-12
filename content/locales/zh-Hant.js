@@ -1,6 +1,6 @@
 ECHO.i18n.register('zh-Hant', {
   'ui.title': '看門狗：殘響',
-  'ui.subtitle': '非官方同人文字冒險・序章試玩',
+  'ui.subtitle': '前傳・非官方同人文字冒險・看門狗：自由軍團 外傳',
   'ui.disclaimer': '本作為非官方同人創作，與 Ubisoft 無關。《看門狗》相關權利屬於 Ubisoft。',
   'ui.start': '啟動',
   'ui.continue': '繼續',

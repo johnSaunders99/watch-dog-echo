@@ -50,6 +50,13 @@
 
     slot,
 
+    // 不經過版本升級，直接看某個存檔欄位現在存了什麼（讓後面的季節讀前面季節的結果）。
+    // 那份存檔的格式可能比讀的人新，所以拿到之後每個欄位都要自己檢查。
+    peek(key) {
+      const stored = getRaw(key);
+      return stored ? (typeof stored.v === 'number' ? stored.data : stored) : null;
+    },
+
     // 讀取第一季的結局：stay、seal、wildfire、recaptured；沒有打完就回傳 null。
     v1Ending() {
       const save = getRaw(V1_KEY);

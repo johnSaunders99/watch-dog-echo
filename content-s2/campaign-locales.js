@@ -1,8 +1,8 @@
 // 第二季戰役的文字（三語）：換區、解放、受傷與死亡、名單和盟友、五個結局。
 // 載入順序在 locales.js 之後，所以這裡會覆蓋原型時期的結局文字。
 ECHO.i18n.register('zh-Hant', {
-  's2.ui.subtitle': '看門狗：殘響　第二季・測試版',
-  's2.ui.disclaimer': '非官方同人作品，與 Ubisoft 無關。這是第二季的測試版：五個行政區、八個主線任務、五種結局都可以玩了，平衡還在調整。',
+  's2.ui.subtitle': '看門狗：殘響　第一季・重建 DedSec',
+  's2.ui.disclaimer': '非官方同人作品，與 Ubisoft 無關。五個行政區、八個主線任務、五種結局。',
   // 主線任務撤退
   's2.abort.1': '無人機的探照燈從四面八方照過來，連成一片。',
   's2.abort.2': '「撤退！今晚到此為止。人不在的話，就沒有明天了。」',
@@ -74,7 +74,8 @@ ECHO.i18n.register('zh-Hant', {
   's2.end.curfew.text': '時間用完了。獅心防務宣布，倫敦的宵禁「延長至另行通知」。這一夜，不會結束了。',
   's2.end.wiped.title': '長夜',
   's2.end.wiped.text': '安全屋空了。Bagley 對著空房間說了一句晚安。倫敦的宵禁，再也沒有人去拆。',
-  's2.end.note': '感謝遊玩《宵禁》。結局由盟友決定，細節依名單的處理方式、名單上的隊員，以及第一季的結局而不同。',
+  's2.end.note': '感謝遊玩《宵禁》。結局由盟友決定，細節依名單的處理方式、名單上的隊員，以及前傳的結局而不同。',
+  's2.end.carry': '這一輪的隊伍會跟著你進入第二季：還在的人直接加入名冊，被抓走的人等你去救。',
   's2.end.dead': '過世',
   's2.end.order': '解放順序',
   's2.epi.list.burn': '名單燒掉了。名單上的四萬人，到最後都不知道自己曾經被預測過。',
@@ -90,8 +91,8 @@ ECHO.i18n.register('zh-Hant', {
 });
 
 ECHO.i18n.register('zh-Hans', {
-  's2.ui.subtitle': '看门狗：残响　第二季・测试版',
-  's2.ui.disclaimer': '非官方同人作品，与 Ubisoft 无关。这是第二季的测试版：五个行政区、八个主线任务、五种结局都可以玩了，平衡还在调整。',
+  's2.ui.subtitle': '看门狗：残响　第一季・重建 DedSec',
+  's2.ui.disclaimer': '非官方同人作品，与 Ubisoft 无关。五个行政区、八个主线任务、五种结局。',
   's2.abort.1': '无人机的探照灯从四面八方照过来，连成一片。',
   's2.abort.2': '“撤退！今晚到此为止。人不在的话，就没有明天了。”',
   's2.log.mainAbort': '主线任务中断了。之后的晚上可以再试一次。',
@@ -157,7 +158,8 @@ ECHO.i18n.register('zh-Hans', {
   's2.end.curfew.text': '时间用完了。狮心防务宣布，伦敦的宵禁“延长至另行通知”。这一夜，不会结束了。',
   's2.end.wiped.title': '长夜',
   's2.end.wiped.text': '安全屋空了。Bagley 对着空房间说了一句晚安。伦敦的宵禁，再也没有人去拆。',
-  's2.end.note': '感谢游玩《宵禁》。结局由盟友决定，细节依名单的处理方式、名单上的队员，以及第一季的结局而不同。',
+  's2.end.note': '感谢游玩《宵禁》。结局由盟友决定，细节依名单的处理方式、名单上的队员，以及前传的结局而不同。',
+  's2.end.carry': '这一轮的队伍会跟着你进入第二季：还在的人直接加入名册，被抓走的人等你去救。',
   's2.end.dead': '过世',
   's2.end.order': '解放顺序',
   's2.epi.list.burn': '名单烧掉了。名单上的四万人，到最后都不知道自己曾经被预测过。',
@@ -173,8 +175,8 @@ ECHO.i18n.register('zh-Hans', {
 });
 
 ECHO.i18n.register('en', {
-  's2.ui.subtitle': 'WATCH_DOGS: ECHO  Season 2 · Beta',
-  's2.ui.disclaimer': 'Unofficial fan work, not affiliated with Ubisoft. This is the Season 2 beta: all five districts, eight main missions and five endings are playable; balance is still being tuned.',
+  's2.ui.subtitle': 'WATCH_DOGS: ECHO  Season 1 · Rebuild DedSec',
+  's2.ui.disclaimer': 'Unofficial fan work, not affiliated with Ubisoft. Five districts, eight main missions and five endings.',
   's2.abort.1': 'Searchlights close in from every direction until they merge into one.',
   's2.abort.2': '"Pull out! That\'s it for tonight. If we lose people, there is no tomorrow."',
   's2.log.mainAbort': 'The main mission was called off. You can try again another night.',
@@ -240,7 +242,8 @@ ECHO.i18n.register('en', {
   's2.end.curfew.text': 'Time ran out. Lionheart announced that the London curfew was "extended until further notice". This night will not end.',
   's2.end.wiped.title': 'The Long Night',
   's2.end.wiped.text': 'The safe house is empty. Bagley says goodnight to an empty room. Nobody is left to take the curfew down.',
-  's2.end.note': 'Thank you for playing Curfew. Your ally decides the ending; the details change with what you did with the List, the teammate on it, and how Season 1 ended.',
+  's2.end.note': 'Thank you for playing Curfew. Your ally decides the ending; the details change with what you did with the List, the teammate on it, and how the prequel ended.',
+  's2.end.carry': 'This crew follows you into Season 2: everyone still with you joins the roster, and anyone who was taken is waiting to be rescued.',
   's2.end.dead': 'Died',
   's2.end.order': 'Liberation order',
   's2.epi.list.burn': 'The List was burned. The forty thousand people on it never knew they had been predicted.',
