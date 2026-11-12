@@ -33,6 +33,9 @@
     return A.clear(s, e.x, e.y, p.x, p.y) && !A.steamed(s, e.x, e.y, p.x, p.y);
   }
 
+  // 這一點是不是在火裡或蒸汽裡。
+  const hazardAt = (s, x, y) => s.zones.find((z) => (z.k === 'fire' || z.k === 'steam') && hyp(x - z.x, y - z.y) < z.r);
+
   // ===== 還沒發現你 =====
   function calmThink(s, e, dt) {
     const p = s.p;
@@ -47,10 +50,20 @@
     if (e.aware >= 1) { A.engage(s, e); return; }
 
     if (e.def.static) { e.ang = e.base + Math.sin(s.t * 0.7 + e.id) * 0.8; return; }
+    // 站在火裡或蒸汽裡：先往外走（在蒸汽裡暈頭轉向，走得比較慢）。
+    const here = !e.def.fly && hazardAt(s, e.x, e.y);
+    if (here) {
+      const a = Math.atan2(e.y - here.y, e.x - here.x), out = here.r + e.r + 30;
+      const gx = clamp(here.x + Math.cos(a) * out, T * 1.5, W - T * 1.5), gy = clamp(here.y + Math.sin(a) * out, T * 1.5, H - T * 1.5);
+      A.moveToward(s, e, gx, gy, e.speed * (here.k === 'steam' ? 0.45 : 0.8), dt);
+      e.ang = A.turn(e.ang, e.mvAng, 6 * dt);
+      return;
+    }
     if (e.state === 'suspect') {
-      // 走到出聲的地方，左右看一看，沒事就回去。
-      const left = A.moveToward(s, e, e.goal.x, e.goal.y, e.speed * 0.7, dt);
-      if (left > 40) { e.ang = A.turn(e.ang, e.mvAng, 6 * dt); e.look += dt * 0.25; }
+      // 走到出聲的地方，左右看一看，沒事就回去。那裡在燒或在冒蒸汽的話，停在外圍看，不會自己走進去。
+      const hz = hazardAt(s, e.goal.x, e.goal.y), stop = hz ? hz.r + e.r + 20 : 40;
+      const left = hyp(e.goal.x - e.x, e.goal.y - e.y) > stop ? A.moveToward(s, e, e.goal.x, e.goal.y, e.speed * 0.7, dt) : 0;
+      if (left > stop) { e.ang = A.turn(e.ang, e.mvAng, 6 * dt); e.look += dt * 0.25; }
       else { e.look += dt; e.ang += Math.sin(e.look * 3) * 2.2 * dt; }
       if (e.look > 2.4) { e.state = 'calm'; e.goal = null; e.look = 0; }
       return;
@@ -465,7 +478,7 @@
     if (e.burn > 0) {
       e.burn -= dt;
       e.burnT -= dt;
-      if (e.burnT <= 0) { e.burnT = 0.5; A.hurt(s, e, 2.5 * s.st.burnMul, { by: 'env' }); if (e.dead) return; }
+      if (e.burnT <= 0) { e.burnT = 0.5; A.hurt(s, e, 2.5 * s.st.burnMul, { by: 'env', quiet: true }); if (e.dead) return; }
     }
     if (e.mark > 0) e.mark -= dt;
     if (e.blind > 0) e.blind -= dt;

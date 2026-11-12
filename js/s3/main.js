@@ -14,6 +14,35 @@
   const AUTO = !!params.get('bot');   // 機器人自己玩（測試用）：不播劇情，對話框自己選
   const pictures = S3.pictures || {};
 
+  // ===== 圖片 =====
+  // 網站每次更新，部署流程會在 <script> 的網址後面加上這一版的編號（?v=…）。圖片也帶上同一個編號，才不會拿到舊的快取。
+  // 在自己電腦上直接打開的時候沒有編號，網址照舊。
+  const VER = (() => { try { return new URL(document.currentScript.src).searchParams.get('v') || ''; } catch (e) { return ''; } })();
+  const asset = (path) => (path && VER ? path + '?v=' + encodeURIComponent(VER) : path);
+  // 一定會先用到的圖（俯視圖、標題、說話的人的頭像）載完，標題畫面的按鈕才能按；首領和事件的插圖接著在背景載。
+  const images = { all: {}, need: 0, done: 0 };
+  function loadImage(path, essential) {
+    if (!path) return null;
+    if (images.all[path]) return images.all[path];
+    const im = new Image();
+    images.all[path] = im;
+    if (essential) images.need++;
+    const end = () => { if (essential) { images.done++; showLoading(); } };
+    im.addEventListener('load', end, { once: true });
+    im.addEventListener('error', end, { once: true }); // 載不到也放行：畫面會改用程式畫的版本
+    im.src = asset(path);
+    return im;
+  }
+  function preload() {
+    for (const a of Object.values(S3.atlas || {})) loadImage(a.src, true);
+    loadImage(pictures.title, true);
+    for (const [k, v] of Object.entries(pictures)) if (k.startsWith('pt-')) loadImage(v, true);
+    for (const v of Object.values(pictures)) loadImage(v, false);
+  }
+  const imagesReady = () => images.done >= images.need;
+  // 畫面（js/s3/render.js）用同一批圖。
+  S3.assets = { url: asset, img: (path) => loadImage(path, true) };
+
   let meta = R.meta();
   let seed = params.get('seed') || fresh();
   let picks = [];          // 今晚的小隊：名冊裡的第幾個人
@@ -31,7 +60,8 @@
   // ===== 前兩季的結局：有幾句台詞會跟著變 =====
   // v1：stay、seal、wildfire、recaptured。s2：dawn、cage、wild、deal、curfew、wiped。ally：hale、cassie、kahn。
   function readPast() {
-    const s2 = E.save.peek('watchdogs-echo.s2.proto');
+    let s2 = null;
+    try { s2 = E.save.peek('watchdogs-echo.s2.proto'); } catch (e) { /* 讀不到《宵禁》的存檔就當作沒玩過 */ }
     return {
       v1: params.get('v1') || E.save.v1Ending(),
       s2: params.get('s2') || (s2 && typeof s2.ended === 'string' ? s2.ended : null),
@@ -104,7 +134,8 @@
   const exName = (id) => t('s3.ex.' + id + '.n');
   const gadName = (id) => t('s3.gad.' + id + '.n');
   const listOf = (names) => names.join(E.i18n.lang === 'en' ? ', ' : '、');
-  const activeIdx = () => (s && !rewarded ? s.active : run ? run.active : 0);
+  // 場上是誰：在房間裡看房間（清場之後也能換人）；不在房間裡看這一趟的紀錄。
+  const activeIdx = () => (s ? s.active : run ? run.active : 0);
   const activePerson = () => (run ? run.squad[activeIdx()].p : null);
   // 台詞裡的變數：{name} 是場上那個人，{n} 是名單上給這個人的威脅評分，{flaw} 是這個人的弱點。
   function lineVars() {
@@ -113,7 +144,7 @@
     return { name: nameOf(p), n: p.threat, flaw: p.flaw ? L(E.people.flawOf(p).name) : '' };
   }
   function portrait(who) {
-    if (pictures['pt-' + who]) return `<img src="${pictures['pt-' + who]}" alt="">`;
+    if (pictures['pt-' + who]) return `<img src="${asset(pictures['pt-' + who])}" alt="">`;
     const sp = ST.speakers[who];
     return sp ? E.art.avatar(sp.art) : '';
   }
@@ -151,10 +182,13 @@
   function squadSummary() {
     const b = run.build, act = activeIdx();
     const rows = run.squad.map((m, i) => {
-      const max = R.maxHp(run, i), hp = m.down ? 0 : Math.round(m.hp);
-      return `<div class="sq-row${m.down ? ' down' : ''}${i === act ? ' on' : ''}"><kbd>${i + 1}</kbd><span class="sq-row-face">${E.faces.of(m.p, { round: true })}</span>
+      // 房間還在打（暫停的時候），體力看房間裡的；其他時候看這一趟的紀錄。
+      const tm = s && !rewarded ? s.team[i] : null, on = tm && i === s.active, down = tm ? tm.down : m.down;
+      const max = tm ? (on ? s.p.maxHp : tm.maxHp) : R.maxHp(run, i);
+      const hp = down ? 0 : Math.round(tm ? (on ? s.p.hp : tm.hp) : m.hp);
+      return `<div class="sq-row${down ? ' down' : ''}${i === act ? ' on' : ''}"><kbd>${i + 1}</kbd><span class="sq-row-face">${E.faces.of(m.p, { round: true })}</span>
         <span class="sq-row-name"><b>${esc(nameOf(m.p))}</b><small>${esc(jobOf(m.p))}</small></span>
-        <span class="sq-row-hp">${m.down ? esc(t('s3.squad.down')) : hp + ' / ' + max}</span>
+        <span class="sq-row-hp">${down ? esc(t('s3.squad.down')) : hp + ' / ' + max}</span>
         <span class="chip">${esc(t('s3.wp.' + m.weapon + '.n'))}</span>
         <span class="chip tag-gadget" title="${esc(t('s3.gad.' + m.gadget.id + '.d'))}"><kbd>Q</kbd> ${esc(gadName(m.gadget.id))} ${esc(t('s3.gad.lv', { n: m.gadget.lv }))}</span>
         <span class="sq-row-job" title="${esc(t('s3.job.' + m.job))}">${esc(t('s3.job.' + m.job))}</span></div>`;
@@ -220,7 +254,7 @@
     mode = 'talk';
     talkState = { lines, i: -1, vars: (o && o.vars) || lineVars(), done, back, full: '', shown: 0, timer: null };
     const bg = o && o.bg && pictures[o.bg];
-    $('talk-bg').style.backgroundImage = bg ? `url("${bg}")` : 'none';
+    $('talk-bg').style.backgroundImage = bg ? `url("${asset(bg)}")` : 'none';
     $('s3-talk').className = bg ? 'has-bg' : '';
     $('talk-banner').textContent = (o && o.banner) || '';
     $('s3-talk').hidden = false;
@@ -295,12 +329,23 @@
     document.title = E.i18n.lang === 'en' ? 'ZERO DAY' : t('s3.ui.title') + ' ZERO DAY';
     $('s3-sound').textContent = sfx.muted ? '🔇' : '🔊';
     for (const k of Object.keys(hudCache)) delete hudCache[k];
+    showLoading();
   }
   function setLang(code) {
     if (!E.i18n.set(code)) return;
     try { localStorage.setItem(LANG_KEY, code); } catch (e) { /* 忽略 */ }
     applyLang();
     if (mode === 'lobby') renderLobby();
+  }
+  // 標題畫面：圖還沒載完的時候，按鈕先不能按，告訴玩家等一下。
+  function showLoading() {
+    const ready = imagesReady() || AUTO;
+    $('s3-loading').hidden = ready;
+    $('s3-start').disabled = !ready;
+    $('s3-continue').disabled = !ready;
+    if (ready) return;
+    $('s3-loading-text').textContent = t('s3.ui.loading', { n: images.done, total: images.need });
+    $('s3-loading-bar').style.width = ((images.done / Math.max(1, images.need)) * 100).toFixed(0) + '%';
   }
   function showTitle() {
     mode = 'title';
@@ -311,6 +356,7 @@
     $('s3-title').hidden = false;
     closeModal();
     $('s3-continue').hidden = !R.load();
+    showLoading();
     $('s3-echoes').textContent = meta.echoes || meta.runs ? t('s3.ui.record', { echoes: meta.echoes, runs: meta.runs, wins: meta.wins }) : '';
   }
 
@@ -527,8 +573,23 @@
     const ph = R.advance(run);
     R.save(run);
     if (ph === 'won') { showFinale(); return; }
-    if (s && mode !== 'title' && s.cleared && !s.over && s.exit < 0 && inRoom) { closeModal(); s.doorsOpen = true; mode = 'play'; play('door'); tip('doors'); }
+    if (s && mode !== 'title' && s.cleared && !s.over && s.exit < 0 && inRoom) { syncTeam(); closeModal(); s.doorsOpen = true; mode = 'play'; play('door'); tip('doors'); }
     else showRoute();
+  }
+
+  // 拿完獎勵、還在房間裡走去門口的時候：小隊以這一趟的紀錄為準（回血、體力上限、拘留室救出來補上的人、律師保出來的人），
+  // 房間裡的狀態跟著改，之後換人也會換到對的人、對的體力。
+  function syncTeam() {
+    if (!s || !run || !rewarded) return;
+    run.squad.forEach((m, i) => {
+      const tm = s.team[i];
+      if (!tm || m.down) return;
+      if (tm.down || tm.build.person !== m.p) { sim.setMember(s, i, R.buildOf(run, i), m.hp); return; }
+      tm.maxHp = R.maxHp(run, i);
+      tm.hp = Math.min(tm.maxHp, m.hp);
+      if (i === s.active) { s.p.maxHp = tm.maxHp; s.p.hp = tm.hp; }
+    });
+    for (const k of Object.keys(hudCache)) delete hudCache[k];
   }
 
   // ===== 房間 =====
@@ -659,7 +720,7 @@
   }
   function showEvent() {
     const ev = run.event, def = R.eventDef(ev.id);
-    const pic = pictures['ev-' + ev.id] ? `<img class="ev-pic" src="${pictures['ev-' + ev.id]}" alt="">` : '';
+    const pic = pictures['ev-' + ev.id] ? `<img class="ev-pic" src="${asset(pictures['ev-' + ev.id])}" alt="">` : '';
     const face = pic ? '' : `<div class="ev-face">${E.art.avatar(def.cameo)}</div>`;
     if (ev.result) {
       modal(`${pic}<div class="ev">${face}<div><h2>${esc(t('s3.ev.' + ev.id + '.t'))}</h2><p>${esc(t(ev.result.key))}</p>${fxLine(ev.result.fx)}</div></div>
@@ -808,10 +869,9 @@
       for (const k of Object.keys(hudCache)) if (k.startsWith('sq-')) delete hudCache[k];
     }
     run.squad.forEach((m, i) => {
-      const tm = live ? s.team[i] : null;
-      const down = tm ? tm.down : m.down, on = i === activeIdx();
-      const hp = down ? 0 : on && live ? p.hp : tm ? tm.hp : m.hp, max = tm ? tm.maxHp : R.maxHp(run, i);
-      set('sq-' + i, 'sq' + (on ? ' on' : '') + (down ? ' down' : '') + (!on && !down && live && s.swapCd > 0 ? ' wait' : '') + (!down && hp < max * 0.3 ? ' low' : ''), 'className');
+      const tm = s.team[i], on = i === s.active, down = tm.down;
+      const hp = down ? 0 : on ? p.hp : tm.hp, max = on ? p.maxHp : tm.maxHp;
+      set('sq-' + i, 'sq' + (on ? ' on' : '') + (down ? ' down' : '') + (!on && !down && s.swapCd > 0 ? ' wait' : '') + (!down && hp < max * 0.3 ? ' low' : ''), 'className');
       set('sq-' + i + '-hp', Math.max(0, (hp / max) * 100).toFixed(0) + '%', 'width');
     });
     set('h-data', '◆ ' + (run.data + (live ? s.gain : 0)));
@@ -902,7 +962,8 @@
     }
     if (s.cleared && !rewarded && s.cache.taken) roomCleared();
     else if (s.cleared && !rewarded) S3.music.set('calm');
-    if (s && s.exit >= 0 && mode === 'play') { const i = s.exit; inRoom = false; enterDoor(i); }
+    // 走進門：清場之後換上來的人，就是下一間一開始在場上的人。
+    if (s && s.exit >= 0 && mode === 'play') { const i = s.exit; inRoom = false; if (!run.squad[s.active].down) run.active = s.active; enterDoor(i); }
   }
   function frame(now) {
     requestAnimationFrame(frame);
@@ -975,8 +1036,9 @@
     let lang = 'zh-Hant';
     try { lang = localStorage.getItem(LANG_KEY) || lang; } catch (e) { /* 忽略 */ }
     E.i18n.set(params.get('lang') || lang);
+    preload();
     V.init($('s3-canvas'));
-    $('s3-title-art').innerHTML = pictures.title ? `<img src="${pictures.title}" alt="">` : E.art.byKey('server');
+    $('s3-title-art').innerHTML = pictures.title ? `<img src="${asset(pictures.title)}" alt="">` : E.art.byKey('server');
     if (pictures.title) $('s3-title').classList.add('has-art');
     document.querySelectorAll('.lang-switch button[data-lang]').forEach((b) => b.addEventListener('click', () => { sfx.unlock(); play('click'); setLang(b.dataset.lang); }));
     $('s3-start').addEventListener('click', () => { sfx.unlock(); play('title'); startFresh(); });

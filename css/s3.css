@@ -15,6 +15,12 @@ body.s3 { overflow: hidden; }
 .s3 kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border: 1px solid #4a5266; border-bottom-width: 2px; border-radius: 4px; background: #161b26; font-family: var(--mono); font-size: 12px; text-align: center; color: #fff; }
 .record { margin: -12px 0 14px; font-family: var(--mono); font-size: 13px; color: var(--echo); min-height: 1em; }
 .desktop-note { margin: 0 0 22px; font-size: 13px; color: var(--warn); }
+/* 標題畫面：圖片還沒載完時的進度條 */
+#s3-loading { display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(320px, 80%); margin: -4px auto 18px; }
+#s3-loading[hidden] { display: none; }
+#s3-loading .loading-bar { position: relative; width: 100%; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+#s3-loading .loading-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--sys); transition: width 0.2s; }
+#s3-loading-text { font-size: 13px; color: var(--muted); }
 
 /* ===== 標籤的顏色：漏洞的六個分類和裝備 ===== */
 .s3 .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--line); background: #121722; color: var(--text); }
