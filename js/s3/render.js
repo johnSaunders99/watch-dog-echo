@@ -25,11 +25,12 @@
 
   // ===== 圖集：請圖像模型畫的俯視圖（清單在 content-s3/atlas.js）。圖還沒載入、或沒有這張小圖時，退回用程式畫。 =====
   const sheets = {};
+  // 圖由 js/s3/main.js 先載（S3.assets，網址帶這一版的編號）；單獨用畫面的時候自己載。
   function loadAtlas() {
     for (const [id, a] of Object.entries(S3.atlas || {})) {
-      const img = new Image();
-      img.onload = () => { sheets[id] = { img, items: a.items }; };
-      img.src = a.src;
+      const img = S3.assets ? S3.assets.img(a.src) : Object.assign(new Image(), { src: a.src });
+      const done = () => { sheets[id] = { img, items: a.items }; };
+      if (img.complete && img.naturalWidth) done(); else img.addEventListener('load', done, { once: true });
     }
   }
   // 畫一張小圖：轉到 ang，縮放到圖上的身體半徑等於 r。回傳有沒有畫出來。

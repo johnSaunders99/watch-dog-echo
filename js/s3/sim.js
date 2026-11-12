@@ -78,6 +78,8 @@
     for (const z of s.zones) if (z.k === 'steam' && segDist(z.x, z.y, ax, ay, bx, by) < z.r * 0.85) return true;
     return false;
   }
+  // 站在蒸汽裡的敵人：看不清楚、暈頭轉向，從哪個方向都可以制伏。
+  const inSteam = (s, e) => s.zones.some((z) => z.k === 'steam' && hyp(e.x - z.x, e.y - z.y) < z.r);
   // 從一點往某個方向射出去，回傳碰到牆的位置。
   function rayEnd(s, x, y, ang, max, low) {
     const cx = Math.cos(ang), cy = Math.sin(ang);
@@ -169,19 +171,26 @@
   // ===== 建立房間 =====
   // build：一個人的配置；或 { squad: [每個隊員的配置], active }。小隊一次只有一個人在場上，其他人待命，隨時可以換。
   // carry：{ hp（一個數字，或每個隊員各一個）, data, revived }。
+  // 一個隊員在房間裡的狀態。hp0 沒給就是滿血。
+  function makeMember(b, hp0) {
+    const made = stats(b), weapon = S3.data.weapons[b.weapon] || S3.data.weapons.pistol;
+    const hp = Math.min(made.st.maxHp, hp0 === undefined ? made.st.maxHp : hp0);
+    const mag = Math.round(weapon.mag * made.st.magMul);
+    return {
+      build: b, st: made.st, fl: made.fl, weapon, hp, maxHp: made.st.maxHp, ammo: mag, mag, down: hp <= 0,
+      guard: made.fl.guard ? 1 : 0, escaped: !!b.escaped, fresh: true,
+      gad: (b.gadgets || []).map((g) => ({ id: g.id, lv: g.lv || 1, cd: 0 })),
+    };
+  }
+  // 房間裡換掉一個隊員（拘留室救出來的人補上倒下的人的位置），之後就可以換上場。場上那個人不能換。
+  function setMember(s, i, b, hp) {
+    if (i === s.active || !s.team[i]) return false;
+    s.team[i] = makeMember(b, hp);
+    return true;
+  }
   function createRoom(spec, build, carry) {
     const D = S3.data, c = carry || {};
-    const team = (build.squad || [build]).map((b, i) => {
-      const made = stats(b), weapon = D.weapons[b.weapon] || D.weapons.pistol;
-      const hp0 = Array.isArray(c.hp) ? c.hp[i] : c.hp;
-      const hp = Math.min(made.st.maxHp, hp0 === undefined ? made.st.maxHp : hp0);
-      const mag = Math.round(weapon.mag * made.st.magMul);
-      return {
-        build: b, st: made.st, fl: made.fl, weapon, hp, maxHp: made.st.maxHp, ammo: mag, mag, down: hp <= 0,
-        guard: made.fl.guard ? 1 : 0, escaped: !!b.escaped, fresh: true,
-        gad: (b.gadgets || []).map((g) => ({ id: g.id, lv: g.lv || 1, cd: 0 })),
-      };
-    });
+    const team = (build.squad || [build]).map((b, i) => makeMember(b, Array.isArray(c.hp) ? c.hp[i] : c.hp));
     let active = build.squad ? build.active || 0 : 0;
     if (team[active].down) active = Math.max(0, team.findIndex((m) => !m.down));
     const me = team[active], st = me.st, fl = me.fl, w = me.weapon;
@@ -282,7 +291,7 @@
   }
 
   // ===== 傷害 =====
-  // src：{ by: 'gun'|'melee'|'hack'|'env'|'ally', crit, sneak }
+  // src：{ by: 'gun'|'melee'|'hack'|'env'|'ally', crit, sneak, quiet 不會讓還沒發現你的敵人發現你 }
   function hurt(s, e, dmg, src = {}) {
     if (e.dead || e.spawnT > 0) return 0;
     const fl = s.fl;
@@ -296,6 +305,8 @@
     s.ev.push({ k: 'hit', x: e.x, y: e.y, n: d, crit: !!src.crit, id: e.id });
     if (e.hp <= 0) { kill(s, e, src); return d; }
     if (e.ally <= 0 && e.state !== 'combat') {
+      // quiet：燒傷、陷阱這類不知道從哪裡來的傷害。會起疑、原地找一找，但不知道你在哪裡，不會叫人。
+      if (src.quiet) { if (e.state === 'calm') { e.state = 'suspect'; e.goal = { x: e.x, y: e.y }; e.look = 0; } return d; }
       engage(s, e);
       // 旁邊看得到的同伴會過來看。
       for (const o of s.en) if (o !== e && !o.dead && o.state === 'calm' && o.distract <= 0 && hyp(o.x - e.x, o.y - e.y) < 220 && clear(s, o.x, o.y, e.x, e.y)) { o.state = 'suspect'; o.goal = { x: e.x, y: e.y }; o.look = 0; }
@@ -313,7 +324,7 @@
         kill(s, e, Object.assign({ ambush: true }, src));
         return left;
       }
-      dmg *= 3;
+      return hurt(s, e, dmg * 3, Object.assign({ quiet: true }, src));
     }
     return hurt(s, e, dmg, src);
   }
@@ -358,7 +369,8 @@
   // 對玩家造成傷害。回傳有沒有打到。
   function hitPlayer(s, dmg, o = {}) {
     const p = s.p;
-    if (s.over || p.inv > 0 || p.dashT > 0) return false;
+    // 清場之後房間就安全了（剩下的火、還沒炸的油桶都不會再傷到人），小隊的體力在打完那一刻就定了。
+    if (s.over || s.cleared || p.inv > 0 || p.dashT > 0) return false;
     if (p.guard > 0) { p.guard = 0; p.inv = 0.5; s.ev.push({ k: 'guard', x: p.x, y: p.y }); return true; }
     const d = dmg * s.st.dmgTaken * (o.hound ? s.st.houndDmg : 1);
     p.hp -= d;
@@ -641,15 +653,20 @@
 
   // ===== 玩家 =====
   // 可以制伏誰：被電暈的、被引開的、背對你而且還沒發現你的；有「處決」的話，血量四分之一以下的也可以。
+  // 可以制伏的敵人：身邊（62 以內）背對你、被引開、被電暈、在蒸汽裡的；被電暈或在蒸汽裡的，隔 LUNGE 以內也能撲過去
+  // （中間不能有牆或掩體）。打得到的裡面挑最近的。
+  const REACH = 62, LUNGE = 150;
   function takedownTarget(s) {
     const p = s.p;
-    let best = null, bd = 62;
+    let best = null, bd = Infinity;
     for (const e of s.en) {
       if (e.dead || e.ally > 0 || e.spawnT > 0) continue;
       const d = hyp(e.x - p.x, e.y - p.y) - e.r;
-      if (d >= bd) continue;
+      if (d >= LUNGE || d >= bd) continue;
+      const dazed = e.stun > 0 || (!e.boss && inSteam(s, e));
+      if (d >= REACH && !(dazed && clear(s, p.x, p.y, e.x, e.y, true))) continue;
       const behind = e.state !== 'combat' && Math.abs(angDiff(Math.atan2(p.y - e.y, p.x - e.x), e.ang)) > 1.7;
-      const ok = e.stun > 0 || (e.state !== 'combat' && e.distract > 0) || behind || (s.fl.exec && !e.boss && e.hp < e.maxHp * 0.25);
+      const ok = dazed || (e.state !== 'combat' && e.distract > 0) || behind || (s.fl.exec && !e.boss && e.hp < e.maxHp * 0.25);
       if (ok) { bd = d; best = e; }
     }
     return best;
@@ -737,6 +754,13 @@
     if (inp.melee && p.meleeCd <= 0 && p.lock <= 0) {
       const t = takedownTarget(s);
       if (t) {
+        // 撲過去：目標不在身邊，就先衝到它旁邊。
+        const gap = t.r + p.r + 4, dist = hyp(t.x - p.x, t.y - p.y);
+        if (dist > gap + 2) {
+          const a = Math.atan2(t.y - p.y, t.x - p.x);
+          moveCircle(s, p, Math.cos(a) * (dist - gap), Math.sin(a) * (dist - gap));
+          s.ev.push({ k: 'dash', x: p.x, y: p.y, ang: a });
+        }
         p.meleeCd = 0.5;
         p.lock = 0.22;
         p.inv = Math.max(p.inv, 0.35);
@@ -968,7 +992,7 @@
         z.tick -= dt;
         if (z.tick <= 0) {
           z.tick = 0.5;
-          for (const e of s.en) if (!e.dead && e.ally <= 0 && !e.def.fly && hyp(e.x - z.x, e.y - z.y) < z.r + e.r) { hurt(s, e, z.burn * 0.5, { by: 'env' }); if (z.k === 'fire') e.burn = Math.max(e.burn, 1.5); }
+          for (const e of s.en) if (!e.dead && e.ally <= 0 && !e.def.fly && hyp(e.x - z.x, e.y - z.y) < z.r + e.r) { hurt(s, e, z.burn * 0.5, { by: 'env', quiet: true }); if (z.k === 'fire') e.burn = Math.max(e.burn, 1.5); }
           if (z.k === 'fire' && !s.fl.fireproof && hyp(p.x - z.x, p.y - z.y) < z.r) hitPlayer(s, 5);
         }
       } else if (z.t <= 0) {
@@ -1158,8 +1182,8 @@
 
   S3.sim = {
     GW, GH, T, W, H, DT, CALL,
-    stats, createRoom, step, pickHack, takedownTarget, swapTo, teamState, carPath, SWAP_CD, think() {},
+    stats, createRoom, step, pickHack, takedownTarget, swapTo, teamState, setMember, carPath, SWAP_CD, REACH, LUNGE, think() {},
     // 給 js/s3/foes.js 和機器人用的內部工具
-    api: { idx, clamp, angDiff, turn, segDist, solidAt, clear, steamed, rayEnd, moveCircle, moveToward, field, spawn, noise, engage, raise, hurt, trapHurt, kill, stun, hitPlayer, blast, shock, sightMul, shielded, jammed },
+    api: { idx, clamp, angDiff, turn, segDist, solidAt, clear, steamed, inSteam, rayEnd, moveCircle, moveToward, field, spawn, noise, engage, raise, hurt, trapHurt, kill, stun, hitPlayer, blast, shock, sightMul, shielded, jammed },
   };
 })(window.ECHO = window.ECHO || {});

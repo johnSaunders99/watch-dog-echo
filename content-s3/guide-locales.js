@@ -125,7 +125,7 @@
 
     // ----- 設施 -----
     's3.prop.junction.n': '配電箱', 's3.prop.junction.d': '過載：頓一下之後放電，電暈附近的敵人；還沒發現你的敵人會直接倒下。用一次就壞了。',
-    's3.prop.vent.n': '蒸汽閥', 's3.prop.vent.d': '噴出蒸汽：擋住視線，裡面的敵人會被燙傷。',
+    's3.prop.vent.n': '蒸汽閥', 's3.prop.vent.d': '噴出蒸汽：擋住視線，裡面的敵人會被燙傷、暈頭轉向，從哪個方向都能制伏。燙傷不會讓他們發現你。',
     's3.prop.barrel.n': '油桶', 's3.prop.barrel.d': '開槍或駭入都會爆炸，留下一片火；還沒發現你的敵人會直接被炸倒。自己站遠一點。',
     's3.prop.car.n': '無人車', 's3.prop.car.d': '往敵人多的那一頭衝出去，撞飛路上的敵人，撞到牆就爆炸。游標指著車會畫出路線，別站在路線上。',
     's3.prop.bollard.n': '路樁', 's3.prop.bollard.d': '升起來當掩體，擋子彈也擋路。站在上面的敵人會被頂暈；還沒發現你的會直接倒下。',
@@ -243,7 +243,7 @@
     's3.en.heavy.n': '重装兵', 's3.en.heavy.d': '机枪扫射之前会先转一下。身上的手榴弹可以引爆。',
 
     's3.prop.junction.n': '配电箱', 's3.prop.junction.d': '过载：顿一下之后放电，电晕附近的敌人；还没发现你的敌人会直接倒下。用一次就坏了。',
-    's3.prop.vent.n': '蒸汽阀', 's3.prop.vent.d': '喷出蒸汽：挡住视线，里面的敌人会被烫伤。',
+    's3.prop.vent.n': '蒸汽阀', 's3.prop.vent.d': '喷出蒸汽：挡住视线，里面的敌人会被烫伤、晕头转向，从哪个方向都能制服。烫伤不会让他们发现你。',
     's3.prop.barrel.n': '油桶', 's3.prop.barrel.d': '开枪或入侵都会爆炸，留下一片火；还没发现你的敌人会直接被炸倒。自己站远一点。',
     's3.prop.car.n': '无人车', 's3.prop.car.d': '往敌人多的那一头冲出去，撞飞路上的敌人，撞到墙就爆炸。光标指着车会画出路线，别站在路线上。',
     's3.prop.bollard.n': '路桩', 's3.prop.bollard.d': '升起来当掩体，挡子弹也挡路。站在上面的敌人会被顶晕；还没发现你的会直接倒下。',
@@ -361,7 +361,7 @@
     's3.en.heavy.n': 'Heavy', 's3.en.heavy.d': 'The machine gun spins up before it fires. The grenade on the belt can be detonated.',
 
     's3.prop.junction.n': 'Junction box', 's3.prop.junction.d': 'Overload: after a beat it discharges and stuns enemies nearby; anyone who has not spotted you goes down. One use.',
-    's3.prop.vent.n': 'Steam valve', 's3.prop.vent.d': 'Vents steam: it blocks sight and scalds enemies inside.',
+    's3.prop.vent.n': 'Steam valve', 's3.prop.vent.d': 'Vents steam: it blocks sight, and enemies inside are scalded and dazed, so they can be taken down from any side. Scalding does not give you away.',
     's3.prop.barrel.n': 'Fuel drum', 's3.prop.barrel.d': 'A shot or a hack blows it up and leaves a fire; anyone who has not spotted you goes down. Keep your distance.',
     's3.prop.car.n': 'Driverless car', 's3.prop.car.d': 'Charges towards whichever end has more enemies, knocks down anyone in the way and explodes when it hits a wall. Point at it to see its path, and stay out of the way.',
     's3.prop.bollard.n': 'Bollards', 's3.prop.bollard.d': 'Raise them as cover: they stop bullets and block the way. Enemies standing on them are stunned, and anyone who has not spotted you goes down.',

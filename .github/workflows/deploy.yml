@@ -37,6 +37,14 @@ jobs:
           test -f s2.html
           node tools/check.js
 
+      # 每次部署都在本機的 .js、.css 網址後面加上這一版的編號，瀏覽器就不會拿快取裡的舊檔案配新的頁面
+      # （GitHub Pages 每個檔案快取 10 分鐘，新舊混在一起時，新的程式會讀不到新的文字）。圖片由 js/s3/main.js 跟著同一個編號。
+      - name: Stamp asset versions
+        run: |
+          v="${GITHUB_SHA::8}"
+          sed -i -E "s#(src|href)=\"((js|content|content-s2|content-s3|css)/[^\"?]+\.(js|css))\"#\1=\"\2?v=$v\"#g" index.html s2.html s3.html
+          grep -c "?v=$v" index.html s2.html s3.html
+
       - name: Configure Pages
         uses: actions/configure-pages@v6
 

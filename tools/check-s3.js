@@ -335,6 +335,55 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       if (s.picks.some((k) => k.k === 'med') || s.p.hp !== s.p.maxHp || s.team[1].hp !== s.team[1].maxHp - 20) fail('s3 pickup: the medkit should top up the active member first, then the most hurt teammate');
     }
 
+    // 燒傷不會讓還沒發現你的敵人發現你：會起疑、從火裡走出來，但不會叫人。
+    s = room({ enemies: [{ kind: 'guard', x: 800, y: 300, ang: UP }] });
+    s.p.cloak = 1e9;
+    const burnt = s.en[0], burntHp = burnt.hp;
+    s.zones.push({ k: 'fire', x: 800, y: 300, r: 70, t: 2, burn: 8, tick: 0 });
+    const burnEv = go(s, 90);
+    if (!(burnt.hp < burntHp) || burnt.state === 'combat' || s.alert || burnEv.includes('spotted')) fail('s3 trap: burning should hurt a guard without giving the player away');
+    if (Math.hypot(burnt.x - 800, burnt.y - 300) < 70) fail('s3 trap: a burning guard should walk out of the fire');
+    // 去查看爆炸的人停在火的外圍，不會自己走進去。
+    s = room({ enemies: [{ kind: 'guard', x: 800, y: 250, ang: UP }] });
+    s.p.cloak = 1e9;
+    const looker = s.en[0];
+    s.zones.push({ k: 'fire', x: 800, y: 500, r: 70, t: 10, burn: 8, tick: 0 });
+    A.noise(s, 800, 500, 600);
+    let closest = 1e9;
+    for (let i = 0; i < 300; i++) { go(s, 1); closest = Math.min(closest, Math.hypot(looker.x - 800, looker.y - 500)); }
+    if (closest < 70 || looker.hp < looker.maxHp || s.alert) fail(`s3 trap: a guard checking the explosion walked into the fire (closest ${Math.round(closest)})`);
+
+    // 蒸汽：裡面的敵人暈頭轉向，正面也能制伏，隔一小段也能撲過去。
+    s = face(room({ enemies: [{ kind: 'guard', x: 800, y: 450, ang: DOWN }] }), DOWN);
+    s.zones.push({ k: 'steam', x: 800, y: 450, r: 130, t: 6, burn: 0, tick: 0 });
+    s.p.x = 800; s.p.y = 530;
+    const steamed = s.en[0];
+    if (sim.takedownTarget(s) !== steamed) fail('s3 fight: a guard in steam should be open to a takedown from the front');
+    go(s, 2, (i) => pad({ melee: i === 0 }));
+    if (!steamed.dead || s.alert) fail('s3 fight: the takedown in steam did not land quietly');
+    // 警報之後，用干擾耳機電暈，再撲過去制伏；中間有牆就撲不過去。
+    s = room({ enemies: [{ kind: 'guard', x: 800, y: 470, ang: DOWN }] });
+    A.raise(s);
+    s.p.x = 800; s.p.y = 600;
+    const dazed = s.en[0];
+    go(s, 1, pad({ hack: true, ax: dazed.x, ay: dazed.y }));
+    if (!(dazed.stun > 1.5)) fail(`s3 hack: the earpiece stun is too short to close in (${dazed.stun.toFixed(2)}s)`);
+    if (sim.takedownTarget(s) !== dazed) fail('s3 fight: a stunned guard within lunge range should be open to a takedown');
+    go(s, 2, (i) => pad({ melee: i === 0 }));
+    if (!dazed.dead || Math.hypot(s.p.x - dazed.x, s.p.y - dazed.y) > dazed.r + s.p.r + 10) fail('s3 fight: the lunge takedown did not land');
+    s = room({ enemies: [{ kind: 'guard', x: 800, y: 470, ang: DOWN }] });
+    A.raise(s);
+    s.p.x = 800; s.p.y = 600;
+    s.solid[A.idx(16, 10)] = 1;
+    A.stun(s, s.en[0], 2);
+    if (sim.takedownTarget(s)) fail('s3 fight: lunged through a wall');
+    // 清場之後房間就安全了：剩下的火、油桶都不會再傷到人。
+    s = room({ enemies: [{ kind: 'guard', x: 800, y: 300, ang: UP }] });
+    A.kill(s, s.en[0], { by: 'gun' });
+    go(s, 5);
+    s.p.inv = 0;
+    if (!s.cleared || A.hitPlayer(s, 50) !== false || s.p.hp !== s.p.maxHp) fail('s3 fight: the player was hurt after the room was clear');
+
     // 路樁：升起來擋子彈，不擋視線；時間到會降下去。
     s = room({ props: [{ kind: 'bollard', tx: 15, ty: 12, w: 3, h: 1, horiz: true }], enemies: [{ kind: 'guard', x: 825, y: 300, ang: UP }] });
     if (!A.clear(s, 800, 775, 825, 300, true)) fail('s3 hack: lowered bollards should not block bullets');
@@ -417,6 +466,12 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       s = sim.createRoom(arena({ enemies: [{ kind: 'turret', x: 200, y: 200, ang: UP }] }), three, { hp: [50, 0, 30] });
       go(s, 1, pad({ swap: 1 }));
       if (s.active !== 0) fail('s3 squad: swapped to a captured member');
+      // 拘留室救出來的人：同一個房間裡就能補上倒下的人的位置，也能換上場；場上那個人不能被換掉。
+      if (!sim.setMember(s, 1, build({ weapon: 'nailgun' }), 40) || s.team[1].down || s.team[1].hp !== 40) fail('s3 squad: a rescued teammate could not join the room');
+      go(s, Math.ceil(sim.SWAP_CD * 60) + 2);
+      go(s, 1, pad({ swap: 1 }));
+      if (s.active !== 1 || s.build.weapon !== 'nailgun' || s.p.hp !== 40) fail('s3 squad: could not swap to the teammate who joined mid-room');
+      if (sim.setMember(s, s.active, build(), 10)) fail('s3 squad: replaced the member on the floor');
     }
 
     // ===== 職業專長 =====
@@ -459,7 +514,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     };
     const a = play(), b = play();
     if (a !== b) fail(`s3 fight: the same room played twice differs (${a} vs ${b})`);
-    console.log('stealth and takedowns, the call before the alarm, gun noise, junction boxes, traps on unaware enemies, shields, hijacking, cars, medkits, bollards, jammers, dash, resync, focus, squads and swapping, job perks, repeatable results');
+    console.log('stealth and takedowns, the call before the alarm, gun noise, junction boxes, traps on unaware enemies, shields, hijacking, cars, medkits, fire and steam that stay quiet, steam and lunge takedowns, a safe room after clearing, bollards, jammers, dash, resync, focus, squads, swapping and mid-room joins, job perks, repeatable results');
   }
 
   // ===== 一整趟的流程 =====
