@@ -2,6 +2,7 @@
 //   node tools/check.js                  跑全部檢查
 //   node tools/check.js --show zh-Hant   另外印出某一條第一季路線的完整文字
 //   node tools/check.js --samples 3      另外印出每個行政區 3 個隨機路人的三語檔案，給人看文字品質
+// 第三季的測試在 tools/check-s3.js，這裡會一起跑。
 // 任何一項失敗，結束碼就不是 0（GitHub Actions 會因此標成失敗）。
 const fs = require('fs');
 const path = require('path');
@@ -2183,6 +2184,9 @@ section('今晚的機會');
   E.i18n.set('zh-Hant');
   console.log(`${Object.keys(J).length} opportunities: offered, conditions, expiry, one try only, rewards (gear, scores, medicine, heat, radio tap, main mission plan)`);
 }
+
+// ===== 7f. 第三季《零時差》：測試寫在 tools/check-s3.js =====
+require('./check-s3.js')({ sandbox, fail, section, storage, root });
 
 // ===== 8. 存檔 =====
 section('存檔');

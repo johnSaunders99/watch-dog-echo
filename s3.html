@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>零時差 ZERO DAY</title>
+  <link rel="stylesheet" href="css/terminal.css">
+  <link rel="stylesheet" href="css/s3.css">
+</head>
+<body class="s3">
+  <!-- 標題畫面 -->
+  <section id="s3-title" class="title-screen">
+    <div class="title-art" id="s3-title-art" aria-hidden="true"></div>
+    <div class="title-box">
+      <div class="glitch" data-text="ZERO DAY">ZERO DAY</div>
+      <h1 data-i18n="s3.ui.title"></h1>
+      <p class="subtitle" data-i18n="s3.ui.subtitle"></p>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="zh-Hant">繁中</button>
+        <button type="button" data-lang="zh-Hans">简中</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <div class="title-actions">
+        <button type="button" id="s3-start" class="primary" data-i18n="s3.ui.start"></button>
+        <button type="button" id="s3-continue" data-i18n="s3.ui.continue" hidden></button>
+      </div>
+      <p id="s3-echoes" class="record"></p>
+      <p class="desktop-note" data-i18n="s3.ui.desktop"></p>
+      <p class="season-link"><a href="s2.html" data-i18n="s3.ui.season2"></a>　<a href="index.html" data-i18n="s3.ui.season1"></a></p>
+      <p class="disclaimer" data-i18n="s3.ui.disclaimer"></p>
+    </div>
+  </section>
+
+  <!-- 安全屋：名冊、今晚的小隊、想加入的人、永久強化 -->
+  <section id="s3-lobby" hidden>
+    <header class="lobby-top">
+      <div>
+        <h2 data-i18n="s3.ui.lobby.title"></h2>
+        <p class="dim" data-i18n="s3.ui.lobby.hint"></p>
+      </div>
+      <div class="lobby-tools">
+        <button type="button" id="s3-lobby-back" class="ghost" data-i18n="s3.ui.back"></button>
+      </div>
+    </header>
+    <div id="s3-hub" class="hub"></div>
+    <div id="s3-roster" class="lobby-block"></div>
+    <div id="s3-vols" class="lobby-block"></div>
+    <div id="s3-perks" class="perks"></div>
+    <div id="s3-squadbar" class="squadbar"></div>
+  </section>
+
+  <!-- 戰鬥：畫面是 canvas，狀態列疊在上面 -->
+  <div id="s3-game" hidden>
+    <div id="s3-stage" data-fit>
+      <div id="s3-frame">
+        <canvas id="s3-canvas"></canvas>
+        <div id="s3-hud">
+          <div class="hud-tl">
+            <div class="hud-me">
+              <div id="h-face"></div>
+              <div class="hud-bars">
+                <div id="h-name"></div>
+                <div class="bar hp"><i id="h-hp"></i><b id="h-hp-v"></b></div>
+                <div id="h-bw" class="pips"></div>
+                <div id="h-focus-box" class="bar focus"><i id="h-focus"></i></div>
+              </div>
+            </div>
+            <div id="h-squad" class="squad"></div>
+          </div>
+          <div class="hud-tc">
+            <div id="h-boss" class="boss"><span id="h-boss-n"></span><div class="bar"><i id="h-boss-hp"></i></div></div>
+          </div>
+          <div id="h-status" class="status"></div>
+          <div class="hud-tr">
+            <span id="h-room"></span>
+            <b id="h-data"></b>
+            <button type="button" id="s3-sound" class="icon-btn" aria-label="Sound"></button>
+            <button type="button" id="s3-pause" class="icon-btn" aria-label="Pause">Ⅱ</button>
+          </div>
+          <div id="s3-comms"></div>
+          <div class="hud-bl">
+            <div class="weapon"><span id="h-weapon"></span><b id="h-ammo"></b></div>
+            <div id="h-dash" class="dash"></div>
+            <div id="h-gad" class="gads"></div>
+          </div>
+        </div>
+        <div id="s3-toast"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 獎勵、黑市、維修間、事件、路線、暫停、結算 -->
+  <div id="s3-modal" class="s3-modal" hidden></div>
+
+  <!-- 劇情對話：首領登場的時候後面是整張插圖 -->
+  <div id="s3-talk" hidden>
+    <div id="talk-bg"></div>
+    <div id="talk-banner"></div>
+    <div id="talk-box" class="talk-box">
+      <div id="talk-face"></div>
+      <div class="talk-body"><b id="talk-who"></b><p id="talk-text"></p></div>
+      <span class="talk-next" data-i18n="s3.talk.next"></span>
+    </div>
+  </div>
+
+  <script src="js/engine/i18n.js"></script>
+  <script src="js/engine/save.js"></script>
+  <script src="js/engine/rng.js"></script>
+  <script src="js/engine/people.js"></script>
+  <script src="content-s2/people.js"></script>
+  <script src="content-s3/data.js"></script>
+  <script src="content-s3/story.js"></script>
+  <script src="content-s3/locales.js"></script>
+  <script src="content-s3/guide-locales.js"></script>
+  <script src="content-s3/squad-locales.js"></script>
+  <script src="content-s3/story-locales.js"></script>
+  <script src="content-s3/atlas.js"></script>
+  <script src="js/s3/gen.js"></script>
+  <script src="js/s3/sim.js"></script>
+  <script src="js/s3/foes.js"></script>
+  <script src="js/s3/run.js"></script>
+  <script src="js/s3/bot.js"></script>
+  <script src="js/ui/art.js"></script>
+  <script src="js/ui/sfx.js"></script>
+  <script src="js/ui/faces.js"></script>
+  <script src="js/s3/sounds.js"></script>
+  <script src="js/s3/render.js"></script>
+  <script src="js/s3/main.js"></script>
+</body>
+</html>

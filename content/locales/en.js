@@ -1,6 +1,6 @@
 ECHO.i18n.register('en', {
   'ui.title': 'WATCH_DOGS: ECHO',
-  'ui.subtitle': 'An unofficial fan-made text adventure · Prologue demo',
+  'ui.subtitle': 'Prequel · An unofficial fan-made text adventure · A Watch Dogs: Legion side story',
   'ui.disclaimer': 'This is an unofficial fan work, not affiliated with or endorsed by Ubisoft. Watch Dogs is a trademark of Ubisoft.',
   'ui.start': 'BOOT',
   'ui.continue': 'CONTINUE',

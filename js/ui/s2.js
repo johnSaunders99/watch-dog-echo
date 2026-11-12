@@ -637,6 +637,8 @@
       + (s.stats.retired.length ? `<div class="end-row"><label>${T('s2.p.status.retired')}</label><div class="end-faces">${faces(s.stats.retired)}</div></div>` : '')
       + `<div class="end-row"><label>${T('s2.end.lost')}</label><div class="end-faces">${faces(s.stats.lost)}</div></div>`
       + ((s.stats.dead || []).length ? `<div class="end-row"><label>${T('s2.end.dead')}</label><div class="end-faces">${faces(s.stats.dead)}</div></div>` : '')
+      // 打到盟友帶來的結局（不是全滅、不是時間到），這一輪的隊伍可以帶進《零時差》（規則在 js/s3/run.js 的 inherit）。
+      + (['dawn', 'cage', 'wild', 'deal'].includes(k) ? `<p class="hint carry">${T('s2.end.carry')} <a href="s3.html">${T('s2.ui.season3')}</a></p>` : '')
       + `<p class="hint">${T('s2.end.note')}</p><div class="bar-actions"><button class="primary" data-act="again">${T('s2.end.again')}</button></div></section>`;
   }
 
