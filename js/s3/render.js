@@ -29,8 +29,9 @@
   // ===== 圖集：請圖像模型畫的俯視圖（清單在 content-s3/atlas.js）。圖還沒載入、或沒有這張小圖時，退回用程式畫。 =====
   const sheets = {};
   // 圖由 js/s3/main.js 先載（S3.assets，網址帶這一版的編號）；單獨用畫面的時候自己載。
-  function loadAtlas() {
-    for (const [id, a] of Object.entries(S3.atlas || {})) {
+  function loadAtlas(ids = Object.keys(S3.atlas || {})) {
+    for (const id of ids) {
+      const a = S3.atlas[id];
       const img = S3.assets ? S3.assets.img(a.src) : Object.assign(new Image(), { src: a.src });
       const done = () => { sheets[id] = { img, items: a.items }; };
       if (img.complete && img.naturalWidth) done(); else img.addEventListener('load', done, { once: true });
@@ -75,13 +76,12 @@
     sweater: 'jacket', workshirt: 'jacket', tactical: 'jacket', hivis: 'hivis', turnout: 'hivis', overalls: 'overalls',
     suit: 'suit', blazer: 'suit', waistcoat: 'waistcoat', coat: 'coat',
   };
-  const dolls = new Map(); // 每個人上好色的身體（離屏的 canvas），第一次上場時做一次
+  const dolls = new WeakMap(); // 依實際 look 暫存，不把另一個世界同編號的人當成同一人。
   function dollOf(person) {
     const sh = sheets.doll;
     if (!sh || !person || !E.faces || !E.faces.look) return null;
-    const key = person.id + '|' + person.occupation;
-    if (dolls.has(key)) return dolls.get(key);
     const L = person.elite ? S3.ops.profiles[person.elite].look : E.faces.look(person), body = DOLL_OF[L.o.top] || 'jacket';
+    if (dolls.has(L)) return dolls.get(L);
     const it = sh.items[body], ic = sh.items[body + '.c'], is = sh.items[body + '.s'];
     if (!it || !ic || !is) return null;
     const make = () => Object.assign(document.createElement('canvas'), { width: it.w, height: it.h });
@@ -100,7 +100,7 @@
     }
     g.globalCompositeOperation = 'source-over';
     const d = { cv: cvs, it, L };
-    dolls.set(key, d);
+    dolls.set(L, d);
     return d;
   }
 
@@ -111,7 +111,7 @@
     shotgun: { len: 3.6, grip: 0.26 }, nailgun: { len: 2.1, grip: 0.12 }, sledge: { len: 3.6, grip: 0.12 },
     hammer: { len: 4.5, grip: 0.16 },
   };
-  function heldItem(id, x, y, R) {
+  function heldItem(ctx, id, x, y, R) {
     if (id === 'match') id = 'silenced';
     const h = HELD[id] || HELD.pistol, len = h.len * R;
     const sh = id === 'hammer' ? sheets.gear : sheets.doll, it = sh && sh.items[id === 'hammer' ? 'smash' : 'held-' + id];
@@ -135,7 +135,7 @@
   }
 
   // 頭髮和帽子（俯視，臉朝 +x）：一般人沿用頭像外觀，特工使用固定設定。R：光頭那一圈的半徑。
-  function headTop(L, R) {
+  function headTop(ctx, L, R) {
     const tone = E.faces.tone, o = L.o, st = L.style, lw = Math.max(0.8, R * 0.12);
     const hc = L.hairC, hd = tone(hc, -0.32), hl = tone(hc, 0.22);
     ctx.lineJoin = 'round';
@@ -232,7 +232,7 @@
   }
 
   // 主角：影子、手上的武器、上好色的身體、頭髮和帽子。回傳有沒有畫出來（圖還沒載入時退回分類的圖）。
-  function drawDoll(s, p, alpha, subject = s.build) {
+  function drawDoll(ctx, p, alpha, subject) {
     const d = dollOf(subject && subject.person);
     if (!d) return false;
     const it = d.it, size = p.r * 1.3, k = size / it.r, R = it.hr * k;
@@ -241,13 +241,20 @@
     ctx.globalAlpha = alpha * 0.32; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(3, 6, size * 1.05, size * 0.9, 0, 0, TAU); ctx.fill();
     ctx.globalAlpha = alpha;
     ctx.rotate(p.ang);
-    if (subject.weapon) heldItem(subject.weapon, (it.gx - it.ax) * k, (it.gy - it.ay) * k, R);
+    if (subject.weapon) heldItem(ctx, subject.weapon, (it.gx - it.ax) * k, (it.gy - it.ay) * k, R);
     ctx.drawImage(d.cv, -it.ax * k, -it.ay * k, it.w * k, it.h * k);
-    headTop(d.L, R);
+    headTop(ctx, d.L, R);
     ctx.restore();
     return true;
   }
 
+  // 畫廊用戰場同一個畫法；不重設遊戲的 canvas、比例或狀態。
+  function previewDoll(canvas, subject) {
+    if (!sheets.doll) loadAtlas(['doll']);
+    const w = canvas.width, h = canvas.height, c = canvas.getContext('2d');
+    c.clearRect(0, 0, w, h);
+    return drawDoll(c, { x: w*.46, y: h*.59, r: Math.min(w,h)*.175, ang: -Math.PI/3 }, 1, subject);
+  }
   function init(canvas) { cv = canvas; ctx = cv.getContext('2d'); resize(); loadAtlas(); }
   function resize() {
     if (!cv) return;
@@ -654,7 +661,7 @@
     if (p.guard > 0) { ctx.strokeStyle = 'rgba(236,232,225,0.6)'; ctx.lineWidth = 2; circle(p.x, p.y, p.r + 9); ctx.stroke(); }
     // 腳下一圈粉紅色：在一堆人裡一眼找得到自己。
     ctx.strokeStyle = 'rgba(255,46,136,0.75)'; ctx.lineWidth = 2.5; circle(p.x, p.y, p.r * 1.75); ctx.stroke();
-    if (drawDoll(s, p, alpha) || sprite('actors', s.build.cat, p.x, p.y, p.ang, p.r * 1.3, alpha)) {
+    if (drawDoll(ctx, p, alpha, s.build) || sprite('actors', s.build.cat, p.x, p.y, p.ang, p.r * 1.3, alpha)) {
       if (p.hurtT > 0) { ctx.globalAlpha = 0.6; circle(p.x, p.y, p.r * 1.4); ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = 1; }
     } else {
       person(p.x, p.y, p.r, p.ang, { body: p.hurtT > 0 ? '#fff' : C.pink, head: '#1c2028' }, p.r + 6, alpha);
@@ -768,7 +775,7 @@
         ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, head, -Math.min(0.9, 2 * w.arc * k), 0); ctx.stroke();
         ctx.shadowBlur = 0;
       }
-      heldItem(w.id, 24, 0, 17);
+      heldItem(ctx, w.id, 24, 0, 17);
       ctx.restore();
     }
   }
@@ -903,7 +910,7 @@
     for (const pet of s.pets) {
       if (pet.kind === 'brawler') {
         ctx.strokeStyle = C.green; ctx.lineWidth = 2; circle(pet.x, pet.y, 16); ctx.stroke();
-        if (!drawDoll(s, pet, 1, { person: pet.person })) person(pet.x, pet.y, pet.r, pet.ang, { body: C.green, head: '#dfbd91' }, false);
+        if (!drawDoll(ctx, pet, 1, { person: pet.person })) person(pet.x, pet.y, pet.r, pet.ang, { body: C.green, head: '#dfbd91' }, false);
       } else if (pet.kind === 'spider' && !sprite('gear', 'spider', pet.x, pet.y, pet.ang, 17) && !sprite('props', 'spider', pet.x, pet.y, pet.ang, 16)) {
         ctx.save(); ctx.translate(pet.x, pet.y); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.strokeStyle = C.out; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.stroke(); }
         ctx.rotate(pet.ang); ctx.fillStyle = '#0d1118'; ctx.fillRect(0, -3, 20, 6); circle(0, 0, 9); outline(C.pink, 2); ctx.restore();
@@ -986,5 +993,5 @@
     }
   }
 
-  S3.render = { init, resize, reset, toWorld, event, update, draw, C };
+  S3.render = { init, resize, reset, toWorld, event, update, draw, previewDoll, C };
 })(window.ECHO = window.ECHO || {});

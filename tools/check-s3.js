@@ -13,6 +13,86 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
   const LANGS = ['zh-Hant', 'zh-Hans', 'en'];
   const T = sim.T;
 
+  // ===== 頭像與紙娃娃共用的外觀，包含尚未交付的零件 =====
+  section('零時差：頭像零件與缺件備援');
+  {
+    const P = S3.portraits, catalog = S3.portraitParts, allowed = new Set();
+    const hairs = 'crop side curly afro locs bob long ponytail bun braids mohawk bald'.split(' ');
+    const tops = 'hoodie polo tee hivis jacket overalls turnout sport suit blazer waistcoat denim coat scrubs workshirt cardigan tactical sweater'.split(' ');
+    const hats = 'headset hardhat bikehelmet cap firehelmet headband beanie flatcap visor hood'.split(' ');
+    const beards = ['stubble', 'moustache', 'beard'];
+    const p = E.people.generate('portrait-test', 'camden', 0), L = E.faces.look(p);
+    const ck = (v, msg) => { if (!v) fail('s3 portraits: ' + msg); };
+    for (const [age, band] of [[18,'y'],[34,'y'],[35,'m'],[54,'m'],[55,'o'],[80,'o']]) {
+      for (const [mood, expression] of Object.entries({ neutral:'neutral', calm:'neutral', smile:'smile', grin:'smile', worried:'frown', cross:'frown', smirk:'smirk' })) {
+        const id = 'face-' + band + '-' + expression; allowed.add(id);
+        ck(P.partsOf({age}, {...L,mood}).face === id, age + '/' + mood);
+      }
+    }
+    for (const style of hairs) {
+      const id = style === 'bald' ? null : 'hair-' + style; if (id) allowed.add(id);
+      ck(P.partsOf(p,{...L,style}).hair === id, style);
+    }
+    for (const b of [null,...beards]) {
+      const id = b && 'beard-' + b; if (id) allowed.add(id);
+      ck(P.partsOf(p,{...L,beardKind:b}).beard === id, 'beard/' + b);
+    }
+    for (const top of tops) {
+      allowed.add('outfit-' + top);
+      ck(P.partsOf(p,{...L,o:{...L.o,top}}).outfit === 'outfit-' + top, top);
+    }
+    for (const hat of [null,...hats]) {
+      const id = hat && 'hat-' + hat; if (id) allowed.add(id);
+      const v = P.partsOf(p,{...L,o:{...L.o,hat,hatCol:'#ffd23f',col:'#336677'}});
+      ck(v.hat === id && v.hatCol === (hat === 'hood' ? '#336677' : '#ffd23f'), 'hat/' + hat);
+    }
+    for (const o of Object.values(E.faces.OUTFIT)) ck(tops.includes(o.top) && (!o.hat || hats.includes(o.hat)), 'unmapped occupation outfit');
+    for (const [id, item] of Object.entries(catalog.items)) {
+      const face = id.startsWith('face-'), [x,y,w,h] = item.box;
+      ck(allowed.has(id) && x>=0 && y>=0 && w>0 && h>0 && x+w<=catalog.size && y+h<=catalog.size, id + ' crop');
+      if (face) ck(item.features.length===5 && item.features.every(n=>n>0 && n<100), id + ' anchor points');
+      for (const suffix of face ? ['','.skin','.iris'] : ['','.tint']) {
+        const png = path.join(root,catalog.path,id+suffix+'.png');
+        if (!fs.existsSync(png)) { fail('s3 portraits: missing ' + png); continue; }
+        const data = fs.readFileSync(png);
+        ck(data.readUInt32BE(16)===w && data.readUInt32BE(20)===h, id + suffix + ' does not match its crop');
+      }
+    }
+    const alt = {...p, age:72, flaw:'hothead', traits:[]};
+    ck(E.faces.look(alt) !== L && E.faces.look(alt).mood === 'cross' && E.faces.look({...p}) === L, 'same district/id across campaigns');
+
+    // 可重複的五層樣本，不假設 Claude 已經交付哪個 PNG；也試清單有底圖、但某個遮罩讀不到。
+    const sample = E.people.crowd('layer-test','camden',0,180).find(p => {
+      const a=P.partsOf(p); return a.hair && a.beard && a.hat;
+    });
+    const a = P.partsOf(sample), look = E.faces.look(sample), ids = [a.face,a.hair,a.beard,a.outfit,a.hat];
+    const test = sandbox(['js/engine/rng.js','js/engine/people.js','content-s2/people.js','content-s3/data.js','js/ui/faces.js']);
+    test.E.s3.portraitParts = {path:'parts/',size:320,items:Object.fromEntries(ids.map(id=>[id,{box:[0,0,320,320],features:[42,40,58,40,52]}]))};
+    require('vm').runInContext(fs.readFileSync(path.join(root,'js/s3/portraits.js'),'utf8'),test.ctx);
+    const F = test.E.faces, renderer = test.E.s3.portraits;
+    const draw = (missing, round) => {
+      renderer.prepare(path => ({complete:true,naturalWidth: missing && path.includes(missing) ? 0 : 320}));
+      return F.of(sample,{round});
+    };
+    const art = draw(null,false), circle = F.of(sample,{round:true});
+    ck(ids.every(id=>art.includes('data-part="' + id + '"')) && [look.skin,look.iris,look.hairC,look.o.col,a.hatCol].every(c=>art.includes('flood-color="' + c + '"')), 'full selection or tint');
+    ck(circle.includes('<clipPath') && !art.includes('undefined') && !art.includes('NaN'), 'broken square or round portrait');
+    const firstIds = new Set([...art.matchAll(/ id="([^"]+)"/g)].map(m=>m[1]));
+    ck(![...circle.matchAll(/ id="([^"]+)"/g)].some(m=>firstIds.has(m[1])), 'duplicate filter IDs between coexisting portraits');
+    for (const id of ids.slice(1)) {
+      const partial = draw(id+'.tint',false);
+      ck(!partial.includes('data-part="' + id + '"') && partial.includes('data-vector-part="' + id + '"') &&
+        ids.filter(x=>x!==id).every(x=>partial.includes('data-part="' + x + '"')), id + ' must use its vector without obscuring healthy layers');
+    }
+    const legacy = draw(a.face+'.iris',true);
+    ck(!legacy.includes('<image') && legacy.includes('<path') && legacy.includes('<clipPath'), 'whole-face fallback for a missing iris mask');
+    ck(!F.of(sample,{round:true}).includes(legacy.match(/<clipPath id="([^"]+)"/)[1]+'"'), 'fallback round portraits share a clip');
+    delete test.E.s3.portraitParts.items[a.hair];
+    const absent = draw(null,false);
+    ck(!absent.includes('data-part="' + a.hair + '"') && absent.includes('data-part="' + a.face + '"'), 'unpublished hair should retain the painted face');
+    console.log(Object.keys(catalog.items).length + '/54 published parts; all names, mask sizes, shared colours, square/round and missing layers checked');
+  }
+
   // ===== 文字 =====
   section('第三季：三語文字');
   {

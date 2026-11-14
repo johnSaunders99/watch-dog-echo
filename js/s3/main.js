@@ -37,6 +37,7 @@
     for (const a of Object.values(S3.atlas || {})) loadImage(a.src, true);
     loadImage(pictures.title, true);
     for (const [k, v] of Object.entries(pictures)) if (k.startsWith('pt-')) loadImage(v, true);
+    S3.portraits.prepare(S3.assets.img);
     for (const v of Object.values(pictures)) loadImage(v, false);
   }
   const imagesReady = () => images.done >= images.need;

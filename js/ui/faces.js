@@ -211,12 +211,20 @@
   }
 
   // ===== 整張頭像 =====
-  const cache = {}, looks = {};
+  const cache = new Map(), looks = new Map();
+  const lookKey = (p) => [p.id, p.occupation, p.age, p.heritage, p.flaw, p.traits.join(',')].join('|');
+  let illustrator = null; // 只有載入《零時差》零件的頁面才使用。
+  let vectorSerial = 0;
+  const instance = (svg, round) => round ? svg.replace(/@vClip/g, 'fc-' + (++vectorSerial)) : svg;
+  const glasses = '<g fill="none" stroke="#0b0f1c" stroke-width="1.6"><rect x="38" y="39.5" width="11" height="8" rx="2.5"/><rect x="51" y="39.5" width="11" height="8" rx="2.5"/><path d="M49 42.5 h2 M38 42 L34.5 41 M62 42 L65.5 41"/></g><path d="M40 41.5 l3 -1" stroke="#fff" stroke-width="1" opacity="0.6"/>';
+  const studs = [33.5, 66.5].map(x => `<circle cx="${x}" cy="51.5" r="1.6" fill="#ffd23f" stroke="${OUT}" stroke-width="0.6"/>`).join('');
+  const spots = c => [[40, 47], [42.5, 48.5], [38.5, 49], [60, 47], [57.5, 48.5], [61.5, 49]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0.55" fill="${c}"/>`).join('');
+  const ink = { top, extra, hat, beard, hair: HAIR, glasses, studs, spots, framed };
   // 一個人長什麼樣子（隨機的那一部分）。頭像和《零時差》的俯視圖都用這一份，兩邊才會對得上。
   // 回傳 { job, o 衣服帽子, light, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles }。
   function look(p) {
-    const lk = p.id + '|' + p.occupation;
-    if (looks[lk]) return looks[lk];
+    const lk = lookKey(p);
+    if (looks.has(lk)) return looks.get(lk);
     const r = E.rng.derive('face2', p.id);
     const job = E.people.occupationOf(p);
     const o = OUTFIT[job.id] || { top: 'tee', col: '#4a5a7a' };
@@ -242,14 +250,20 @@
     const earring = r.chance(0.18);
     const specs = (o.specs && r.chance(o.specs)) || p.age >= 66 || r.chance(0.08);
     const freckles = light && r.chance(0.25);
-    looks[lk] = { job, o, light, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles };
-    return looks[lk];
+    const L = { job, o, light, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles };
+    looks.set(lk, L);
+    return L;
   }
 
   function of(p, opt = {}) {
-    const ck = p.id + '|' + p.occupation + (opt.round ? '|r' : '');
-    if (cache[ck]) return cache[ck];
-    const { job, o, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles } = look(p);
+    const L = look(p), tier = E.people.tierOf(p);
+    if (illustrator) {
+      const svg = illustrator(p, L, ink, tier, opt);
+      if (svg) return svg;
+    }
+    const ck = lookKey(p) + '|' + tier + (opt.round ? '|r' : '');
+    if (cache.has(ck)) return instance(cache.get(ck), opt.round);
+    const { job, o, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles } = L;
     const skinD = tone(skin, -0.2);
     const skinL = tone(skin, 0.18);
 
@@ -268,8 +282,8 @@
       + `<path d="M56 24 Q67 30 66.4 44 Q65.6 58 52 61.3 Q61.5 53 61.8 42 Q62 31 56 24 Z" fill="${skinD}" opacity="0.45"/>`
       + `<ellipse cx="44" cy="30" rx="5" ry="3" fill="${skinL}" opacity="0.45"/>`
       + `<circle cx="40" cy="50" r="3.2" fill="#ff6f6f" opacity="${mood === 'grin' ? 0.3 : 0.16}"/><circle cx="60" cy="50" r="3.2" fill="#ff6f6f" opacity="${mood === 'grin' ? 0.3 : 0.16}"/>`;
-    if (earring) g += `<circle cx="33.5" cy="51.5" r="1.6" fill="#ffd23f" stroke="${OUT}" stroke-width="0.6"/><circle cx="66.5" cy="51.5" r="1.6" fill="#ffd23f" stroke="${OUT}" stroke-width="0.6"/>`;
-    if (freckles) g += [[40, 47], [42.5, 48.5], [38.5, 49], [60, 47], [57.5, 48.5], [61.5, 49]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0.55" fill="${skinD}"/>`).join('');
+    if (earring) g += studs;
+    if (freckles) g += spots(skinD);
     // 皺紋
     if (p.age >= 55) g += `<path d="M42 31 Q50 29.5 58 31 M43.5 33.5 Q50 32.3 56.5 33.5" stroke="${skinD}" stroke-width="0.9" fill="none"/><path d="M38.5 47 Q40 51 42.5 52 M61.5 47 Q60 51 57.5 52" stroke="${skinD}" stroke-width="0.8" fill="none"/>`;
     // 五官
@@ -281,14 +295,18 @@
     g += mouth(mood);
     // 頭髮、眼鏡、帽子
     g += H.front(hairC);
-    if (specs) g += `<g fill="none" stroke="${OUT}" stroke-width="1.6"><rect x="38" y="39.5" width="11" height="8" rx="2.5"/><rect x="51" y="39.5" width="11" height="8" rx="2.5"/><path d="M49 42.5 h2 M38 42 L34.5 41 M62 42 L65.5 41"/></g><path d="M40 41.5 l3 -1" stroke="#fff" stroke-width="1" opacity="0.6"/>`;
+    if (specs) g += glasses;
     g += hat(o);
     // 稀有度的框
-    const tier = E.people.tierOf(p);
+    const svg = framed(g, tier, opt, '@vClip');
+    cache.set(ck, svg);
+    return instance(svg, opt.round);
+  }
+
+  function framed(g, tier, opt, cid) {
     const fc = FRAME[tier];
     let svg;
     if (opt.round) {
-      const cid = 'fc-' + String(p.id).replace(/[^\w-]/g, '_');
       svg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><clipPath id="${cid}"><circle cx="50" cy="50" r="50"/></clipPath></defs>`
         + `<g clip-path="url(#${cid})">${g}</g>${fc ? `<circle cx="50" cy="50" r="47" fill="none" stroke="${fc}" stroke-width="6"/>` : ''}</svg>`;
     } else {
@@ -298,9 +316,8 @@
       else if (tier === 'special') frame = `<rect x="2" y="2" width="96" height="96" fill="none" stroke="${fc}" stroke-width="4"/>`;
       svg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${g}${frame}</svg>`;
     }
-    cache[ck] = svg;
     return svg;
   }
 
-  E.faces = { of, look, tone, OUTFIT, HATLESS };
+  E.faces = { of, look, tone, OUTFIT, HATLESS, useIllustrator(fn) { illustrator = fn; } };
 })(window.ECHO = window.ECHO || {});
