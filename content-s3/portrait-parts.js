@@ -271,12 +271,252 @@ window.ECHO.s3.portraitParts = {
         129
       ]
     },
+    "beard-stubble": {
+      "box": [
+        103,
+        136,
+        114,
+        65
+      ]
+    },
+    "beard-moustache": {
+      "box": [
+        125,
+        150,
+        70,
+        24
+      ]
+    },
+    "beard-beard": {
+      "box": [
+        103,
+        134,
+        114,
+        74
+      ]
+    },
     "outfit-hoodie": {
       "box": [
         33,
         195,
         254,
         125
+      ]
+    },
+    "outfit-polo": {
+      "box": [
+        34,
+        205,
+        252,
+        115
+      ]
+    },
+    "outfit-tee": {
+      "box": [
+        34,
+        217,
+        252,
+        103
+      ]
+    },
+    "outfit-hivis": {
+      "box": [
+        32,
+        223,
+        255,
+        97
+      ]
+    },
+    "outfit-jacket": {
+      "box": [
+        34,
+        198,
+        252,
+        122
+      ]
+    },
+    "outfit-overalls": {
+      "box": [
+        35,
+        221,
+        250,
+        99
+      ]
+    },
+    "outfit-turnout": {
+      "box": [
+        33,
+        186,
+        253,
+        134
+      ]
+    },
+    "outfit-sport": {
+      "box": [
+        34,
+        198,
+        252,
+        122
+      ]
+    },
+    "outfit-suit": {
+      "box": [
+        34,
+        217,
+        252,
+        103
+      ]
+    },
+    "outfit-blazer": {
+      "box": [
+        34,
+        213,
+        252,
+        107
+      ]
+    },
+    "outfit-waistcoat": {
+      "box": [
+        36,
+        220,
+        247,
+        100
+      ]
+    },
+    "outfit-denim": {
+      "box": [
+        32,
+        199,
+        256,
+        121
+      ]
+    },
+    "outfit-coat": {
+      "box": [
+        33,
+        173,
+        254,
+        147
+      ]
+    },
+    "outfit-scrubs": {
+      "box": [
+        37,
+        217,
+        246,
+        103
+      ]
+    },
+    "outfit-workshirt": {
+      "box": [
+        33,
+        202,
+        254,
+        118
+      ]
+    },
+    "outfit-cardigan": {
+      "box": [
+        33,
+        212,
+        252,
+        108
+      ]
+    },
+    "outfit-tactical": {
+      "box": [
+        34,
+        201,
+        252,
+        119
+      ]
+    },
+    "outfit-sweater": {
+      "box": [
+        34,
+        219,
+        252,
+        101
+      ]
+    },
+    "hat-headset": {
+      "box": [
+        74,
+        42,
+        172,
+        135
+      ]
+    },
+    "hat-hardhat": {
+      "box": [
+        87,
+        35,
+        146,
+        93
+      ]
+    },
+    "hat-bikehelmet": {
+      "box": [
+        86,
+        34,
+        148,
+        91
+      ]
+    },
+    "hat-cap": {
+      "box": [
+        99,
+        42,
+        122,
+        87
+      ]
+    },
+    "hat-firehelmet": {
+      "box": [
+        66,
+        11,
+        188,
+        182
+      ]
+    },
+    "hat-headband": {
+      "box": [
+        100,
+        61,
+        119,
+        67
+      ]
+    },
+    "hat-beanie": {
+      "box": [
+        91,
+        33,
+        138,
+        92
+      ]
+    },
+    "hat-flatcap": {
+      "box": [
+        86,
+        49,
+        147,
+        81
+      ]
+    },
+    "hat-visor": {
+      "box": [
+        101,
+        112,
+        118,
+        121
+      ]
+    },
+    "hat-hood": {
+      "box": [
+        77,
+        44,
+        165,
+        188
       ]
     }
   }
