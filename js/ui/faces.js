@@ -211,10 +211,12 @@
   }
 
   // ===== 整張頭像 =====
-  const cache = {};
-  function of(p, opt = {}) {
-    const ck = p.id + '|' + p.occupation + (opt.round ? '|r' : '');
-    if (cache[ck]) return cache[ck];
+  const cache = {}, looks = {};
+  // 一個人長什麼樣子（隨機的那一部分）。頭像和《零時差》的俯視圖都用這一份，兩邊才會對得上。
+  // 回傳 { job, o 衣服帽子, light, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles }。
+  function look(p) {
+    const lk = p.id + '|' + p.occupation;
+    if (looks[lk]) return looks[lk];
     const r = E.rng.derive('face2', p.id);
     const job = E.people.occupationOf(p);
     const o = OUTFIT[job.id] || { top: 'tee', col: '#4a5a7a' };
@@ -222,8 +224,6 @@
     // 膚色：大致依族裔，但倫敦人什麼樣子都有。
     const pal = r.chance(0.08) ? SKIN[r.pick(Object.keys(SKIN))] : SKIN[p.heritage] || SKIN.british;
     const skin = r.pick(pal);
-    const skinD = tone(skin, -0.2);
-    const skinL = tone(skin, 0.18);
     // 髮色：年紀大的白髮，年輕人偶爾染色。
     let hairC = r.pick(light ? HAIR_COL.light : HAIR_COL.dark);
     if (p.age >= 60 || (p.age >= 50 && r.chance(0.4))) hairC = r.pick(HAIR_COL.grey);
@@ -242,6 +242,16 @@
     const earring = r.chance(0.18);
     const specs = (o.specs && r.chance(o.specs)) || p.age >= 66 || r.chance(0.08);
     const freckles = light && r.chance(0.25);
+    looks[lk] = { job, o, light, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles };
+    return looks[lk];
+  }
+
+  function of(p, opt = {}) {
+    const ck = p.id + '|' + p.occupation + (opt.round ? '|r' : '');
+    if (cache[ck]) return cache[ck];
+    const { job, o, skin, hairC, iris, style, mood, sleepy, beardKind, earring, specs, freckles } = look(p);
+    const skinD = tone(skin, -0.2);
+    const skinL = tone(skin, 0.18);
 
     let g = '';
     // 背景：分類的底色、身後一圈光
@@ -292,5 +302,5 @@
     return svg;
   }
 
-  E.faces = { of };
+  E.faces = { of, look, tone, OUTFIT, HATLESS };
 })(window.ECHO = window.ECHO || {});

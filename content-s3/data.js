@@ -168,7 +168,8 @@
     eagle: { cd: 14, range: 520, r: 170, stun: 2.4, dmg: 15 },            // Darcy 的老鷹無人機：飛到游標處，電磁脈衝
     blackout: { cd: 28, dur: 5 },                                         // 艾登的大停電：全場敵人看不到你
     sergei: { cd: 12, range: 560, r: 95, dmg: 60, fuse: 0.7, crate: 10 }, // Wrench 的謝爾蓋：把貨箱丟到游標處
-    hammer: { cd: 6, r: 105, arc: 1.25, dmg: 55, knock: 260, stun: 0.9 }, // Wrench 的鐵鎚
+    hammer: { cd: 6, r: 115, arc: 1.35, dmg: 65, knock: 300, stun: 1.1 }, // Wrench 的 Lady Smash（只有 Wrench 的事件拿得到）
+    sledge: { cd: 6, r: 95, arc: 1.05, dmg: 45, knock: 210, stun: 0.7 },  // 工地的大鐵鎚（身體類的人自己帶的）
     mask: { cd: 18, dur: 4, mult: 3 },                                    // 第二張臉：隱形
     spider: { cd: 20, dur: 11, dmg: 7, rate: 5, sight: 420 },             // 蜘蛛機器人：自動砲塔
     lure: { cd: 10, range: 520, dur: 4.5, r: 330 },                       // 誘餌喇叭
@@ -177,7 +178,7 @@
   // 職業分類的起始裝備和起始漏洞（各從裡面隨機一個）。
   const kits = {
     hacker: { gadget: ['eagle', 'mine'], exploit: ['chain', 'fiber', 'antenna', 'ransom'] },
-    physical: { gadget: ['hammer', 'mine'], exploit: ['kevlar', 'adrenal', 'scavenger', 'static'] },
+    physical: { gadget: ['sledge', 'mine'], exploit: ['kevlar', 'adrenal', 'scavenger', 'static'] },
     social: { gadget: ['lure', 'mask'], exploit: ['silencer', 'afterimage', 'miner', 'profiler'] },
     specialist: { gadget: ['spider', 'sergei'], exploit: ['puppet', 'extmag', 'medic', 'thermal'] },
   };
@@ -270,7 +271,7 @@
     { id: 'marcus', cameo: 'marcus', once: true, choices: [{ fx: { draft: 'u' } }, { fx: { data: 50 } }] },
     { id: 'bluedoor', cameo: 'bluedoor', once: true, choices: [{ fx: { gadget: 'mask' } }, { fx: { heal: 25 } }] },
     { id: 'cat', cameo: 'cat', once: true, choices: [{ fx: { heal: 30 } }, { fx: { maxBw: 1, hurt: 10 } }] },
-    { id: 'tarot', cameo: 'tarot', once: true, choices: [{ roll: [[0.34, { maxHp: 15 }, 'a'], [0.67, { rerolls: 2 }, 'b'], [1, { data: 40 }, 'c']] }, { fx: {} }] },
+    { id: 'tarot', cameo: 'device', once: true, choices: [{ roll: [[0.34, { maxHp: 15 }, 'a'], [0.67, { rerolls: 2 }, 'b'], [1, { data: 40 }, 'c']] }, { fx: {} }] },
     { id: 'vending', cameo: 'device', choices: [{ cost: 15, roll: [[0.5, { heal: 25 }, 'a'], [0.7, { data: 60 }, 'b'], [1, {}, 'c']] }, { fx: {} }] },
     { id: 'terminal', cameo: 'device', choices: [{ roll: [[0.6, { data: 55 }, 'a'], [1, { curse: 'sweep' }, 'b']] }, { fx: {} }] },
     { id: 'courier', cameo: 'crowd', choices: [{ fx: { hurt: 15, draft: 'u' } }, { fx: {} }] },

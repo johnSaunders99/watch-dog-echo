@@ -129,7 +129,7 @@
         const nearMe = foes.filter((e) => hyp(e.x - p.x, e.y - p.y) < 110 + e.r).length;
         const far = foes.slice().sort((a, b) => hyp(a.x - p.x, a.y - p.y) - hyp(b.x - p.x, b.y - p.y))[0];
         const cluster = (r) => { let best = null, n = 0; for (const e of foes) { const c = foes.filter((o) => hyp(o.x - e.x, o.y - e.y) < r).length; if (c > n) { n = c; best = e; } } return { e: best, n }; };
-        if (g.id === 'hammer') { if (nearMe) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; } }
+        if (g.id === 'hammer' || g.id === 'sledge') { if (nearMe) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; } }
         else if (g.id === 'eagle') { const c = cluster(160); if (c.n >= 2 || foes.some((e) => e.boss)) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; } }
         else if (g.id === 'sergei') { const c = cluster(90); if (c.e && hyp(c.e.x - p.x, c.e.y - p.y) > 120) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; } }
         else if (g.id === 'spider') { if (s.alert) inp[key] = true; }

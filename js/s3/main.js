@@ -80,8 +80,8 @@
     sfx.play(name);
   }
   const SHOT = { pistol: 's3gun', taser: 's3taser', shotgun: 's3shotgun', nailgun: 's3nail', silenced: 's3silenced' };
-  const EVENT_SOUND = { bluedoor: 'dream', tarot: 'dream', cat: 'dream', wrench: 'cameo', darcy: 'cameo', aiden: 'cameo', marcus: 'cameo' };
-  const GADGET_SOUND = { eagle: 'emp', blackout: 'blackout', sergei: 'sergei', hammer: 'smash', mask: 'dream', spider: 'droneJam', lure: 's3shriek', mine: 'lock' };
+  const EVENT_SOUND = { bluedoor: 'dream', cat: 'dream', wrench: 'cameo', darcy: 'cameo', aiden: 'cameo', marcus: 'cameo' };
+  const GADGET_SOUND = { eagle: 'emp', blackout: 'blackout', sergei: 'sergei', hammer: 'smash', sledge: 'smash', mask: 'dream', spider: 'droneJam', lure: 's3shriek', mine: 'lock' };
   function sound(ev) {
     switch (ev.k) {
       case 'shot': play(SHOT[ev.w] || 's3gun', 40); break;

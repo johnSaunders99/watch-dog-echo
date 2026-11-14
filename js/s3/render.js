@@ -1,4 +1,5 @@
-// 第三季的畫面：把 js/s3/sim.js 的房間狀態畫到 canvas 上。全部用程式畫，沒有任何圖檔。
+// 第三季的畫面：把 js/s3/sim.js 的房間狀態畫到 canvas 上。人、機器和道具用圖集（請圖像模型畫的俯視圖，
+// content-s3/atlas.js），圖還沒載入或沒有那一張時退回用程式畫；主角的頭髮和帽子一律用程式畫，才對得上頭像。
 // 畫風跟第二季的戰術地圖一致：平塗、深色描邊。邏輯座標是 1600×900，依視窗大小等比例縮放。
 // 牆和地板先畫到一張暫存的圖上（地形變了才重畫），其他東西每一幀重畫。
 // 粒子、震動、傷害數字這些演出只影響畫面，用 Math.random 沒關係（不影響模擬的結果）。
@@ -20,6 +21,7 @@
 
   let cv = null, ctx = null, scale = 1, bake = null, bakeKey = '';
   let parts = [], texts = [], beams = [], rings = [];
+  let swings = [], flyers = []; // 鐵鎚揮過去的那一下、謝爾蓋丟完貨箱飛走
   let shake = 0, hurtFlash = 0, whiteFlash = 0, clock = 0;
   const flashOf = new Map(); // 敵人被打到時閃一下白
 
@@ -50,6 +52,177 @@
   // 圖上的身體要畫得比判定的圓大多少。
   const BODY = { drone: 1.75, hound: 1.15, turret: 1.3, heavy: 1.2, bulldog: 1.2, carrier: 1.25 };
 
+  // ===== 主角的紙娃娃：身體是圖（doll 圖集，光頭），衣服和皮膚照這個人的頭像上色，頭髮和帽子用程式畫，手上拿著自己的武器 =====
+  // 頭像的上衣款式對到八種身體（tools/art-slice.py 的 DOLLS）。
+  const DOLL_OF = {
+    hoodie: 'hoodie', polo: 'tee', tee: 'tee', scrubs: 'tee', jacket: 'jacket', denim: 'jacket', sport: 'jacket', cardigan: 'jacket',
+    sweater: 'jacket', workshirt: 'jacket', tactical: 'jacket', hivis: 'hivis', turnout: 'hivis', overalls: 'overalls',
+    suit: 'suit', blazer: 'suit', waistcoat: 'waistcoat', coat: 'coat',
+  };
+  const dolls = new Map(); // 每個人上好色的身體（離屏的 canvas），第一次上場時做一次
+  function dollOf(person) {
+    const sh = sheets.doll;
+    if (!sh || !person || !E.faces || !E.faces.look) return null;
+    const key = person.id + '|' + person.occupation;
+    if (dolls.has(key)) return dolls.get(key);
+    const L = E.faces.look(person), body = DOLL_OF[L.o.top] || 'jacket';
+    const it = sh.items[body], ic = sh.items[body + '.c'], is = sh.items[body + '.s'];
+    if (!it || !ic || !is) return null;
+    const make = () => Object.assign(document.createElement('canvas'), { width: it.w, height: it.h });
+    const cvs = make(), g = cvs.getContext('2d'), tmp = make(), tg = tmp.getContext('2d');
+    g.drawImage(sh.img, it.x, it.y, it.w, it.h, 0, 0, it.w, it.h);
+    // 底圖在衣服和皮膚的地方是灰階的明暗，乘上這個人的顏色：明暗不變，顏色換掉。
+    for (const [m, col] of [[ic, L.o.col], [is, L.skin]]) {
+      tg.globalCompositeOperation = 'source-over';
+      tg.clearRect(0, 0, it.w, it.h);
+      tg.fillStyle = col;
+      tg.fillRect(0, 0, it.w, it.h);
+      tg.globalCompositeOperation = 'destination-in';
+      tg.drawImage(sh.img, m.x, m.y, m.w, m.h, 0, 0, it.w, it.h);
+      g.globalCompositeOperation = 'multiply';
+      g.drawImage(tmp, 0, 0);
+    }
+    g.globalCompositeOperation = 'source-over';
+    const d = { cv: cvs, it, L };
+    dolls.set(key, d);
+    return d;
+  }
+
+  // 手上的東西：圖集有就用圖（held-*），沒有就用程式畫個大概。len：多長（頭的半徑的幾倍）；grip：手握的地方（從尾端算的比例）。
+  // 握得靠後一點：手和袖子會蓋住握的地方，整把槍要露在手前面才認得出來。
+  const HELD = {
+    pistol: { len: 1.9, grip: 0.1 }, taser: { len: 1.9, grip: 0.1 }, silenced: { len: 2.7, grip: 0.08 },
+    shotgun: { len: 3.6, grip: 0.26 }, nailgun: { len: 2.1, grip: 0.12 }, sledge: { len: 3.6, grip: 0.12 },
+  };
+  function heldItem(id, x, y, R) {
+    const h = HELD[id] || HELD.pistol, len = h.len * R, sh = sheets.doll, it = sh && sh.items['held-' + id];
+    if (it) {
+      const k = len / it.w;
+      ctx.drawImage(sh.img, it.x, it.y, it.w, it.h, x - h.grip * len, y - (it.h * k) / 2, len, it.h * k);
+      return;
+    }
+    const w = R * 0.42, x0 = x - h.grip * len;
+    const bar = (fill, a, b, ww) => {
+      ctx.beginPath(); ctx.rect(x0 + a * len, y - ww / 2, (b - a) * len, ww);
+      ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = C.out; ctx.lineWidth = Math.max(1, R * 0.1); ctx.stroke();
+    };
+    if (id === 'shotgun') { bar('#6b4a2e', 0, 0.38, w * 1.1); bar('#2a2d36', 0.3, 1, w * 0.8); bar('#4a3a2a', 0.55, 0.75, w * 1.25); }
+    else if (id === 'nailgun') { bar('#ff8a1e', 0, 0.7, w * 1.3); bar('#5a606e', 0.68, 1, w * 0.6); }
+    else if (id === 'taser') { bar('#ffd23f', 0, 0.85, w); bar('#1c2028', 0.82, 1, w * 0.8); }
+    else if (id === 'silenced') { bar('#2a2d36', 0, 0.55, w); bar('#1c2028', 0.5, 1, w * 0.7); }
+    else if (id === 'sledge') { bar('#8a5a2e', 0, 0.84, w * 0.5); bar('#8a93a3', 0.78, 1, w * 1.9); }
+    else bar('#2a2d36', 0, 1, w);
+  }
+
+  // 頭髮和帽子（俯視，臉朝 +x）：跟頭像用同一份 E.faces.look，髮型、髮色、帽子都對得上。R：光頭那一圈的半徑。
+  function headTop(L, R) {
+    const tone = E.faces.tone, o = L.o, st = L.style, lw = Math.max(0.8, R * 0.12);
+    const hc = L.hairC, hd = tone(hc, -0.32), hl = tone(hc, 0.22);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    // 一塊有黑邊的形狀；給好幾塊就拼成一塊（先描全部的邊、再填全部的色，接縫就不會有線）。
+    const shape = (fill, ...paths) => {
+      ctx.strokeStyle = C.out; ctx.lineWidth = lw * 2;
+      for (const p of paths) { ctx.beginPath(); p(); ctx.stroke(); }
+      ctx.fillStyle = fill;
+      for (const p of paths) { ctx.beginPath(); p(); ctx.fill(); }
+    };
+    const disc = (x, y, r) => () => ctx.arc(x * R, y * R, r * R, 0, TAU);
+    const oval = (x, y, rx, ry) => () => ctx.ellipse(x * R, y * R, rx * R, ry * R, 0, 0, TAU);
+    const line = (col, w, pts) => {
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x * R, y * R) : ctx.moveTo(x * R, y * R)));
+      ctx.strokeStyle = col; ctx.lineWidth = w * R; ctx.stroke();
+    };
+    const strand = (col, w, pts) => { line(C.out, w + (lw * 2) / R, pts); line(col, w, pts); }; // 有黑邊的粗線
+    const ring = (col, r, w, a0 = 0, a1 = TAU) => {
+      for (const [c, ww] of [[C.out, w * R + lw * 2], [col, w * R]]) {
+        ctx.beginPath(); ctx.arc(-0.05 * R, 0, r * R, a0, a1); ctx.strokeStyle = c; ctx.lineWidth = ww; ctx.stroke();
+      }
+    };
+    const bumps = (cx, ring, r, n) => Array.from({ length: n }, (_, i) => disc(cx + Math.cos((i / n) * TAU) * ring, Math.sin((i / n) * TAU) * ring, r));
+
+    // 頭髮。垂在後面的（長髮、馬尾、辮子、髮束）先畫，再畫頭頂那一片。
+    if (st === 'long') {
+      // 長髮：從頭的兩邊往後披到背上，越往後越窄。
+      shape(hc, () => {
+        ctx.moveTo(-0.1 * R, -0.98 * R);
+        ctx.quadraticCurveTo(-1.0 * R, -1.02 * R, -1.5 * R, -0.5 * R);
+        ctx.quadraticCurveTo(-1.72 * R, 0, -1.5 * R, 0.5 * R);
+        ctx.quadraticCurveTo(-1.0 * R, 1.02 * R, -0.1 * R, 0.98 * R);
+        ctx.closePath();
+      });
+      for (const y of [-0.42, 0, 0.42]) line(hd, 0.07, [[-0.95, y * 1.2], [-1.45, y * 0.8]]);
+    }
+    if (st === 'ponytail') shape(hc, oval(-1.55, 0, 0.6, 0.27));
+    if (st === 'locs' || st === 'braids') {
+      const n = st === 'locs' ? 7 : 2;
+      for (let i = 0; i < n; i++) {
+        const a = Math.PI + (n === 2 ? (i ? 0.38 : -0.38) : (i - (n - 1) / 2) * 0.3);
+        strand(hc, st === 'locs' ? 0.27 : 0.22, [[Math.cos(a) * 0.6, Math.sin(a) * 0.6], [Math.cos(a) * 1.75, Math.sin(a) * 1.5]]);
+      }
+    }
+    if (st === 'afro') shape(hc, ...bumps(-0.15, 1.0, 0.42, 10), disc(-0.15, 0, 1.05));
+    else if (st === 'curly') shape(hc, ...bumps(-0.12, 0.72, 0.34, 8), disc(-0.12, 0, 0.8));
+    else if (st === 'bob') shape(hc, oval(-0.14, 0, 1.06, 1.2));
+    else if (st === 'mohawk') {
+      const a = ctx.globalAlpha;
+      ctx.globalAlpha = a * 0.3; ctx.fillStyle = hc; ctx.beginPath(); ctx.arc(0, 0, R * 0.96, 0, TAU); ctx.fill(); // 兩邊剃短
+      ctx.globalAlpha = a;
+      shape(hc, oval(-0.12, 0, 1.08, 0.24));
+      for (let i = 0; i < 4; i++) line(hd, 0.06, [[0.6 - i * 0.45, -0.12], [0.4 - i * 0.45, 0.12]]);
+    } else if (st !== 'bald') shape(hc, oval(-0.12, 0, 0.98, 1.03)); // 一般的頭髮：蓋住頭頂，前面露出一點額頭
+    // 細節：分線、辮子的紋路、髮圈、髮髻、光頭的反光
+    if (st === 'side') line(hd, 0.09, [[0.72, -0.38], [-0.85, -0.3]]);
+    if (st === 'bob' || st === 'long') line(hd, 0.08, [[0.8, 0], [-0.6, 0]]);
+    if (st === 'braids') for (const y of [-0.42, 0, 0.42]) line(hd, 0.08, [[0.7, y * 0.8], [-0.88, y]]);
+    if (st === 'locs') for (const y of [-0.4, 0.05, 0.45]) line(hd, 0.07, [[0.55, y], [-0.6, y * 1.1]]);
+    if (st === 'ponytail') shape(hd, disc(-1.0, 0, 0.17));
+    if (st === 'bun') { shape(hc, disc(-0.45, 0, 0.42)); line(hd, 0.07, [[-0.6, -0.15], [-0.4, 0.05], [-0.55, 0.22]]); }
+    if (['crop', 'side', 'long', 'ponytail', 'bun', 'bob'].includes(st)) line(hl, 0.12, [[0.3, -0.52], [-0.3, -0.64]]);
+    if (st === 'bald') { ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.ellipse(0.12 * R, -0.32 * R, 0.36 * R, 0.2 * R, -0.3, 0, TAU); ctx.fill(); }
+
+    // 帽子：跟頭像同一頂、同一個顏色。
+    const hat = o.hat;
+    if (!hat) return;
+    const col = o.hatCol || '#3a3a42', dk = tone(col, -0.25), lt = tone(col, 0.25);
+    if (hat === 'hardhat') { shape(dk, oval(0.05, 0, 1.3, 1.22)); shape(col, disc(-0.05, 0, 0.98)); line(lt, 0.2, [[-0.85, 0], [0.85, 0]]); }
+    else if (hat === 'firehelmet') { shape(dk, oval(-0.45, 0, 1.55, 1.25)); shape(col, disc(0, 0, 0.98)); line(lt, 0.18, [[-0.85, 0], [0.85, 0]]); shape('#ffd23f', disc(0.95, 0, 0.22)); }
+    else if (hat === 'bikehelmet') { shape(col, oval(-0.12, 0, 1.25, 1.04)); for (const y of [-0.42, 0, 0.42]) line('#1c2028', 0.13, [[-0.65, y * 0.9], [0.45, y]]); }
+    else if (hat === 'cap') { shape(dk, oval(0.95, 0, 0.62, 0.72)); shape(col, disc(-0.08, 0, 1.0)); shape(dk, disc(-0.08, 0, 0.1)); }
+    else if (hat === 'flatcap') { shape(dk, oval(0.82, 0, 0.42, 0.66)); shape(col, oval(-0.1, 0, 1.06, 1.0)); line(dk, 0.07, [[0.55, -0.6], [0.7, 0], [0.55, 0.6]]); }
+    else if (hat === 'beanie') { shape(col, disc(-0.05, 0, 1.08)); ring(dk, 0.9, 0.2); line(lt, 0.12, [[0.25, -0.45], [-0.3, -0.55]]); } // 反摺的帽緣
+    else if (hat === 'hood') { shape(o.col, disc(-0.2, 0, 1.24)); shape(tone(o.col, -0.45), oval(0.62, 0, 0.42, 0.72)); }
+    else if (hat === 'headband') { ring(col, 0.95, 0.2); strand(col, 0.14, [[-1.0, 0], [-1.45, -0.22]]); strand(col, 0.14, [[-1.0, 0], [-1.4, 0.2]]); }
+    else if (hat === 'headset') {
+      strand(col, 0.2, [[-0.02, -1.0], [-0.02, 1.0]]);
+      shape('#1c2028', oval(0, -1.0, 0.3, 0.2), oval(0, 1.0, 0.3, 0.2));
+      line('#1c2028', 0.08, [[0.15, 1.02], [0.6, 0.85], [0.85, 0.5]]);
+      shape(col, disc(0.85, 0.5, 0.12));
+    } else if (hat === 'visor') {
+      ring(col, 0.96, 0.22, -1.25, 1.25);
+      const a = ctx.globalAlpha;
+      ctx.globalAlpha = a * 0.6; shape(col, oval(1.02, 0, 0.26, 0.78)); ctx.globalAlpha = a;
+    }
+  }
+
+  // 主角：影子、手上的武器、上好色的身體、頭髮和帽子。回傳有沒有畫出來（圖還沒載入時退回分類的圖）。
+  function drawDoll(s, p, alpha) {
+    const d = dollOf(s.build && s.build.person);
+    if (!d) return false;
+    const it = d.it, size = p.r * 1.3, k = size / it.r, R = it.hr * k;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.globalAlpha = alpha * 0.32; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(3, 6, size * 1.05, size * 0.9, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = alpha;
+    ctx.rotate(p.ang);
+    heldItem(s.build.weapon, (it.gx - it.ax) * k, (it.gy - it.ay) * k, R); // 武器先畫，兩手握在上面
+    ctx.drawImage(d.cv, -it.ax * k, -it.ay * k, it.w * k, it.h * k);
+    headTop(d.L, R);
+    ctx.restore();
+    return true;
+  }
+
   function init(canvas) { cv = canvas; ctx = cv.getContext('2d'); resize(); loadAtlas(); }
   function resize() {
     if (!cv) return;
@@ -67,7 +240,7 @@
     const b = cv.getBoundingClientRect();
     return { x: ((clientX - b.left) / b.width) * W, y: ((clientY - b.top) / b.height) * H };
   }
-  function reset() { parts = []; texts = []; beams = []; rings = []; shake = hurtFlash = whiteFlash = 0; flashOf.clear(); bakeKey = ''; }
+  function reset() { parts = []; texts = []; beams = []; rings = []; swings = []; flyers = []; shake = hurtFlash = whiteFlash = 0; flashOf.clear(); bakeKey = ''; }
 
   // ===== 地板和牆 =====
   function bakeRoom(s) {
@@ -366,8 +539,12 @@
     if (e.elite) { ctx.strokeStyle = { armored: '#cfd6e4', firewall: C.green, volatile: C.warn, swift: C.echo }[e.elite]; ctx.lineWidth = 3; circle(x, y, r + 7); ctx.stroke(); }
     if (e.mark > 0) { ctx.strokeStyle = C.cyan; ctx.lineWidth = 2; ctx.setLineDash([4, 5]); circle(x, y, r + 12); ctx.stroke(); ctx.setLineDash([]); }
     const art = e.boss === 'keystone' ? null : e.boss || e.kind;
-    if (art && e.def.fly && sheets.actors && sheets.actors.items[art]) { ctx.fillStyle = 'rgba(0,0,0,0.28)'; circle(x + 8, y + 22, r * 1.2); ctx.fill(); }
-    if (art && sprite('actors', art, x, y, e.ang, r * (BODY[art] || 1.3), 1, !e.def.fly)) {
+    // 無人機和砲塔用 gear 圖：被劫持的無人機換成我們的機體，敵人的有裝甲和紅燈。
+    const gearArt = e.kind === 'drone' ? (ally ? 'droneAlly' : 'droneEnemy') : e.kind === 'turret' ? 'turret' : null;
+    const sheet = gearArt && sheets.gear && sheets.gear.items[gearArt] ? 'gear' : 'actors', name = sheet === 'gear' ? gearArt : art;
+    const size = sheet === 'gear' ? r * (e.kind === 'drone' ? 1.55 : 1.45) : r * (BODY[art] || 1.3);
+    if (name && e.def.fly && sheets[sheet] && sheets[sheet].items[name]) { ctx.fillStyle = 'rgba(0,0,0,0.28)'; circle(x + 8, y + 22, r * 1.2); ctx.fill(); }
+    if (name && sprite(sheet, name, x, y, e.ang, size, 1, !e.def.fly)) {
       if (ally) { ctx.fillStyle = 'rgba(255,46,136,0.3)'; circle(x, y, r * 1.5); ctx.fill(); }
       ctx.translate(x, y); ctx.rotate(e.ang);
       if (e.kind === 'shield' || e.boss === 'bulldog') {
@@ -450,7 +627,7 @@
     if (p.guard > 0) { ctx.strokeStyle = 'rgba(236,232,225,0.6)'; ctx.lineWidth = 2; circle(p.x, p.y, p.r + 9); ctx.stroke(); }
     // 腳下一圈粉紅色：在一堆人裡一眼找得到自己。
     ctx.strokeStyle = 'rgba(255,46,136,0.75)'; ctx.lineWidth = 2.5; circle(p.x, p.y, p.r * 1.75); ctx.stroke();
-    if (sprite('actors', s.build.cat, p.x, p.y, p.ang, p.r * 1.3, alpha)) {
+    if (drawDoll(s, p, alpha) || sprite('actors', s.build.cat, p.x, p.y, p.ang, p.r * 1.3, alpha)) {
       if (p.hurtT > 0) { ctx.globalAlpha = 0.6; circle(p.x, p.y, p.r * 1.4); ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = 1; }
     } else {
       person(p.x, p.y, p.r, p.ang, { body: p.hurtT > 0 ? '#fff' : C.pink, head: '#1c2028' }, p.r + 6, alpha);
@@ -479,12 +656,40 @@
       ctx.fillStyle = `rgba(${col},${0.1 + 0.15 * k})`; circle(z.x, z.y, z.r); ctx.fill();
       ctx.strokeStyle = `rgba(${col},0.9)`; ctx.lineWidth = 3; circle(z.x, z.y, z.r); ctx.stroke();
       ctx.lineWidth = 2; circle(z.x, z.y, z.r * Math.max(0, 1 - k)); ctx.stroke();
-      if (z.fx !== undefined && !z.quiet && z.t0) { const px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k - Math.sin(k * Math.PI) * 90; circle(px, py, 6); ctx.fillStyle = mine ? '#8a5a2c' : '#3a4a2a'; ctx.fill(); ctx.strokeStyle = C.out; ctx.stroke(); }
+      if (z.fx !== undefined && !z.quiet && z.t0 && !(z.cargo && sheets.gear)) { const px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k - Math.sin(k * Math.PI) * 90; circle(px, py, 6); ctx.fillStyle = mine ? '#8a5a2c' : '#3a4a2a'; ctx.fill(); ctx.strokeStyle = C.out; ctx.stroke(); }
     } else if (z.k === 'eagle') {
       const k = 1 - z.t / z.t0, px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k;
       ctx.strokeStyle = 'rgba(108,214,226,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); circle(z.x, z.y, z.r); ctx.stroke(); ctx.setLineDash([]);
-      ctx.save(); ctx.translate(px, py - 14); ctx.rotate(Math.atan2(z.y - z.fy, z.x - z.fx));
-      ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -12); ctx.lineTo(-3, 0); ctx.lineTo(-8, 12); ctx.closePath(); outline('#e8e6e0'); ctx.restore();
+      // Darcy 的老鷹：拍著翅膀飛過去（兩張圖輪流）。
+      if (!inAir(px, py, Math.floor(clock * 12) % 2 ? 'eagle2' : 'eagle', Math.atan2(z.y - z.fy, z.x - z.fx), 24)) {
+        ctx.save(); ctx.translate(px, py - 14); ctx.rotate(Math.atan2(z.y - z.fy, z.x - z.fx));
+        ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -12); ctx.lineTo(-3, 0); ctx.lineTo(-8, 12); ctx.closePath(); outline('#e8e6e0'); ctx.restore();
+      }
+    }
+  }
+  // 飛在空中的東西：地上一塊影子，圖往上提 alt。圖集沒有這張圖就只畫影子，回傳 false。
+  function inAir(x, y, name, ang, r, alpha = 1, alt = 26) {
+    ctx.save();
+    ctx.globalAlpha = 0.28 * alpha; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x, y, r * 0.9, r * 0.55, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+    return sprite('gear', name, x, y - alt, ang, r, alpha, false);
+  }
+  // Wrench 的裝備：謝爾蓋吊著貨箱飛到游標、丟下去之後飛走；鐵鎚從一邊掃到另一邊。
+  function drawGear(s) {
+    if (!sheets.gear) return;
+    for (const z of s.zones) {
+      if (z.k !== 'tele' || !z.cargo || z.fx === undefined) continue;
+      const k = Math.min(1, 1 - z.t / (z.t0 || 1)), ease = 1 - (1 - k) * (1 - k);
+      const x = z.fx + (z.x - z.fx) * ease, y = z.fy + (z.y - z.fy) * ease, ang = Math.atan2(z.y - z.fy, z.x - z.fx);
+      sprite('props', 'crate', x, y - 12, 0, 13, 1, false);
+      inAir(x, y, 'sergei', ang, 26);
+    }
+    for (const f of flyers) inAir(f.x, f.y, 'sergei', f.ang, 26, Math.max(0, f.life / f.max), 26 + (1 - f.life / f.max) * 50);
+    for (const w of swings) {
+      const k = 1 - w.life / w.max, a = w.ang - w.arc + 2 * w.arc * k;
+      // 工地的大鐵鎚（跟主角手上的同一把）；Wrench 的 Lady Smash 用 gear 圖集那張。
+      if (w.id === 'sledge') { ctx.save(); ctx.translate(w.x, w.y); ctx.rotate(a); heldItem('sledge', 24, 0, 17); ctx.restore(); }
+      else sprite('gear', 'smash', w.x + Math.cos(a) * 44, w.y + Math.sin(a) * 44, a, 22, 1, true);
     }
   }
   function drawPick(k, s) {
@@ -566,7 +771,8 @@
       case 'clang': burst(ev.x, ev.y, 5, '#dfeaff', 200, 3, 0.2); break;
       case 'takedown': ring(ev.x, ev.y, 46, C.pink, 0.3, 6); shake = Math.max(shake, 6); break;
       case 'melee': case 'swing': rings.push({ x: ev.x, y: ev.y, r: ev.k === 'melee' ? 62 : 84, col: ev.k === 'melee' ? C.white : C.warn, life: 0.16, max: 0.16, w: 6, arc: ev.ang }); break;
-      case 'smash': rings.push({ x: ev.x, y: ev.y, r: ev.r, col: C.warn, life: 0.25, max: 0.25, w: 12, arc: ev.ang, wide: 1.25 }); shake = Math.max(shake, 10); break;
+      case 'drop': flyers.push({ x: ev.x, y: ev.y, ang: ev.ang, vx: Math.cos(ev.ang) * 170, vy: Math.sin(ev.ang) * 170, life: 0.7, max: 0.7 }); break;
+      case 'smash': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.arc || 1.25, id: ev.id, life: 0.24, max: 0.24 }); rings.push({ x: ev.x, y: ev.y, r: ev.r, col: C.warn, life: 0.25, max: 0.25, w: 12, arc: ev.ang, wide: 1.25 }); shake = Math.max(shake, 10); break;
       case 'pickup': if (ev.what !== 'cache' && ev.n) texts.push({ x: ev.x, y: ev.y - 14, vy: -40, life: 0.5, max: 0.5, str: '+' + ev.n, col: ev.what === 'med' ? C.green : C.cyan, size: 14 }); break;
       case 'crash': ring(ev.x, ev.y, 100, C.white, 0.35, 8); burst(ev.x, ev.y, 18, '#cfd6e4', 300, 6, 0.5); shake = Math.max(shake, 14); break;
       case 'raise': case 'breach': case 'hijack': ring(ev.x, ev.y, 60, ev.k === 'hijack' ? C.pink : C.green, 0.35, 5); break;
@@ -585,6 +791,9 @@
     for (const t of texts) { t.life -= dt; t.y += t.vy * dt; }
     for (const b of beams) b.life -= dt;
     for (const r of rings) r.life -= dt;
+    for (const w of swings) w.life -= dt;
+    for (const f of flyers) { f.life -= dt; f.x += f.vx * dt; f.y += f.vy * dt; }
+    swings = swings.filter((w) => w.life > 0); flyers = flyers.filter((f) => f.life > 0);
     parts = parts.filter((p) => p.life > 0); texts = texts.filter((t) => t.life > 0); beams = beams.filter((b) => b.life > 0); rings = rings.filter((r) => r.life > 0);
     if (parts.length > 700) parts.splice(0, parts.length - 700);
   }
@@ -607,12 +816,13 @@
     for (const k of s.picks) drawPick(k, s);
     for (const pr of s.props) if (pr.def.solid || pr.kind === 'camera' || pr.kind === 'speaker') drawProp(s, pr, ui);
     for (const d of s.decoys) { ctx.globalAlpha = 0.5 + 0.2 * Math.sin(clock * 12); if (d.ghost) person(d.x, d.y, 14, 0, { body: C.echo, head: '#fff' }, 0, 0.5); else { circle(d.x, d.y, 10); outline(C.echo, 2); } ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(194,179,255,0.4)'; ctx.lineWidth = 2; circle(d.x, d.y, 18 + ((clock * 60) % 30)); ctx.stroke(); }
-    for (const pet of s.pets) { if (sprite('props', 'spider', pet.x, pet.y, pet.ang, 16)) continue; ctx.save(); ctx.translate(pet.x, pet.y); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.strokeStyle = C.out; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.stroke(); } ctx.rotate(pet.ang); ctx.fillStyle = '#0d1118'; ctx.fillRect(0, -3, 20, 6); circle(0, 0, 9); outline(C.pink, 2); ctx.restore(); }
+    for (const pet of s.pets) { if (sprite('gear', 'spider', pet.x, pet.y, pet.ang, 17) || sprite('props', 'spider', pet.x, pet.y, pet.ang, 16)) continue; ctx.save(); ctx.translate(pet.x, pet.y); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.strokeStyle = C.out; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.stroke(); } ctx.rotate(pet.ang); ctx.fillStyle = '#0d1118'; ctx.fillRect(0, -3, 20, 6); circle(0, 0, 9); outline(C.pink, 2); ctx.restore(); }
     for (const e of s.en) drawTelegraph(s, e);
     for (const e of s.en) if (!e.def.fly) drawEnemy(s, e, ui);
     drawPlayer(s);
     for (const e of s.en) if (e.def.fly) drawEnemy(s, e, ui);
     for (const z of s.zones) if (z.k === 'steam' || z.k === 'eagle') drawZone(s, z);
+    drawGear(s);
 
     // 子彈
     for (const b of s.bul) {

@@ -831,11 +831,12 @@
       for (const e of s.en) { if (e.ally > 0) continue; e.atk = null; e.aware = 0; e.seen = false; if (e.call > 0) e.call = CALL; if (e.state === 'suspect') { e.state = 'calm'; e.goal = null; } }
     } else if (g.id === 'sergei') {
       const at = reach(def.range);
-      s.zones.push({ k: 'tele', x: at.x, y: at.y, r: def.r * s.st.aoeMul, t: def.fuse, dmg: (def.dmg + 20 * lv) * s.st.aoeDmg, side: 'p', crate: def.crate + 4 * lv, cargo: true });
-    } else if (g.id === 'hammer') {
+      s.zones.push({ k: 'tele', x: at.x, y: at.y, fx: p.x, fy: p.y, r: def.r * s.st.aoeMul, t: def.fuse, t0: def.fuse, dmg: (def.dmg + 20 * lv) * s.st.aoeDmg, side: 'p', crate: def.crate + 4 * lv, cargo: true });
+    } else if (g.id === 'hammer' || g.id === 'sledge') {
+      // Lady Smash 和工地的大鐵鎚：同一個揮法，數字不同（content-s3/data.js）。
       p.lock = 0.2;
       p.cloak = 0;
-      s.ev.push({ k: 'smash', x: p.x, y: p.y, ang: p.ang, r: def.r });
+      s.ev.push({ k: 'smash', x: p.x, y: p.y, ang: p.ang, r: def.r, id: g.id, arc: def.arc });
       for (const e of s.en) {
         if (e.dead || e.ally > 0 || e.spawnT > 0) continue;
         const d = hyp(e.x - p.x, e.y - p.y) - e.r;
@@ -1000,7 +1001,7 @@
           if (z.side === 'p') {
             blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', knock: 160 });
             noise(s, z.x, z.y, 500);
-            if (z.crate) dropCrate(s, z.x, z.y, z.crate);
+            if (z.crate) { dropCrate(s, z.x, z.y, z.crate); s.ev.push({ k: 'drop', x: z.x, y: z.y, ang: z.fx === undefined ? 0 : Math.atan2(z.y - z.fy, z.x - z.fx) }); }
           } else blast(s, z.x, z.y, z.r, z.dmg, { side: 'e' });
         } else if (z.k === 'eagle') {
           shock(s, z.x, z.y, z.r, z.dmg, z.stun, 'env');
