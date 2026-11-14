@@ -45,11 +45,19 @@
   // ===== 永久進度 =====
   // roster：名冊，每一筆是 { p 路人, status: 'ready' 待命｜'held' 被關, runs 出過幾趟 }。
   // story：看過哪些劇情。rescued：一共救出過幾個人。seed：這份存檔的路人種子。
-  function meta() {
-    const m = META.read() || {};
-    return Object.assign({ echoes: 0, perks: {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [], vol: 0, story: {}, rescued: 0, seed: '', endings: {} }, m);
+  function blankMeta(campaign, endings = {}) {
+    return { campaign, echoes: 0, perks: {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [], vol: 0, story: {}, rescued: 0, seed: '',
+      unlocks: { jobs: [], events: [] }, endings: Object.assign({}, endings) };
   }
-  function saveMeta(m) { META.write(m); }
+  function meta() {
+    const stored = META.read();
+    // 舊存檔沒有 campaign：一律視為進行中，不在讀檔時判斷全滅。
+    return stored ? Object.assign(blankMeta('active'), stored) : blankMeta('new');
+  }
+  function saveMeta(m) {
+    if (m.campaign === 'new') m.campaign = 'active';
+    META.write(m);
+  }
   const perkLv = (m, id) => (m.perks && m.perks[id]) || 0;
   function buyPerk(m, id) {
     const def = D().perks.find((p) => p.id === id), lv = perkLv(m, id);
@@ -61,42 +69,88 @@
   }
 
   // ===== 《宵禁》的隊伍 =====
-  // 打完《宵禁》的話（全滅和時間到不算），那一輪的隊伍會跟過來：還在的人直接進名冊；
-  // 當時被捕、被轉移走的人關在基石裡，要到拘留室才救得回來。
-  // 回傳 { ready: [路人], held: [路人] }，沒有可以接的就回傳 null。
+  // 選開局時只預覽；玩家選定繼承後，才把待命和被關的老兵分別加入新名冊。
   const CURFEW_KEY = 'watchdogs-echo.s2.proto';
   const CURFEW_DONE = ['dawn', 'cage', 'wild', 'deal'];
   const CURFEW_READY = ['active', 'injured', 'away', 'network'], CURFEW_HELD = ['arrested', 'lost'];
   const same = (a, b) => a.id === b.id && a.district === b.district && a.occupation === b.occupation;
-  function inherit(m) {
+  function inheritance(m = blankMeta('new')) {
     const old = E.save.peek(CURFEW_KEY);
-    const members = old && CURFEW_DONE.includes(old.ended) && old.roster && Array.isArray(old.roster.members) ? old.roster.members : null;
-    if (!members) return null;
-    // 同一輪《宵禁》只接一次；之後再打完新的一輪，那一輪的人也會過來。
+    if (!old) return { reason: 'missing' };
+    if (!CURFEW_DONE.includes(old.ended)) return { reason: 'unfinished' };
+    if (!old.roster || !Array.isArray(old.roster.members)) return { reason: 'unreadable' };
     const key = String(old.seed || '') + ':' + old.ended;
-    if (m.imported === key) return null;
+    const taken = m.roster.map((x) => x.p);
     // 那份存檔不是這裡寫的：每個人都要是這一季認得的樣子才收。
     const usable = (p) => {
       if (!p || !p.id || !p.district || !p.skills || !Array.isArray(p.traits) || !Array.isArray(p.quirks)) return false;
-      try { return !!D().kits[occOf(p).category] && !m.roster.some((x) => same(x.p, p)); } catch (e) { return false; }
+      try { return !!D().kits[occOf(p).category] && !!E.people.name(p).en && E.people.traitsOf(p).every(Boolean)
+        && !!E.people.flawOf(p) && E.people.quirksOf(p).every(Boolean) && !taken.some((q) => same(q, p)); } catch (e) { return false; }
     };
-    const out = { ready: [], held: [] };
-    const take = (statuses, status, list, max) => {
-      for (const st of statuses) for (const x of members) {
-        if (x.status !== st || list.length >= max || m.roster.length >= rosterMax(m) || !usable(x.person)) continue;
-        m.roster.push({ p: x.person, status, runs: 0, veteran: true });
-        list.push(x.person);
+    const take = (statuses, max) => {
+      const list = [];
+      for (const st of statuses) for (const x of old.roster.members) {
+        if (list.length >= max || taken.length >= rosterMax(m)) return list;
+        if (!x || x.status !== st || !usable(x.person)) continue;
+        taken.push(x.person); list.push(x.person);
       }
+      return list;
     };
-    // 名冊有上限：先收還在的人（最多五個），再收被關的人（最多三個）。
-    take(CURFEW_READY, 'ready', out.ready, 5);
-    take(CURFEW_HELD, 'held', out.held, 3);
-    m.imported = key;
+    return { key, ready: take(CURFEW_READY, 5), held: take(CURFEW_HELD, 3) };
+  }
+  function addVeterans(m, source) {
+    for (const status of ['ready', 'held']) for (const p of source[status]) m.roster.push({ p, status, runs: 0, veteran: true });
+    m.imported = source.key;
+  }
+  function inherit(m) {
+    if (m.campaign === 'wiped') return null;
+    const source = inheritance(m);
+    if (source.reason || m.imported === source.key) return null;
+    addVeterans(m, source);
     saveMeta(m);
-    return out.ready.length || out.held.length ? out : null;
+    return source.ready.length || source.held.length ? { ready: source.ready, held: source.held } : null;
   }
 
   // ===== 名冊 =====
+  // 跟《宵禁》night.create 的開場抽同一批康登志願者，包括沒入選的候選人所佔用的姓名。
+  // 手動繼承時避開老兵的編號，優先補還沒到場的職業分類。
+  function addOpening(m, count) {
+    const used = new Set(m.roster.map((x) => x.p.id)), names = new Set(m.roster.map((x) => E.people.name(x.p).en));
+    const cache = [], out = [];
+    const wants = ['hacker', 'physical', 'social'].filter((cat) => !m.roster.some((x) => x.status === 'ready' && occOf(x.p).category === cat));
+    for (const want of wants.concat(null)) {
+      if (out.length >= count) break;
+      for (let i = 0; i < 300; i++) {
+        if (used.has('camden-' + (1000 + i))) continue;
+        if (!cache[i]) {
+          const p = E.people.generate(m.seed, 'camden', 1000 + i), families = E.s2.people.heritages[p.heritage].family.length;
+          for (let k = 0; k < families && names.has(E.people.name(p).en); k++) p.family = (p.family + 1) % families;
+          names.add(E.people.name(p).en);
+          cache[i] = p;
+        }
+        const p = cache[i];
+        if (p.rare || (want && occOf(p).category !== want)) continue;
+        used.add(p.id); out.push(p); m.roster.push({ p, status: 'ready', runs: 0 });
+        break;
+      }
+    }
+    return out;
+  }
+  function newGame(source, seed, previous = meta()) {
+    const m = blankMeta('active', previous.endings);
+    m.seed = seed;
+    let vets = null;
+    if (source === 'inherit') {
+      vets = inheritance();
+      if (vets.reason) return null; // 選擇期間若《宵禁》存檔已經換掉，既有進度不動。
+      addVeterans(m, vets);
+      addOpening(m, Math.max(0, SQUAD - vets.ready.length));
+    } else if (source === 'random') addOpening(m, 4);
+    else return null;
+    saveMeta(m);
+    RUN.clear();
+    return { meta: m, vets };
+  }
   // 找 n 個路人，盡量是名冊裡還沒有的職業分類。tag 讓不同用途抽到不同的人。
   function findPeople(seed, tag, n, taken) {
     const districts = Object.keys(E.s2.people.districts);
@@ -113,13 +167,15 @@
   }
   // 沒有連著名冊的單趟（機器人、測試）用的三人小隊。
   const crewFor = (seed) => findPeople(seed, 'crew', SQUAD);
-  // 名冊裡待命的人不到 need 個，就補上新來的志願者（開局是四個人）。
+  // 未結束的名冊至少要有三個人能出發；沒有名冊的舊存檔採用《宵禁》的四人開局。
   function ensureRoster(m) {
+    if (m.campaign === 'wiped') return [];
+    m.campaign = 'active';
     if (!m.seed) m.seed = 'meta-' + Math.floor(Math.random() * 1e9).toString(36);
-    const need = m.roster.length ? SQUAD : 4;
+    if (!m.roster.length) return addOpening(m, 4);
     const ready = m.roster.filter((x) => x.status === 'ready').length;
-    if (ready >= need) return [];
-    const fresh = findPeople(m.seed, 'join' + m.vol, need - ready, m.roster.map((x) => x.p));
+    if (ready >= SQUAD) return [];
+    const fresh = findPeople(m.seed, 'join' + m.vol, SQUAD - ready, m.roster.map((x) => x.p));
     m.vol++;
     for (const p of fresh) m.roster.push({ p, status: 'ready', runs: 0 });
     return fresh;
@@ -585,14 +641,17 @@
     if (won) for (const x of m.roster || []) if (x.status === 'held') { x.status = 'ready'; freed++; }
     m.rescued = (m.rescued || 0) + freed;
     m.vol = (m.vol || 0) + 1;
+    // 小隊和中途被替換的人都已經入冊；安全屋還沒補志願者。wins 只算這局。
+    const wiped = !won && m.wins >= 1 && m.roster.length > 0 && m.roster.every((x) => x.status === 'held');
+    if (wiped) { m = blankMeta('wiped', m.endings); m.endings.wipe = 1; }
     saveMeta(m);
     RUN.clear();
-    return { earned, meta: m, captured, freed };
+    return { earned: wiped ? 0 : earned, meta: m, captured, freed, wiped };
   }
 
   S3.run = {
     SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax,
-    meta, saveMeta, perkLv, buyPerk, inherit, ensureRoster, volunteers, recruit, dismiss, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
+    meta, saveMeta, perkLv, buyPerk, inheritance, inherit, newGame, ensureRoster, volunteers, recruit, dismiss, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
     start, route, enter, spec, carry, finishRoom, take, reroll, rescue, advance, bail, heal,
     buy, restock, safe, choose, canChoose, finish, addExploit, addGadget, maxHp, exploitDef, eventDef, hurtSomeone, isRoom,
     save(run) { RUN.write(run); },

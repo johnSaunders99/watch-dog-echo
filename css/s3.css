@@ -86,6 +86,7 @@ body.s3 { overflow: hidden; }
 .slot b { color: #fff; font-size: 14px; white-space: nowrap; }
 .slot i { width: 30px; height: 30px; border-radius: 50%; background: #161b26; }
 .bar-note { margin-left: auto; font-size: 13px; color: var(--muted); }
+.bar-note.exposed { color: var(--warn); }
 .s3 .squadbar .primary { min-width: 130px; padding: 10px 26px; letter-spacing: 0.2em; }
 /* 標題有畫好的背景圖就用圖。 */
 .title-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -230,6 +231,30 @@ body.s3 { overflow: hidden; }
   margin: 0 auto 14px; border-radius: 8px; object-fit: contain;
 }
 .s3-modal.pic .s3-box { width: min(760px, 100%); }
+
+/* 開局先選名冊；預設的隨機選項和焦點同在第一列。 */
+.source-options { display: grid; gap: 10px; margin: 18px 0; }
+.s3 .source-option { flex-direction: row; align-items: baseline; gap: 14px; padding: 15px 18px; border: 1px solid var(--line); }
+.s3 .source-option:first-child { border-left: 3px solid var(--sys); }
+.s3 .source-option:disabled { opacity: 1; }
+.source-option:disabled b, .source-option:disabled kbd { color: var(--muted); }
+.source-detail { display: block; color: var(--muted); font-size: 14px; line-height: 1.55; margin-top: 4px; }
+.s3-modal.campaign button:focus-visible, .s3-modal.wipe button:focus-visible { outline: 2px solid var(--sys); outline-offset: 3px; }
+
+/* 全滅：保留插圖全幅；若沒有插圖，點名的文字獨立置中。 */
+.s3-modal.wipe { background: var(--bg); }
+.wipe .s3-box { width: fit-content; max-width: 100%; padding: 0; border: 0; border-radius: 0; background: none; }
+.wipe-scene { display: grid; align-items: center; gap: clamp(20px, 4vw, 64px); }
+.wipe-scene.illustrated { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); max-width: 1200px; }
+.wipe-scene img { display: block; width: 100%; }
+.wipe-copy { max-width: 47ch; padding: 12px 4px; }
+.wipe-copy .wipe-label { color: var(--sys); font: 600 13px/1.6 var(--mono); letter-spacing: 0.12em; }
+.wipe-copy h2 { font-size: clamp(30px, 4.6vw, 64px); line-height: 1.15; margin: 0 0 22px; }
+.wipe-copy button { margin-top: 10px; }
+@media (max-width: 760px) {
+  .wipe-scene.illustrated { grid-template-columns: 1fr; max-width: 480px; gap: 8px; }
+  .wipe-scene img { max-height: 33vh; object-fit: contain; }
+}
 
 /* ===== 無線電：打的時候右上角插進來的一句 ===== */
 #s3-comms { position: absolute; right: 14px; top: 52px; display: flex; gap: 10px; align-items: flex-start; width: min(380px, 42%); padding: 8px 12px; border: 1px solid var(--line); border-left: 3px solid var(--who, var(--sys)); border-radius: 6px; background: rgba(11, 15, 28, 0.92); opacity: 0; transform: translateX(14px); transition: opacity 0.25s, transform 0.25s; text-shadow: none; }

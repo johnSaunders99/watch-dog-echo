@@ -68,7 +68,7 @@
       ally: params.get('ally') || (s2 && s2.ally) || null,
     };
   }
-  const PAST = readPast();
+  let PAST = readPast();
   const lineKey = (l) => (l.v1 && l.v1[PAST.v1]) || (l.s2 && l.s2[PAST.s2]) || (l.ally && l.ally[PAST.ally]) || l.k;
 
   // ===== 聲音：同一種聲音太密集就略過幾次 =====
@@ -220,7 +220,7 @@
       if (card && !card.disabled) card.click();
     };
   }
-  function closeModal() { $('s3-modal').hidden = true; modalHandler = null; onModalKey = null; }
+  function closeModal() { $('s3-modal').hidden = true; $('s3-title').inert = false; modalHandler = null; onModalKey = null; }
   $('s3-modal').addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled || !modalHandler) return;
@@ -323,6 +323,15 @@
   }
 
   // ===== 標題 =====
+  const hasProgress = () => meta.campaign === 'active' || (meta.campaign !== 'wiped' && !!R.load());
+  function titleActions() {
+    const active = hasProgress(), start = $('s3-start');
+    $('s3-continue').hidden = !active;
+    start.classList.toggle('primary', !active);
+    start.dataset.i18n = active || meta.campaign === 'wiped' ? 's3.ui.newGame' : 's3.ui.start';
+    start.textContent = t(start.dataset.i18n);
+    $('s3-echoes').textContent = meta.echoes || meta.runs ? t('s3.ui.record', { echoes: meta.echoes, runs: meta.runs, wins: meta.wins }) : '';
+  }
   function applyLang() {
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('.lang-switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === E.i18n.lang)));
@@ -336,6 +345,7 @@
     try { localStorage.setItem(LANG_KEY, code); } catch (e) { /* 忽略 */ }
     applyLang();
     if (mode === 'lobby') renderLobby();
+    if (mode === 'title') titleActions();
   }
   // 標題畫面：圖還沒載完的時候，按鈕先不能按，告訴玩家等一下。
   function showLoading() {
@@ -355,9 +365,8 @@
     $('s3-lobby').hidden = true;
     $('s3-title').hidden = false;
     closeModal();
-    $('s3-continue').hidden = !R.load();
+    titleActions();
     showLoading();
-    $('s3-echoes').textContent = meta.echoes || meta.runs ? t('s3.ui.record', { echoes: meta.echoes, runs: meta.runs, wins: meta.wins }) : '';
   }
 
   // ===== 安全屋：名冊、今晚的小隊、想加入的人、永久強化 =====
@@ -389,10 +398,8 @@
     </article>`;
   }
   // 進安全屋：補人、預先選好上一次的小隊、挑一句閒聊。
-  function enterLobby() {
-    meta = R.meta();
-    // 打完《宵禁》的人，第一次進來時那一輪的隊伍會跟過來。
-    const vets = R.inherit(meta);
+  function enterLobby(vets = null) {
+    if (meta.campaign === 'wiped') { showTitle(); return; }
     const came = R.ensureRoster(meta);
     R.saveMeta(meta);
     lobbyNote = vets ? { vets } : came.length && meta.runs ? { came } : null;
@@ -402,7 +409,7 @@
     picks = ready.filter((i) => lastSquad.includes(pid(meta.roster[i].p))).slice(0, R.SQUAD);
     for (const i of ready) if (picks.length < R.SQUAD && !picks.includes(i)) picks.push(i);
     const held = meta.roster.filter((x) => x.status === 'held').length;
-    const pool = vets ? ST.hub.vets : held && Math.random() < 0.6 ? ST.hub.held : meta.story.ended && Math.random() < 0.4 ? ST.hub.won : ST.hub.any;
+    const pool = vets && vets.ready.length ? ST.hub.vets : held && (vets || Math.random() < 0.6) ? ST.hub.held : meta.story.ended && Math.random() < 0.4 ? ST.hub.won : ST.hub.any;
     hubLine = { l: oneOf(pool), vars: { n: held } };
     mode = 'lobby';
     S3.music.set(null);
@@ -451,7 +458,8 @@
       return `<span class="slot${x ? ' on' : ''}"><kbd>${n + 1}</kbd>${x ? `<span class="slot-face">${E.faces.of(x.p, { round: true })}</span><b>${esc(nameOf(x.p))}</b>` : '<i></i>'}</span>`;
     }).join('');
     const need = R.SQUAD - picks.length;
-    $('s3-squadbar').innerHTML = `<span class="k">${esc(t('s3.squad.title'))}</span>${slots}<span class="bar-note">${esc(need ? t('s3.roster.need', { n: need }) : t('s3.roster.ready'))}</span>
+    const exposed = !need && meta.wins >= 1 && readyN === R.SQUAD;
+    $('s3-squadbar').innerHTML = `<span class="k">${esc(t('s3.squad.title'))}</span>${slots}<span class="bar-note${exposed ? ' exposed' : ''}">${esc(need ? t('s3.roster.need', { n: need }) : t(exposed ? 's3.roster.noReserve' : 's3.roster.ready'))}</span>
       <button type="button" id="s3-go" class="primary" ${need ? 'disabled' : ''}>${esc(t('s3.ui.lobby.go'))}</button>`;
   }
   function togglePick(i) {
@@ -497,18 +505,67 @@
     const go = () => showRoute(true);
     if (!meta.seen.controls && !AUTO) { meta.seen.controls = 1; R.saveMeta(meta); showControls(go); } else go();
   }
-  // 按「開始」：手上還有沒打完的一趟就先結掉（倒下的人照樣被帶走），第一次會先播開場，然後進安全屋。
-  function startFresh() {
-    const old = R.load();
-    if (old) { R.finish(old, false, meta); meta = R.meta(); }
-    beat('intro', { bg: 'title', vars: {} }, enterLobby);
+  // 開局的兩層選單都只讀。確認重開時先讓焦點停在「返回」，不能誤按 Enter 刪檔。
+  function campaignModal(html, handler, cls, first, back) {
+    modal(html, handler, cls);
+    $('s3-title').inert = true;
+    const box = $('s3-modal').firstElementChild;
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'campaign-heading');
+    const numbers = onModalKey;
+    onModalKey = (e) => {
+      if (e.code === 'Escape' && back) { e.preventDefault(); back(); }
+      else if (e.code === 'Tab') {
+        const buttons = box.querySelectorAll('button:not(:disabled)'), last = buttons[buttons.length - 1];
+        if (e.shiftKey && document.activeElement === buttons[0]) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); buttons[0].focus(); }
+      } else if (!e.repeat) numbers(e);
+    };
+    box.querySelector('[data-act="' + first + '"]').focus();
+  }
+  function chooseGame() {
+    const src = R.inheritance();
+    const reasons = { missing: 's3.new.missing', unfinished: 's3.new.unfinished', unreadable: 's3.new.unreadable' };
+    const detail = src.reason ? t(reasons[src.reason]) : t('s3.new.count', { total: src.ready.length + src.held.length, ready: src.ready.length, held: src.held.length })
+      + (src.ready.length < R.SQUAD ? ' ' + t('s3.new.fill', { n: R.SQUAD - src.ready.length }) : '');
+    const option = (act, n, name, desc, off) => `<button type="button" class="s3-card source-option" data-act="${act}" ${off ? 'disabled' : ''}>
+      <kbd aria-hidden="true">${n}</kbd><span><b>${esc(t(name))}</b><span class="source-detail">${esc(desc)}</span></span></button>`;
+    const back = () => { closeModal(); $('s3-start').focus(); };
+    campaignModal(`<h2 id="campaign-heading">${esc(t('s3.new.title'))}</h2><div class="source-options">
+      ${option('random', 1, 's3.new.random', t('s3.new.randomDesc'))}
+      ${option('inherit', 2, 's3.new.inherit', detail, src.reason)}</div>
+      <div class="s3-actions"><button type="button" class="ghost" data-act="back">${esc(t('s3.ui.back'))}</button></div>`, (act) => {
+      if (act === 'back') back();
+      else if (hasProgress()) confirmRestart(act);
+      else openCampaign(act);
+    }, 'campaign', 'random', back);
+  }
+  function confirmRestart(source) {
+    const method = t(source === 'random' ? 's3.new.random' : 's3.new.inherit');
+    campaignModal(`<h2 id="campaign-heading">${esc(t('s3.new.confirmTitle'))}</h2>
+      <p>${esc(t('s3.new.loss'))}</p><p class="dim">${esc(t('s3.new.keep'))}</p>
+      <div class="s3-actions"><button type="button" class="ghost" data-act="back">${esc(t('s3.ui.back'))}</button>
+      <button type="button" class="primary" data-act="restart">${esc(t('s3.new.confirm', { method }))}</button></div>`,
+      (act) => { if (act === 'restart') openCampaign(source); else chooseGame(); }, 'campaign', 'back', chooseGame);
+  }
+  function openCampaign(source) {
+    const made = R.newGame(source, params.get('seed') || fresh(), meta);
+    if (!made) { chooseGame(); return; }
+    closeModal();
+    $('s3-title').hidden = true;
+    meta = made.meta;
+    PAST = readPast();
+    beat('intro', { bg: 'title', vars: {} }, () => enterLobby(made.vets));
   }
   function resume() {
+    if (meta.campaign === 'wiped') { chooseGame(); return; }
     run = R.load();
     if (!run) { enterLobby(); return; }
     seed = run.seed;
     showGame();
     if (run.phase === 'room') startRoom(R.spec(run));
+    else if (run.phase === 'won') showFinale();
     else if (run.phase === 'reward' && run.pending) showReward(run.pending, afterNode);
     else if (run.phase === 'shop' || run.phase === 'safe' || run.phase === 'event') showNode();
     else if (run.phase === 'done' || run.phase === 'doors') afterNode();
@@ -608,7 +665,7 @@
     const sec = D.sectors[run.sector];
     const begin = () => {
       toast(spec.boss ? t('s3.boss.' + spec.boss + '.n') : t('s3.sec.' + sec.id + '.n') + '　' + t('s3.hud.room', { n: run.roomNo }) + (spec.mod ? '　' + t('s3.mod.' + spec.mod + '.n') : ''), spec.boss ? 'boss' : '');
-      if (run.roomNo === 1) setTimeout(() => tip('stealth'), 2800);
+      if (run.roomNo === 1) setTimeout(() => { if (s && s.spec === spec && mode === 'play') tip('stealth'); }, 2800);
       // 新區段的第一間：多講一句這一區有什麼。
       else if (run.depth === 0 && !spec.boss) setTimeout(() => { if (s && s.spec === spec && !AUTO) toast(t('s3.sec.' + sec.id + '.d'), 'tip'); }, 2800);
     };
@@ -812,6 +869,22 @@
       talk(e.lines, { bg: 'title', banner: t('s3.end.' + id + '.t'), vars: {} }, () => showEnd(true, false, id));
     }, 'wide');
   }
+  function showWipe() {
+    run = null; s = null; mode = 'menu';
+    $('s3-game').hidden = true;
+    campaignModal(`<div class="wipe-scene"><div class="wipe-copy">
+      <p class="wipe-label">${esc(t('s3.wipe.label'))}</p><h2 id="campaign-heading">${esc(t('s3.wipe.title'))}</h2>
+      <p>${esc(t('s3.wipe.1'))}</p><p>${esc(t('s3.wipe.2'))}</p><p>${esc(t('s3.wipe.3'))}</p>
+      <button type="button" class="primary" data-act="new">${esc(t('s3.ui.newGame'))}</button>
+      </div></div>`, () => { showTitle(); chooseGame(); }, 'wipe', 'new');
+    const src = pictures['end-wipe'];
+    if (src) {
+      const scene = $('s3-modal').querySelector('.wipe-scene'), im = new Image();
+      im.alt = '';
+      im.onload = () => { scene.prepend(im); scene.classList.add('illustrated'); };
+      im.src = asset(src);
+    }
+  }
   function showEnd(won, quit, ending) {
     const lastName = run.squad[run.active] ? nameOf(run.squad[run.active].p) : '';
     // 機器人模式不動存檔。
@@ -822,6 +895,7 @@
     sfx.ambient(null);
     if (!won) play(quit ? 'loss' : 'fail');
     inRoom = false;
+    if (res.wiped) { showWipe(); return; }
     const stat = (k, n) => `<div><span>${esc(t('s3.stat.' + k))}</span><b>${n}</b></div>`;
     const title = won ? t('s3.end.' + ending + '.t') : t(quit ? 's3.quit.title' : 's3.dead.title');
     const text = won ? t('s3.win.text') : t(quit ? 's3.dead.quit' : 's3.dead.text', { sector: t('s3.sec.' + sec.id + '.n'), n: run.roomNo });
@@ -1046,7 +1120,7 @@
     $('s3-title-art').innerHTML = pictures.title ? `<img src="${asset(pictures.title)}" alt="">` : E.art.byKey('server');
     if (pictures.title) $('s3-title').classList.add('has-art');
     document.querySelectorAll('.lang-switch button[data-lang]').forEach((b) => b.addEventListener('click', () => { sfx.unlock(); play('click'); setLang(b.dataset.lang); }));
-    $('s3-start').addEventListener('click', () => { sfx.unlock(); play('title'); startFresh(); });
+    $('s3-start').addEventListener('click', () => { sfx.unlock(); play('title'); chooseGame(); });
     $('s3-continue').addEventListener('click', () => { sfx.unlock(); play('click'); resume(); });
     $('s3-sound').addEventListener('click', () => { sfx.unlock(); sfx.toggle(); applyLang(); });
     $('s3-pause').addEventListener('click', () => pause());
@@ -1067,7 +1141,7 @@
 
   // 測試用：從主控台跳到某個區段的首領、給自己東西、重播某一段劇情。
   S3.debug = {
-    get run() { return run; }, get room() { return s; }, get meta() { return meta; }, get mode() { return mode; }, past: PAST,
+    get run() { return run; }, get room() { return s; }, get meta() { return meta; }, get mode() { return mode; }, get past() { return PAST; },
     jump(sector, depth) { run.sector = sector; run.depth = depth === undefined ? D.sectors[sector].rooms : depth; run.roomNo = D.sectors.slice(0, sector).reduce((n, x) => n + x.rooms + 1, 0) + run.depth; R.route(run); inRoom = false; showRoute(); },
     give(id) { if (D.gadgets[id]) R.addGadget(run, id); else R.addExploit(run, id); },
     heal() { R.heal(run, 999); if (s) { s.p.hp = s.p.maxHp; for (const m of s.team) if (!m.down) m.hp = m.maxHp; } },

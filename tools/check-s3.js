@@ -745,6 +745,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     const carried = R.inherit(mc);
     if (!carried || carried.ready.length !== 3 || carried.held.length !== 2 || mc.roster.filter((x) => x.veteran).length !== 5 || mc.roster.filter((x) => x.status === 'held').length !== 2) fail('s3 carry: the Curfew crew did not come over as expected');
     if (R.inherit(mc)) fail('s3 carry: the same Curfew crew came over twice');
+    if (R.meta().campaign !== 'active') fail('s3 carry: saved veterans must be resumable');
     R.ensureRoster(mc);
     const vetRun = R.start('vet-night', mc.roster.filter((x) => x.status === 'ready').slice(0, 3).map((x) => x.p), mc);
     if (vetRun.held !== 2) fail('s3 carry: held veterans should send the squad to the holding cells');
@@ -766,6 +767,103 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     if (old.echoes !== 7 || !Array.isArray(old.roster) || old.perks.hp !== 1) fail('s3 meta: an older save did not migrate');
     storage.clear();
     console.log('four people to start, volunteers, captures recorded, holding cells and rescues, strangers joining, bail, everyone freed on a win, the Curfew crew carried over, older saves');
+  }
+
+  section('第三季：開局、重開、全名冊被捕');
+  {
+    storage.clear();
+    const CURFEW = 'watchdogs-echo.s2.proto', META = 'watchdogs-echo.s3.meta', RUN = 'watchdogs-echo.s3.run';
+    const put = (key, v, data) => storage.set(key, JSON.stringify({ v, data }));
+    const json = JSON.stringify, ready = (m) => m.roster.filter((x) => x.status === 'ready');
+    const squad = (m) => ready(m).slice(0, R.SQUAD).map((x) => x.p);
+    const down = (r) => r.squad.forEach((x) => { x.down = true; x.hp = 0; });
+    const from = (ended, members) => put(CURFEW, 6, { seed: 'curfew', ended, roster: { members } });
+    const members = ['lost', 'network', 'active', 'dead', 'injured', 'arrested', 'away', 'injured', 'lost', 'arrested', 'active', 'active']
+      .map((status, i) => ({ status, person: E.people.generate('old-crew', 'soho', 70 + i) }));
+    const freshFields = (m) => !m.echoes && !m.runs && !m.wins && !m.best && !m.vol && !m.rescued && !m.squad &&
+      json(m.perks) === '{}' && json(m.story) === '{}' && json(m.seen) === '{}' && json(m.unlocks) === '{"jobs":[],"events":[]}';
+    if (R.inheritance().reason !== 'missing' || R.newGame('inherit', 'none') || storage.size) fail('s3 campaign: missing save was accepted or modified');
+    from('dawn', members);
+    const prevSource = storage.get(CURFEW);
+    // 含同名候選人的種子：直接比《宵禁》真正的開場名單，而不只比職業分類。
+    const N = sandbox(['js/engine/rng.js', 'js/engine/people.js', 'content-s2/people.js', 'js/engine/roster.js', 'js/engine/night.js']).E.night;
+    for (const seed of ['zero-day', 'camden-ci-30', 'whitehall']) {
+      const city = N.create(seed, { skipStory: true }), people = city.volunteers.map((id) => city.people[id]);
+      const { meta: m, vets } = R.newGame('random', seed);
+      if (vets || m.imported || m.roster.length !== 4 || ready(m).length !== 4 || m.roster.some((x) => x.veteran) || json(m.roster.map((x) => x.p)) !== json(people))
+        fail('s3 campaign: random opening differs from Curfew or inherited automatically: ' + seed);
+      const loaded = R.meta(); R.ensureRoster(loaded);
+      if (json(loaded) !== json(m) || storage.get(CURFEW) !== prevSource) fail('s3 campaign: visiting the safehouse changed the crew or the Curfew source');
+    }
+    if (/\bR\.inherit\s*\(/.test(fs.readFileSync(path.join(root, 'js/s3/main.js'), 'utf8'))) fail('s3 campaign: UI merged the Curfew save outside the chosen new-game source');
+    const prev = R.meta();
+    Object.assign(prev, { echoes: 40, perks: { hp: 2 }, runs: 8, wins: 2, best: 17, rescued: 3, vol: 5, squad: ['old'],
+      endings: { return: 1 }, story: { ended: 'return' }, seen: { hack: 1 }, unlocks: { jobs: ['fixture-job'], events: ['fixture-event'] } });
+    R.saveMeta(prev); R.save(R.start('interrupted', squad(prev), prev));
+    const savedMeta = storage.get(META), savedRun = storage.get(RUN);
+    for (const ended of [null, 'curfew', 'wiped']) {
+      from(ended, members);
+      if (R.inheritance().reason !== 'unfinished' || R.newGame('inherit', 'nope')) fail('s3 campaign: incomplete Curfew save was accepted');
+    }
+    put(CURFEW, 6, { ended: 'deal' });
+    if (R.inheritance().reason !== 'unreadable' || R.newGame('inherit', 'nope')) fail('s3 campaign: missing Curfew roster was accepted');
+    const memberIds = (list) => list.map((p) => p.id).join(',');
+    for (const ended of ['dawn', 'cage', 'wild', 'deal']) {
+      from(ended, [null, { status: 'active', person: {} }, members[2], ...members]);
+      const info = R.inheritance();
+      if (info.reason || memberIds(info.ready) !== memberIds([2, 10, 11, 4, 7].map((i) => members[i].person)) ||
+        memberIds(info.held) !== memberIds([5, 9, 0].map((i) => members[i].person))) fail('s3 campaign: preview priority, duplicates or limits: ' + ended);
+    }
+    if (storage.get(META) !== savedMeta || storage.get(RUN) !== savedRun) fail('s3 campaign: preview or failed inheritance discarded existing progress');
+    const src = storage.get(CURFEW), plan = R.inheritance(), replaced = R.newGame('inherit', 'new-seed').meta;
+    if (!freshFields(replaced) || !replaced.endings.return || replaced.roster.length !== 8 || !replaced.roster.every((x) => x.veteran) ||
+      memberIds(replaced.roster.map((x) => x.p)) !== memberIds(plan.ready.concat(plan.held)) || R.load() || storage.get(CURFEW) !== src)
+      fail('s3 campaign: confirmed restart did not replace only the campaign or did not honour the preview');
+    // 舊老兵即使全在拘留室，也不會因為開啟舊存檔而回溯判定全滅。
+    const legacy = Object.assign({}, prev, { imported: 'curfew:dawn', roster: replaced.roster.map((x) => Object.assign({}, x, { status: 'held', runs: 5 })) });
+    delete legacy.campaign; delete legacy.unlocks;
+    put(META, 3, legacy); storage.set(RUN, savedRun);
+    const oldBytes = storage.get(META), old = R.meta();
+    if (old.campaign !== 'active' || json(old.roster) !== json(legacy.roster) || old.wins !== 2 || old.echoes !== 40 || old.imported !== legacy.imported ||
+      old.perks.hp !== 2 || !old.endings.return || old.unlocks.jobs.length || old.unlocks.events.length || !R.load() || storage.get(META) !== oldBytes)
+      fail('s3 campaign: legacy veterans/progress changed on read');
+    if (R.ensureRoster(old).length !== 3 || old.roster.filter((x) => x.veteran && x.status === 'held').length !== 8) fail('s3 campaign: a legacy all-held roster could not resume');
+    const captive = E.people.generate('fill', 'camden', 1000);
+    from('cage', [{ status: 'arrested', person: captive }]);
+    const m = R.newGame('inherit', 'fill').meta;
+    if (m.roster.length !== 4 || ready(m).length !== 3 || !m.roster[0].veteran || m.roster[0].status !== 'held' ||
+      ready(m).some((x) => x.veteran || x.p.rare || x.p.district !== 'camden' || x.p.id === captive.id)) fail('s3 campaign: no deployable squad alongside the imported prisoner');
+    let r = R.start('before-first-win', squad(m), m); down(r); r.stats.rooms = 2;
+    const first = R.finish(r, false, m);
+    if (first.wiped || first.meta.echoes !== 2 || ready(m).length || R.ensureRoster(m).length !== 3) fail('s3 wipe: total capture before a first win must allow replacements');
+    r = R.start('win', squad(m), m); const victory = R.finish(r, true, m);
+    if (victory.wiped || victory.freed !== 4 || m.wins !== 1 || ready(m).length !== 7) fail('s3 wipe: victory should free the holding cells');
+    r = R.start('squad-not-roster', squad(m), m); down(r);
+    if (R.finish(r, false, m).wiped || ready(m).length !== 4) fail('s3 wipe: three lost with reserves must not wipe');
+    r = R.start('retreat', squad(m), m); r.squad[0].down = true;
+    if (R.finish(r, false, m).wiped || ready(m).length !== 3) fail('s3 wipe: surviving operatives must return from retreat');
+    // 本輪最後三人，又在拘留室中換下一個人：結算必須先處理 run.lost，再檢查整份名冊。
+    r = R.start('last-squad', squad(m), m); r.squad[0].down = true; r.pending = { kind: 'rescue' };
+    if (!R.rescue(r, m).joined) fail('s3 wipe: rescue setup did not replace the captured operative');
+    Object.assign(m, { perks: { hp: 2 }, unlocks: { jobs: ['fixture-job'], events: ['fixture-event'] }, seen: { hack: 1 }, story: { intro: 1 },
+      squad: ['last'], echoes: 50, endings: { return: 1, open: 1 } });
+    R.saveMeta(m); R.save(r); down(r);
+    const end = R.finish(r, false, m), closed = R.meta();
+    if (!end.wiped || end.captured.length !== 4 || end.earned || closed.campaign !== 'wiped' || !freshFields(closed) || closed.seed || closed.imported ||
+      closed.roster.length || R.ensureRoster(closed).length || R.inherit(closed) || R.load() || json(closed.endings) !== '{"return":1,"open":1,"wipe":1}')
+      fail('s3 wipe: terminal save retained campaign progress, refilled prisoners, or dropped an ending');
+    const again = R.newGame('inherit', 'another-night').meta;
+    if (again.campaign !== 'active' || !freshFields(again) || !again.endings.wipe || !again.roster[0].veteran || ready(again).length !== 3)
+      fail('s3 wipe: could not pick the same Curfew crew for a fresh campaign');
+    r = R.start('first-again', squad(again), again); down(r);
+    if (R.finish(r, false, again).wiped) fail('s3 wipe: remembered endings must not remove first-win protection');
+    from('dawn', []);
+    const empty = R.newGame('inherit', 'empty-source').meta;
+    if (ready(empty).length !== 3 || empty.roster.some((x) => x.veteran)) fail('s3 carry: a completed empty roster must still supply a squad');
+    empty.roster = []; empty.wins = 1;
+    if (R.finish(R.start('no-roster', R.crewFor('no-roster'), empty), false, empty).wiped) fail('s3 wipe: an empty roster is not a captured roster');
+    storage.clear();
+    console.log('Camden opening matches Curfew, explicit import and caps, read-only previews, restart, legacy progress, full-roster loss after victory, rescue replacements, endings and fresh unlocks');
   }
 
   section('第三季：無人機與裝備存檔');

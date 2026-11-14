@@ -706,6 +706,7 @@
     "boss-bulldog": "assets/s3/boss-bulldog.jpg",
     "boss-carrier": "assets/s3/boss-carrier.jpg",
     "boss-keystone": "assets/s3/boss-keystone.jpg",
+    "end-wipe": "assets/s3/end-wipe.jpg",
     "ev-aiden": "assets/s3/ev-aiden.jpg",
     "ev-darcy": "assets/s3/ev-darcy.jpg",
     "ev-tarot": "assets/s3/ev-tarot.jpg",
