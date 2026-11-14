@@ -104,8 +104,8 @@
     // ----- 裝備 -----
     's3.gad.eagle.n': '老鷹無人機', 's3.gad.eagle.d': '飛到游標的位置放出電磁脈衝：電暈一圈敵人，順便癱瘓盾牌。',
     's3.gad.blackout.n': '大停電', 's3.gad.blackout.d': '全場停電 5 秒：敵人看不到你，正在叫人的也會被打斷。',
-    's3.gad.sergei.n': '謝爾蓋', 's3.gad.sergei.d': '工程無人機把貨箱砸在游標的位置，砸完留下來當掩體。',
-    's3.gad.hammer.n': 'Lady Smash', 's3.gad.hammer.d': 'Wrench 改裝的大鐵鎚：比工地的鐵鎚掃得更大、更重，打飛、敲暈，盾牌一下就碎。',
+    's3.gad.sergei.n': '謝爾蓋', 's3.gad.sergei.d': '扳手改裝的貨運無人機會朝游標位置丟下貨箱。落地的箱子可以當掩體。',
+    's3.gad.hammer.n': '粉碎女士', 's3.gad.hammer.d': '扳手改裝的大鐵鎚：比工地的鐵鎚掃得更大、更重，打飛、敲暈，盾牌一下就碎。',
     's3.gad.sledge.n': '大鐵鎚',
     's3.gad.sledge.d': '工地用的大鐵鎚：往前掃一片，打傷、打退、敲暈，盾牌也會被敲開。',
     's3.gad.mask.n': '第二張臉', 's3.gad.mask.d': '隱形 4 秒。隱形時開的第一槍傷害三倍。',
@@ -226,8 +226,8 @@
 
     's3.gad.eagle.n': '老鹰无人机', 's3.gad.eagle.d': '飞到光标的位置放出电磁脉冲：电晕一圈敌人，顺便瘫痪盾牌。',
     's3.gad.blackout.n': '大停电', 's3.gad.blackout.d': '全场停电 5 秒：敌人看不到你，正在叫人的也会被打断。',
-    's3.gad.sergei.n': '谢尔盖', 's3.gad.sergei.d': '工程无人机把货箱砸在光标的位置，砸完留下来当掩体。',
-    's3.gad.hammer.n': 'Lady Smash', 's3.gad.hammer.d': 'Wrench 改装的大铁锤：比工地的铁锤扫得更大、更重，打飞、敲晕，盾牌一下就碎。',
+    's3.gad.sergei.n': '谢尔盖', 's3.gad.sergei.d': '扳手改装的货运无人机会朝光标位置扔下货箱。落地的箱子可以当掩体。',
+    's3.gad.hammer.n': '粉碎女士', 's3.gad.hammer.d': '扳手改装的大铁锤：比工地的铁锤扫得更大、更重，打飞、敲晕，盾牌一下就碎。',
     's3.gad.sledge.n': '大铁锤',
     's3.gad.sledge.d': '工地用的大铁锤：往前扫一片，打伤、打退、敲晕，盾牌也会被敲开。',
     's3.gad.mask.n': '第二张脸', 's3.gad.mask.d': '隐形 4 秒。隐形时开的第一枪伤害三倍。',
@@ -346,7 +346,7 @@
 
     's3.gad.eagle.n': 'Eagle drone', 's3.gad.eagle.d': 'Flies to the cursor and lets off an EMP: stuns everyone in the ring and knocks out shields.',
     's3.gad.blackout.n': 'Blackout', 's3.gad.blackout.d': 'Lights out for 5 seconds: enemies cannot see you, and anyone calling it in is cut off.',
-    's3.gad.sergei.n': 'Sergei', 's3.gad.sergei.d': 'A construction drone drops a crate on the cursor. The crate stays as cover.',
+    's3.gad.sergei.n': 'Sergei', 's3.gad.sergei.d': "Wrench's custom cargo drone drops a crate on the cursor. The crate stays as cover.",
     's3.gad.hammer.n': 'Lady Smash', 's3.gad.hammer.d': "Wrench's custom hammer: a wider, heavier swing than a builder's sledgehammer that sends people flying, dazes them and shatters shields.",
     's3.gad.sledge.n': 'Sledgehammer',
     's3.gad.sledge.d': "A builder's sledgehammer: a wide swing in front of you that hurts, knocks back and dazes, and breaks shields.",

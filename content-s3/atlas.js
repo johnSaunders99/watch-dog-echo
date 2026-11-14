@@ -308,74 +308,56 @@
         "smash": {
           "x": 1,
           "y": 1,
-          "w": 136,
-          "h": 80,
-          "ax": 68.0,
-          "ay": 40.0,
-          "r": 40.0
+          "w": 173,
+          "h": 108,
+          "ax": 86.5,
+          "ay": 54.0,
+          "r": 54.0
         },
         "sergei": {
-          "x": 139,
+          "x": 189,
           "y": 1,
-          "w": 125,
-          "h": 130,
-          "ax": 62.5,
-          "ay": 65.0,
-          "r": 62.5
+          "w": 186,
+          "h": 151,
+          "ax": 93.0,
+          "ay": 75.5,
+          "r": 75.5
+        },
+        "cargo": {
+          "x": 377,
+          "y": 1,
+          "w": 171,
+          "h": 152,
+          "ax": 85.5,
+          "ay": 76.0,
+          "r": 76.0
         },
         "eagle": {
-          "x": 277,
+          "x": 565,
           "y": 1,
-          "w": 111,
-          "h": 216,
-          "ax": 55.5,
-          "ay": 108.0,
-          "r": 55.5
+          "w": 158,
+          "h": 187,
+          "ax": 79.0,
+          "ay": 93.5,
+          "r": 79.0
         },
         "eagle2": {
-          "x": 415,
-          "y": 1,
-          "w": 107,
-          "h": 144,
-          "ax": 53.5,
-          "ay": 72.0,
-          "r": 53.5
+          "x": 1,
+          "y": 190,
+          "w": 159,
+          "h": 179,
+          "ax": 79.5,
+          "ay": 89.5,
+          "r": 79.5
         },
         "spider": {
-          "x": 1,
-          "y": 219,
-          "w": 111,
-          "h": 131,
-          "ax": 55.5,
-          "ay": 65.5,
-          "r": 55.5
-        },
-        "turret": {
-          "x": 139,
-          "y": 219,
-          "w": 134,
-          "h": 133,
-          "ax": 67.0,
-          "ay": 66.5,
-          "r": 66.5
-        },
-        "droneAlly": {
-          "x": 277,
-          "y": 219,
-          "w": 104,
-          "h": 120,
-          "ax": 52.0,
-          "ay": 60.0,
-          "r": 52.0
-        },
-        "droneEnemy": {
-          "x": 415,
-          "y": 219,
-          "w": 123,
-          "h": 133,
-          "ax": 61.5,
-          "ay": 66.5,
-          "r": 61.5
+          "x": 189,
+          "y": 190,
+          "w": 122,
+          "h": 108,
+          "ax": 61.0,
+          "ay": 54.0,
+          "r": 54.0
         }
       }
     },
@@ -683,11 +665,11 @@
     "boss-bulldog": "assets/s3/boss-bulldog.jpg",
     "boss-carrier": "assets/s3/boss-carrier.jpg",
     "boss-keystone": "assets/s3/boss-keystone.jpg",
-    "ev-tarot": "assets/s3/ev-tarot.jpg",
-    "title": "assets/s3/title.jpg",
-    "ev-wrench": "assets/s3/ev-wrench.jpg",
-    "ev-darcy": "assets/s3/ev-darcy.jpg",
     "ev-aiden": "assets/s3/ev-aiden.jpg",
+    "ev-darcy": "assets/s3/ev-darcy.jpg",
+    "ev-tarot": "assets/s3/ev-tarot.jpg",
+    "ev-wrench": "assets/s3/ev-wrench.jpg",
+    "title": "assets/s3/title.jpg",
     "ev-marcus": "assets/s3/ev-marcus.jpg",
     "ev-bluedoor": "assets/s3/ev-bluedoor.jpg",
     "ev-cat": "assets/s3/ev-cat.jpg",

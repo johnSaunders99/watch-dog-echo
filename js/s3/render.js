@@ -7,6 +7,7 @@
   const S3 = E.s3, sim = S3.sim, A = sim.api;
   const { T, W, H, GW, GH } = sim, TAU = Math.PI * 2, hyp = Math.hypot;
   const C = { out: '#0b0f1c', pink: '#ff2e88', cyan: '#6cd6e2', green: '#72e6a4', warn: '#ffb547', bad: '#ff5d6c', white: '#ece8e1', echo: '#c2b3ff' };
+  const SMASH_GLOW = '#94ff74';
   const THEME = {
     docks: { floor: '#141a22', floor2: '#171e28', line: '#1f2835', wall: '#2a3242', top: '#3e4a5e', face: '#1a202b', accent: '#ffb547' },
     offices: { floor: '#151726', floor2: '#191b2d', line: '#23263f', wall: '#2d3050', top: '#474c76', face: '#1b1d33', accent: '#6cd6e2' },
@@ -35,8 +36,22 @@
       if (img.complete && img.naturalWidth) done(); else img.addEventListener('load', done, { once: true });
     }
   }
+  const gearItem = (name) => sheets.gear && sheets.gear.items[name];
+  // 劫持不換機體。粉紅底乘上原圖的明暗，再用原圖裁回輪廓；陰影另畫，不會被染色。
+  const hijacked = new WeakMap();
+  function hijackedSprite(img, it) {
+    if (hijacked.has(it)) return hijacked.get(it);
+    const cv = Object.assign(document.createElement('canvas'), { width: it.w, height: it.h });
+    const g = cv.getContext('2d');
+    const stamp = () => g.drawImage(img, it.x, it.y, it.w, it.h, 0, 0, it.w, it.h);
+    g.fillStyle = '#ff67af'; g.fillRect(0, 0, it.w, it.h);
+    g.globalCompositeOperation = 'multiply'; stamp();
+    g.globalCompositeOperation = 'destination-in'; stamp();
+    hijacked.set(it, cv);
+    return cv;
+  }
   // 畫一張小圖：轉到 ang，縮放到圖上的身體半徑等於 r。回傳有沒有畫出來。
-  function sprite(sheet, name, x, y, ang, r, alpha = 1, shadow = true) {
+  function sprite(sheet, name, x, y, ang, r, alpha = 1, shadow = true, controlled = false) {
     const sh = sheets[sheet], it = sh && sh.items[name];
     if (!it) return false;
     const k = r / it.r;
@@ -45,7 +60,8 @@
     if (shadow) { ctx.globalAlpha = alpha * 0.32; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(3, 6, r * 1.05, r * 0.9, 0, 0, TAU); ctx.fill(); }
     ctx.globalAlpha = alpha;
     ctx.rotate(ang);
-    ctx.drawImage(sh.img, it.x, it.y, it.w, it.h, -it.ax * k, -it.ay * k, it.w * k, it.h * k);
+    const img = controlled ? hijackedSprite(sh.img, it) : sh.img;
+    ctx.drawImage(img, controlled ? 0 : it.x, controlled ? 0 : it.y, it.w, it.h, -it.ax * k, -it.ay * k, it.w * k, it.h * k);
     ctx.restore();
     return true;
   }
@@ -93,9 +109,11 @@
   const HELD = {
     pistol: { len: 1.9, grip: 0.1 }, taser: { len: 1.9, grip: 0.1 }, silenced: { len: 2.7, grip: 0.08 },
     shotgun: { len: 3.6, grip: 0.26 }, nailgun: { len: 2.1, grip: 0.12 }, sledge: { len: 3.6, grip: 0.12 },
+    hammer: { len: 4.5, grip: 0.16 },
   };
   function heldItem(id, x, y, R) {
-    const h = HELD[id] || HELD.pistol, len = h.len * R, sh = sheets.doll, it = sh && sh.items['held-' + id];
+    const h = HELD[id] || HELD.pistol, len = h.len * R;
+    const sh = id === 'hammer' ? sheets.gear : sheets.doll, it = sh && sh.items[id === 'hammer' ? 'smash' : 'held-' + id];
     if (it) {
       const k = len / it.w;
       ctx.drawImage(sh.img, it.x, it.y, it.w, it.h, x - h.grip * len, y - (it.h * k) / 2, len, it.h * k);
@@ -111,6 +129,7 @@
     else if (id === 'taser') { bar('#ffd23f', 0, 0.85, w); bar('#1c2028', 0.82, 1, w * 0.8); }
     else if (id === 'silenced') { bar('#2a2d36', 0, 0.55, w); bar('#1c2028', 0.5, 1, w * 0.7); }
     else if (id === 'sledge') { bar('#8a5a2e', 0, 0.84, w * 0.5); bar('#8a93a3', 0.78, 1, w * 1.9); }
+    else if (id === 'hammer') { bar('#444a54', 0, 0.85, w * 0.65); bar('#353940', 0.72, 1, w * 3); }
     else bar('#2a2d36', 0, 1, w);
   }
 
@@ -539,13 +558,9 @@
     if (e.elite) { ctx.strokeStyle = { armored: '#cfd6e4', firewall: C.green, volatile: C.warn, swift: C.echo }[e.elite]; ctx.lineWidth = 3; circle(x, y, r + 7); ctx.stroke(); }
     if (e.mark > 0) { ctx.strokeStyle = C.cyan; ctx.lineWidth = 2; ctx.setLineDash([4, 5]); circle(x, y, r + 12); ctx.stroke(); ctx.setLineDash([]); }
     const art = e.boss === 'keystone' ? null : e.boss || e.kind;
-    // 無人機和砲塔用 gear 圖：被劫持的無人機換成我們的機體，敵人的有裝甲和紅燈。
-    const gearArt = e.kind === 'drone' ? (ally ? 'droneAlly' : 'droneEnemy') : e.kind === 'turret' ? 'turret' : null;
-    const sheet = gearArt && sheets.gear && sheets.gear.items[gearArt] ? 'gear' : 'actors', name = sheet === 'gear' ? gearArt : art;
-    const size = sheet === 'gear' ? r * (e.kind === 'drone' ? 1.55 : 1.45) : r * (BODY[art] || 1.3);
-    if (name && e.def.fly && sheets[sheet] && sheets[sheet].items[name]) { ctx.fillStyle = 'rgba(0,0,0,0.28)'; circle(x + 8, y + 22, r * 1.2); ctx.fill(); }
-    if (name && sprite(sheet, name, x, y, e.ang, size, 1, !e.def.fly)) {
-      if (ally) { ctx.fillStyle = 'rgba(255,46,136,0.3)'; circle(x, y, r * 1.5); ctx.fill(); }
+    const size = r * (BODY[art] || 1.3);
+    if (art && e.def.fly && sheets.actors && sheets.actors.items[art]) { ctx.fillStyle = 'rgba(0,0,0,0.28)'; circle(x + 8, y + 22, r * 1.2); ctx.fill(); }
+    if (art && sprite('actors', art, x, y, e.ang, size, 1, !e.def.fly, ally)) {
       ctx.translate(x, y); ctx.rotate(e.ang);
       if (e.kind === 'shield' || e.boss === 'bulldog') {
         // 盾牌有效是亮的弧線，被癱瘓是紅色虛線。
@@ -610,7 +625,12 @@
       label('!', x, y - r - 18, C.bad, 24);
       ctx.strokeStyle = C.bad; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, r + 14, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - e.call / sim.CALL)); ctx.stroke();
     }
-    if (ally) { ctx.strokeStyle = C.pink; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, r + 9, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, e.ally / 10)); ctx.stroke(); }
+    // 控制時間另放在機體下方，不用圈圈蓋住旋翼和槍管。
+    if (ally) {
+      const y0 = y + size + 8;
+      ctx.fillStyle = C.out; ctx.fillRect(x - 13, y0 - 1, 26, 4);
+      ctx.fillStyle = C.pink; ctx.fillRect(x - 12, y0, 24 * Math.min(1, e.ally / 10), 2);
+    }
     if (!e.boss && e.hp < e.maxHp) {
       const w = Math.max(30, r * 2.4);
       ctx.fillStyle = 'rgba(11,15,28,0.8)'; ctx.fillRect(x - w / 2 - 1, y + r + 7, w + 2, 6);
@@ -656,40 +676,46 @@
       ctx.fillStyle = `rgba(${col},${0.1 + 0.15 * k})`; circle(z.x, z.y, z.r); ctx.fill();
       ctx.strokeStyle = `rgba(${col},0.9)`; ctx.lineWidth = 3; circle(z.x, z.y, z.r); ctx.stroke();
       ctx.lineWidth = 2; circle(z.x, z.y, z.r * Math.max(0, 1 - k)); ctx.stroke();
-      if (z.fx !== undefined && !z.quiet && z.t0 && !(z.cargo && sheets.gear)) { const px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k - Math.sin(k * Math.PI) * 90; circle(px, py, 6); ctx.fillStyle = mine ? '#8a5a2c' : '#3a4a2a'; ctx.fill(); ctx.strokeStyle = C.out; ctx.stroke(); }
+      if (z.fx !== undefined && !z.quiet && z.t0 && !(z.cargo && gearItem('sergei'))) { const px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k - Math.sin(k * Math.PI) * 90; circle(px, py, 6); ctx.fillStyle = mine ? '#8a5a2c' : '#3a4a2a'; ctx.fill(); ctx.strokeStyle = C.out; ctx.stroke(); }
     } else if (z.k === 'eagle') {
       const k = 1 - z.t / z.t0, px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k;
       ctx.strokeStyle = 'rgba(108,214,226,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); circle(z.x, z.y, z.r); ctx.stroke(); ctx.setLineDash([]);
-      // Darcy 的老鷹：拍著翅膀飛過去（兩張圖輪流）。
-      if (!inAir(px, py, Math.floor(clock * 12) % 2 ? 'eagle2' : 'eagle', Math.atan2(z.y - z.fy, z.x - z.fx), 24)) {
+      // 達西的固定翼無人機：兩格只轉動翼尖旋翼。沒有第二格時維持第一格。
+      const frame = gearItem('eagle2') && Math.floor(clock * 12) % 2 ? 'eagle2' : 'eagle';
+      if (!inAir(px, py, frame, Math.atan2(z.y - z.fy, z.x - z.fx), 24)) {
         ctx.save(); ctx.translate(px, py - 14); ctx.rotate(Math.atan2(z.y - z.fy, z.x - z.fx));
         ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -12); ctx.lineTo(-3, 0); ctx.lineTo(-8, 12); ctx.closePath(); outline('#e8e6e0'); ctx.restore();
       }
     }
   }
-  // 飛在空中的東西：地上一塊影子，圖往上提 alt。圖集沒有這張圖就只畫影子，回傳 false。
-  function inAir(x, y, name, ang, r, alpha = 1, alt = 26) {
+  // 先畫地面上的影子，再畫吊著的箱子（若有），最後把機身往上提 alt。
+  function inAir(x, y, name, ang, r, alpha = 1, alt = 26, carrying = false) {
     ctx.save();
     ctx.globalAlpha = 0.28 * alpha; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x, y, r * 0.9, r * 0.55, 0, 0, TAU); ctx.fill();
     ctx.restore();
+    if (carrying) sprite('props', 'crate', x, y - 8, 0, 14, alpha, false);
     return sprite('gear', name, x, y - alt, ang, r, alpha, false);
   }
-  // Wrench 的裝備：謝爾蓋吊著貨箱飛到游標、丟下去之後飛走；鐵鎚從一邊掃到另一邊。
+  // 扳手的裝備：箱子只在去程掛著；「粉碎女士」的光尾跟著鎚頭從一邊掃到另一邊。
   function drawGear(s) {
-    if (!sheets.gear) return;
     for (const z of s.zones) {
-      if (z.k !== 'tele' || !z.cargo || z.fx === undefined) continue;
+      if (z.k !== 'tele' || !z.cargo || z.fx === undefined || !gearItem('sergei')) continue;
       const k = Math.min(1, 1 - z.t / (z.t0 || 1)), ease = 1 - (1 - k) * (1 - k);
       const x = z.fx + (z.x - z.fx) * ease, y = z.fy + (z.y - z.fy) * ease, ang = Math.atan2(z.y - z.fy, z.x - z.fx);
-      sprite('props', 'crate', x, y - 12, 0, 13, 1, false);
-      inAir(x, y, 'sergei', ang, 26);
+      inAir(x, y, 'sergei', ang, 32, 1, 38, true);
     }
-    for (const f of flyers) inAir(f.x, f.y, 'sergei', f.ang, 26, Math.max(0, f.life / f.max), 26 + (1 - f.life / f.max) * 50);
+    if (gearItem('sergei')) for (const f of flyers) inAir(f.x, f.y, 'sergei', f.ang, 32, f.life / f.max, 38 + (1 - f.life / f.max) * 50);
     for (const w of swings) {
       const k = 1 - w.life / w.max, a = w.ang - w.arc + 2 * w.arc * k;
-      // 工地的大鐵鎚（跟主角手上的同一把）；Wrench 的 Lady Smash 用 gear 圖集那張。
-      if (w.id === 'sledge') { ctx.save(); ctx.translate(w.x, w.y); ctx.rotate(a); heldItem('sledge', 24, 0, 17); ctx.restore(); }
-      else sprite('gear', 'smash', w.x + Math.cos(a) * 44, w.y + Math.sin(a) * 44, a, 22, 1, true);
+      ctx.save(); ctx.translate(w.x, w.y); ctx.rotate(a);
+      if (w.id === 'hammer') {
+        const h = HELD.hammer, head = 24 + (0.86 - h.grip) * h.len * 17;
+        ctx.lineCap = 'round'; ctx.strokeStyle = SMASH_GLOW; ctx.shadowColor = SMASH_GLOW; ctx.shadowBlur = 12;
+        ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, head, -Math.min(0.9, 2 * w.arc * k), 0); ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      heldItem(w.id, 24, 0, 17);
+      ctx.restore();
     }
   }
   function drawPick(k, s) {
@@ -772,7 +798,7 @@
       case 'takedown': ring(ev.x, ev.y, 46, C.pink, 0.3, 6); shake = Math.max(shake, 6); break;
       case 'melee': case 'swing': rings.push({ x: ev.x, y: ev.y, r: ev.k === 'melee' ? 62 : 84, col: ev.k === 'melee' ? C.white : C.warn, life: 0.16, max: 0.16, w: 6, arc: ev.ang }); break;
       case 'drop': flyers.push({ x: ev.x, y: ev.y, ang: ev.ang, vx: Math.cos(ev.ang) * 170, vy: Math.sin(ev.ang) * 170, life: 0.7, max: 0.7 }); break;
-      case 'smash': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.arc || 1.25, id: ev.id, life: 0.24, max: 0.24 }); rings.push({ x: ev.x, y: ev.y, r: ev.r, col: C.warn, life: 0.25, max: 0.25, w: 12, arc: ev.ang, wide: 1.25 }); shake = Math.max(shake, 10); break;
+      case 'smash': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.arc || 1.25, id: ev.id, life: 0.24, max: 0.24 }); rings.push({ x: ev.x, y: ev.y, r: ev.r, col: ev.id === 'hammer' ? SMASH_GLOW : C.warn, life: 0.25, max: 0.25, w: 12, arc: ev.ang, wide: 1.25 }); shake = Math.max(shake, 10); break;
       case 'pickup': if (ev.what !== 'cache' && ev.n) texts.push({ x: ev.x, y: ev.y - 14, vy: -40, life: 0.5, max: 0.5, str: '+' + ev.n, col: ev.what === 'med' ? C.green : C.cyan, size: 14 }); break;
       case 'crash': ring(ev.x, ev.y, 100, C.white, 0.35, 8); burst(ev.x, ev.y, 18, '#cfd6e4', 300, 6, 0.5); shake = Math.max(shake, 14); break;
       case 'raise': case 'breach': case 'hijack': ring(ev.x, ev.y, 60, ev.k === 'hijack' ? C.pink : C.green, 0.35, 5); break;

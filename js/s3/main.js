@@ -720,7 +720,7 @@
   }
   function showEvent() {
     const ev = run.event, def = R.eventDef(ev.id);
-    const pic = pictures['ev-' + ev.id] ? `<img class="ev-pic" src="${asset(pictures['ev-' + ev.id])}" alt="">` : '';
+    const pic = pictures['ev-' + ev.id] ? `<img class="ev-pic" data-event="${esc(ev.id)}" src="${asset(pictures['ev-' + ev.id])}" alt="">` : '';
     const face = pic ? '' : `<div class="ev-face">${E.art.avatar(def.cameo)}</div>`;
     if (ev.result) {
       modal(`${pic}<div class="ev">${face}<div><h2>${esc(t('s3.ev.' + ev.id + '.t'))}</h2><p>${esc(t(ev.result.key))}</p>${fxLine(ev.result.fx)}</div></div>

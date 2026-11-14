@@ -224,6 +224,10 @@ body.s3 { overflow: hidden; }
 .s3-card.end-return { --rar: var(--ok); } .s3-card.end-burn { --rar: #ff8a3d; } .s3-card.end-open { --rar: var(--warn); } .s3-card.end-teach { --rar: var(--echo); }
 .s3-box p.good { color: var(--ok); } .s3-box p.warn { color: var(--warn); }
 .ev-pic { display: block; width: 100%; max-height: 300px; margin-bottom: 14px; border-radius: 8px; object-fit: cover; }
+/* 三張獨立的 3:2 插圖要保留翼尖、帽沿和鎚頭；低視窗仍留得下事件選項。 */
+.ev-pic:is([data-event="wrench"], [data-event="darcy"], [data-event="aiden"]) {
+  width: auto; max-width: 100%; max-height: min(42vh, 410px); margin-inline: auto; object-fit: contain;
+}
 .s3-modal.pic .s3-box { width: min(760px, 100%); }
 
 /* ===== 無線電：打的時候右上角插進來的一句 ===== */
