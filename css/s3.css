@@ -156,6 +156,7 @@ body.s3 { overflow: hidden; }
 .gad i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(194, 179, 255, 0.28); }
 .gad em { position: relative; z-index: 1; font-style: normal; font-family: var(--mono); color: var(--echo); }
 .gad.cd { border-color: #4a4660; } .gad.cd span { color: var(--muted); }
+.gad.armed { border-color: var(--sys); } .gad.armed em { color: var(--sys); }
 #s3-toast { position: absolute; left: 50%; bottom: 52px; transform: translate(-50%, 8px); padding: 8px 20px; border-radius: 6px; background: rgba(11, 15, 28, 0.92); border: 1px solid var(--line); color: #fff; font-size: 15px; line-height: 1.5; max-width: 76%; text-align: center; opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; }
 #s3-toast.show { opacity: 1; transform: translate(-50%, 0); }
 #s3-toast.warn { border-color: var(--warn); color: var(--warn); } #s3-toast.good { border-color: var(--ok); color: var(--ok); }
@@ -223,10 +224,10 @@ body.s3 { overflow: hidden; }
 .s3-card.ending { min-height: 150px; }
 .s3-card.end-return { --rar: var(--ok); } .s3-card.end-burn { --rar: #ff8a3d; } .s3-card.end-open { --rar: var(--warn); } .s3-card.end-teach { --rar: var(--echo); }
 .s3-box p.good { color: var(--ok); } .s3-box p.warn { color: var(--warn); }
-.ev-pic { display: block; width: 100%; max-height: 300px; margin-bottom: 14px; border-radius: 8px; object-fit: cover; }
-/* 三張獨立的 3:2 插圖要保留翼尖、帽沿和鎚頭；低視窗仍留得下事件選項。 */
-.ev-pic:is([data-event="wrench"], [data-event="darcy"], [data-event="aiden"]) {
-  width: auto; max-width: 100%; max-height: min(42vh, 410px); margin-inline: auto; object-fit: contain;
+/* 統一用 3:2 的展示區；舊格圖比例略有不同，留邊而不裁掉原畫。 */
+.ev-pic {
+  display: block; width: min(100%, 63vh, 615px); height: auto; aspect-ratio: 3 / 2;
+  margin: 0 auto 14px; border-radius: 8px; object-fit: contain;
 }
 .s3-modal.pic .s3-box { width: min(760px, 100%); }
 

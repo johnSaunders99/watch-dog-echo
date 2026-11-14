@@ -185,7 +185,9 @@
   // 房間裡換掉一個隊員（拘留室救出來的人補上倒下的人的位置），之後就可以換上場。場上那個人不能換。
   function setMember(s, i, b, hp) {
     if (i === s.active || !s.team[i]) return false;
-    s.team[i] = makeMember(b, hp);
+    const m = makeMember(b, hp), eagle = m.gad.find((g) => g.id === 'eagle');
+    if (eagle) eagle.cd = s.eagleCd;
+    s.team[i] = m;
     return true;
   }
   function createRoom(spec, build, carry) {
@@ -202,7 +204,7 @@
       t: 0, rt: 0, tick: 0, navV: 1, fields: new Map(),
       solid: new Uint8Array(GW * GH), en: [], bul: [], props: [], zones: [], picks: [], decoys: [], pets: [], mines: [], ev: [],
       alert: !!spec.boss, alertT: 0, waves: spec.waves.map((x) => x.slice()), waveT: 0, cleared: false, silent: false, cache: null, doorsOpen: false, exit: -1, over: null,
-      blackout: 0, hackN: 0, nextId: 1, gain: 0, gainAcc: 0, baseData: c.data || 0, revived: !!c.revived, usedRevive: false,
+      blackout: 0, recon: null, eagleCd: 0, hackN: 0, nextId: 1, gain: 0, gainAcc: 0, baseData: c.data || 0, revived: !!c.revived, usedRevive: false,
       stats: { kills: 0, hacks: 0, takedowns: 0, hurt: 0, envKills: 0 },
       dmgScale: (1 + (spec.scale - 1) * 0.9) * D.enemyDmg,
     };
@@ -246,7 +248,7 @@
     const e = {
       id: s.nextId++, kind, def, x, y, r: def.r, ang: o.ang || 0, base: o.ang || 0, mvAng: o.ang || 0,
       hp: def.hp * s.spec.scale, speed: def.speed, state: s.alert || o.wave ? 'combat' : 'calm', aware: 0, call: 0,
-      stun: 0, burn: 0, burnT: 0, mark: 0, blind: 0, distract: 0, resist: 0, noShield: 0, ally: 0,
+      stun: 0, burn: 0, burnT: 0, mark: 0, blind: 0, distract: 0, resist: 0, noShield: 0, ally: 0, confused: 0, jamOff: 0,
       patrol: o.patrol || null, pi: 1, wait: 0, goal: null, look: 0, home: { x, y },
       atk: null, cd: 0.6 + s.rng.next() * 0.9, strafe: s.rng.chance(0.5) ? 1 : -1, strafeT: 1 + s.rng.next() * 1.5,
       seen: false, last: null, lostT: 0, elite: o.elite || null, grenade: kind === 'heavy', spawnT: o.wave ? 1.1 : 0,
@@ -267,7 +269,7 @@
     s.ev.push({ k: 'noise', x, y, r });
     if (s.alert) return;
     for (const e of s.en) {
-      if (e.dead || e.state === 'combat' || e.def.static || e.ally > 0 || e.distract > 0) continue;
+      if (e.dead || e.state === 'combat' || e.def.static || e.ally > 0 || e.confused > 0 || e.distract > 0) continue;
       if (hyp(e.x - x, e.y - y) > r) continue;
       if (loud) { engage(s, e); continue; }
       e.state = 'suspect';
@@ -276,7 +278,7 @@
     }
   }
   function engage(s, e) {
-    if (e.state === 'combat') return;
+    if (e.state === 'combat' || e.confused > 0) return;
     e.state = 'combat';
     e.distract = 0;
     e.atk = null;
@@ -455,7 +457,7 @@
         if (o.burn) e.burn = Math.max(e.burn, o.burn);
         if (o.knock) { const a = Math.atan2(e.y - y, e.x - x); e.kx += Math.cos(a) * o.knock; e.ky += Math.sin(a) * o.knock; }
         if (o.noShield) e.noShield = Math.max(e.noShield, o.noShield);
-        if (dmg) (o.trap ? trapHurt : hurt)(s, e, dmg * (1 - 0.4 * clamp(d / r, 0, 1)), { by: o.by || 'env' });
+        if (dmg) (o.trap ? trapHurt : hurt)(s, e, dmg * (1 - 0.4 * clamp(d / r, 0, 1)), o.quiet ? { by: o.by || 'env', quiet: true } : { by: o.by || 'env' });
       }
       if (o.self && !s.fl.hardhat && hyp(s.p.x - x, s.p.y - y) < r * 0.8 + s.p.r) hitPlayer(s, o.self);
     }
@@ -503,7 +505,7 @@
 
   // ===== 駭入 =====
   function jammed(s, x, y) {
-    for (const e of s.en) if (!e.dead && e.def.jam && e.ally <= 0 && e.stun <= 0 && e.spawnT <= 0 && hyp(e.x - x, e.y - y) < e.def.jam) return true;
+    for (const e of s.en) if (!e.dead && e.def.jam && e.ally <= 0 && e.confused <= 0 && e.jamOff <= 0 && e.stun <= 0 && e.spawnT <= 0 && hyp(e.x - x, e.y - y) < e.def.jam) return true;
     return false;
   }
   function propHack(s, pr) {
@@ -637,6 +639,7 @@
     else if (h.act === 'blind') { e.blind = H.dur; e.atk = null; s.ev.push({ k: 'zap', x: e.x, y: e.y }); }
     else if (h.act === 'hijack' || h.act === 'hijackTurret') {
       e.ally = H.dur * s.st.hijackMul;
+      e.confused = 0;
       e.state = 'combat';
       e.atk = null;
       e.stun = 0;
@@ -684,7 +687,8 @@
     const p = s.p, st = s.st, fl = s.fl, w = s.weapon;
     p.fireCd -= dt; p.meleeCd -= dt; p.hackCd -= dt; p.inv -= dt; p.lock -= dt; p.hurtT -= dt;
     if (p.cloak > 0) p.cloak -= dt;
-    for (const m of s.team) for (const g of m.gad) g.cd = Math.max(0, g.cd - dt); // 待命的人，裝備也在冷卻
+    s.eagleCd = Math.max(0, s.eagleCd - dt);
+    for (const m of s.team) for (const g of m.gad) g.cd = g.id === 'eagle' ? s.eagleCd : Math.max(0, g.cd - dt); // 待命的人，裝備也在冷卻
     p.bw = Math.min(st.bwMax, p.bw + st.bwRegen * (s.spec.mod === 'jam' ? 0.6 : 1) * dt);
     if (p.dashN < st.dashCharges) { p.dashCd -= dt; if (p.dashCd <= 0) { p.dashN++; p.dashCd = st.dashCd; } }
     if (p.lock <= 0) p.ang = Math.atan2(inp.ay - p.y, inp.ax - p.x);
@@ -815,7 +819,11 @@
     const p = s.p, g = p.gad[slot];
     if (!g || g.cd > 0 || p.lock > 0) { if (g) s.ev.push({ k: 'denied', x: p.x, y: p.y, why: 'cool' }); return; }
     const def = S3.data.gadgets[g.id], lv = g.lv - 1;
-    g.cd = def.cd * (1 - 0.2 * lv);
+    if (g.id === 'eagle' && s.recon) {
+      if (s.recon.orbit) detonateEagle(s);
+      return;
+    }
+    if (g.id !== 'eagle') g.cd = def.cd * (1 - 0.2 * lv);
     // 游標太遠就拉回射程內。
     const reach = (range) => {
       const d = hyp(ax - p.x, ay - p.y);
@@ -823,15 +831,19 @@
       return { x: clamp(p.x + (ax - p.x) * k, T + 20, W - T - 20), y: clamp(p.y + (ay - p.y) * k, T + 20, H - T - 20) };
     };
     s.ev.push({ k: 'gadget', id: g.id, x: p.x, y: p.y });
-    if (g.id === 'eagle') {
+    if (g.id === 'kamikaze') {
       const at = reach(def.range);
-      s.zones.push({ k: 'eagle', x: at.x, y: at.y, fx: p.x, fy: p.y, r: def.r * (1 + 0.12 * lv), t: 0.5, t0: 0.5, stun: def.stun + 0.5 * lv, dmg: def.dmg + 8 * lv });
+      s.zones.push({ k: 'kamikaze', x: at.x, y: at.y, fx: p.x, fy: p.y, r: def.r * (1 + 0.12 * lv), t: def.flight, t0: def.flight, stun: def.stun + 0.5 * lv, dmg: def.dmg + 8 * lv });
+    } else if (g.id === 'eagle') {
+      // 全隊只有這一台。換人或施放者倒下，盤旋中的老鷹仍可用共用鍵引爆。
+      s.recon = Object.assign(reach(def.range), { fx: p.x, fy: p.y, orbit: false, t: def.flight, dur: def.dur + lv, beat: 0, lv: g.lv,
+        r: def.r * s.st.aoeMul, dmg: (def.dmg + 10 * lv) * s.st.aoeDmg });
     } else if (g.id === 'blackout') {
       s.blackout = def.dur + lv;
       for (const e of s.en) { if (e.ally > 0) continue; e.atk = null; e.aware = 0; e.seen = false; if (e.call > 0) e.call = CALL; if (e.state === 'suspect') { e.state = 'calm'; e.goal = null; } }
-    } else if (g.id === 'sergei') {
+    } else if (g.id === 'cargo' || g.id === 'sergei') {
       const at = reach(def.range);
-      s.zones.push({ k: 'tele', x: at.x, y: at.y, fx: p.x, fy: p.y, r: def.r * s.st.aoeMul, t: def.fuse, t0: def.fuse, dmg: (def.dmg + 20 * lv) * s.st.aoeDmg, side: 'p', crate: def.crate + 4 * lv, cargo: true });
+      s.zones.push({ k: 'tele', x: at.x, y: at.y, fx: p.x, fy: p.y, r: def.r * s.st.aoeMul, t: def.fuse, t0: def.fuse, dmg: (def.dmg + 20 * lv) * s.st.aoeDmg, side: 'p', crate: def.crate + 4 * lv, cargo: g.id, lv: g.lv });
     } else if (g.id === 'hammer' || g.id === 'sledge') {
       // Lady Smash 和工地的大鐵鎚：同一個揮法，數字不同（content-s3/data.js）。
       p.lock = 0.2;
@@ -851,8 +863,8 @@
     } else if (g.id === 'mask') {
       p.cloak = def.dur + lv;
       for (const e of s.en) { e.aware = 0; if (e.call > 0) e.call = CALL; }
-    } else if (g.id === 'spider') {
-      s.pets.push({ x: p.x, y: p.y, t: def.dur + 3 * lv, cd: 0, ang: p.ang, dmg: def.dmg + 2 * lv, rate: def.rate, sight: def.sight });
+    } else if (g.id === 'spider' || g.id === 'escort') {
+      s.pets.push({ kind: g.id, x: p.x, y: p.y, t: def.dur + (g.id === 'escort' ? 1 : 3) * lv, cd: 0, ang: p.ang, dmg: def.dmg + 2 * lv, rate: def.rate, sight: def.sight });
     } else if (g.id === 'lure') {
       const at = reach(def.range);
       s.decoys.push({ x: at.x, y: at.y, t: def.dur + lv, r: def.r });
@@ -861,6 +873,47 @@
     } else if (g.id === 'mine') {
       if (s.mines.length >= def.max) s.mines.shift();
       s.mines.push({ x: p.x, y: p.y, arm: 0.6, r: def.r * (1 + 0.15 * lv), stun: def.stun + 0.5 * lv, dmg: def.dmg + 10 * lv });
+    }
+  }
+
+  function detonateEagle(s) {
+    const z = s.recon, def = S3.data.gadgets.eagle;
+    s.recon = null;
+    s.eagleCd = def.cd * (1 - 0.2 * (z.lv - 1));
+    for (const m of s.team) for (const g of m.gad) if (g.id === 'eagle') g.cd = s.eagleCd;
+    blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', trap: true, shock: true });
+    for (const e of s.en) {
+      if (e.dead || e.ally > 0 || e.spawnT > 0 || hyp(e.x - z.x, e.y - z.y) > z.r + e.r) continue;
+      if (e.def.machine || e.boss === 'carrier' || e.boss === 'keystone') { e.stun = Math.max(e.stun, def.emp); e.atk = null; }
+      else stun(s, e, def.stun);
+      if (e.def.jam) e.jamOff = Math.max(e.jamOff, def.emp);
+    }
+    for (const pr of s.props) if (!pr.gone && hyp(pr.x - z.x, pr.y - z.y) <= z.r) {
+      if (pr.kind === 'camera') { pr.down = Math.max(pr.down, def.emp); pr.aware = 0; }
+      if (pr.kind === 'pylon') pr.down = Math.max(pr.down, def.emp);
+    }
+    noise(s, z.x, z.y, 420);
+  }
+  function stepRecon(s, dt) {
+    const z = s.recon, def = S3.data.gadgets.eagle;
+    z.t -= dt;
+    if (!z.orbit) {
+      if (z.t > 0) return;
+      z.orbit = true; z.t = z.dur;
+    }
+    if (z.t <= 0) { detonateEagle(s); return; }
+    for (const e of s.en) if (!e.dead && e.ally <= 0 && e.spawnT <= 0 && hyp(e.x - z.x, e.y - z.y) <= def.scan + e.r) e.mark = Math.max(e.mark, 1);
+    z.beat -= dt;
+    if (z.beat <= 0) { z.beat = def.beat; noise(s, z.x, z.y, def.noise); }
+  }
+  function scramble(s, z) {
+    const def = S3.data.gadgets.sergei;
+    const range = (e) => hyp(e.x - z.x, e.y - z.y);
+    const targets = s.en.filter((e) => !e.dead && e.ally <= 0 && e.spawnT <= 0 && range(e) <= def.jamRange)
+      .sort((a, b) => range(a) - range(b)).slice(0, def.targets + z.lv - 1);
+    for (const e of targets) {
+      e.confused = def.dur + z.lv - 1; e.call = 0; e.atk = null; e.aware = 0; e.cd = 0.18;
+      s.ev.push({ k: 'scramble', x: z.x, y: z.y - 38, x2: e.x, y2: e.y });
     }
   }
 
@@ -893,14 +946,14 @@
       }
       if (b.side === 'p') {
         for (const e of s.en) {
-          if (e.dead || e.ally > 0 || e.spawnT > 0 || (b.hit && b.hit.has(e))) continue;
+          if (e.dead || e.id === b.shooter || e.ally > 0 || e.spawnT > 0 || (b.hit && b.hit.has(e))) continue;
           if (segDist(e.x, e.y, ox, oy, b.x, b.y) > e.r + b.r) continue;
-          if (shielded(e, ox - b.vx * 0.02, oy - b.vy * 0.02)) { b.life = 0; s.ev.push({ k: 'clang', x: b.x, y: b.y }); engage(s, e); break; }
+          if (shielded(e, ox - b.vx * 0.02, oy - b.vy * 0.02)) { b.life = 0; s.ev.push({ k: 'clang', x: b.x, y: b.y }); if (!b.shooter) engage(s, e); break; }
           const sneak = e.state !== 'combat' && b.by !== 'ally';
           if (b.stun) { stun(s, e, b.stun); s.ev.push({ k: 'zap', x: e.x, y: e.y }); }
           if (b.burn) e.burn = Math.max(e.burn, b.burn);
           if (b.knock) { const l = hyp(b.vx, b.vy) || 1; e.kx += (b.vx / l) * b.knock; e.ky += (b.vy / l) * b.knock; }
-          hurt(s, e, b.dmg * (sneak ? b.sneak || 1 : 1), { by: b.by || 'gun', crit: b.crit });
+          hurt(s, e, b.dmg * (sneak ? b.sneak || 1 : 1), { by: b.by || 'gun', crit: b.crit, quiet: !!b.shooter });
           if (b.pierce > 0) { b.pierce--; (b.hit = b.hit || new Set()).add(e); } else { b.life = 0; break; }
         }
       } else if (segDist(p.x, p.y, ox, oy, b.x, b.y) < p.r + b.r - 2) {
@@ -936,7 +989,7 @@
         }
       }
       if (pr.kind === 'bollard' && pr.up > 0) { pr.up -= dt; if (pr.up <= 0) { stamp(s, pr, 0); pr.cool = def.cd; } }
-      if (pr.kind === 'pylon' && pr.down > 0) pr.down -= dt;
+      if ((pr.kind === 'pylon' || pr.kind === 'camera') && pr.down > 0) pr.down -= dt;
       if (pr.temp !== undefined) { pr.temp -= dt; if (pr.temp <= 0) { pr.gone = true; stamp(s, pr, 0); } }
       if (pr.kind === 'car' && pr.moving) {
         const dx = DX[pr.go], dy = DY[pr.go];
@@ -972,7 +1025,7 @@
         }
       }
       // 攝影機：還沒響警報的時候會掃視，看到你就直接報警。
-      if (pr.kind === 'camera' && !pr.looped && !s.alert && !s.cleared) {
+      if (pr.kind === 'camera' && !pr.looped && pr.down <= 0 && !s.alert && !s.cleared) {
         pr.look = pr.ang + Math.sin(s.t * 0.8 + pr.id) * 0.75;
         const sight = def.sight * sightMul(s);
         const d = hyp(p.x - pr.x, p.y - pr.y);
@@ -987,6 +1040,7 @@
   // ===== 範圍效果、寵物、地雷、誘餌 =====
   function stepZones(s, dt) {
     const p = s.p;
+    if (s.recon) stepRecon(s, dt);
     for (const z of s.zones) {
       z.t -= dt;
       if (z.k === 'steam' || z.k === 'fire') {
@@ -1001,9 +1055,15 @@
           if (z.side === 'p') {
             blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', knock: 160 });
             noise(s, z.x, z.y, 500);
-            if (z.crate) { dropCrate(s, z.x, z.y, z.crate); s.ev.push({ k: 'drop', x: z.x, y: z.y, ang: z.fx === undefined ? 0 : Math.atan2(z.y - z.fy, z.x - z.fx) }); }
+            if (z.crate) {
+              if (z.cargo === 'sergei') scramble(s, z);
+              dropCrate(s, z.x, z.y, z.crate);
+              s.ev.push({ k: 'drop', id: z.cargo, x: z.x, y: z.y, ang: Math.atan2(z.y - z.fy, z.x - z.fx) });
+            }
+          } else if (z.side === 'crossfire') {
+            blast(s, z.x, z.y, z.r, z.dmg, { by: 'ally', quiet: true });
           } else blast(s, z.x, z.y, z.r, z.dmg, { side: 'e' });
-        } else if (z.k === 'eagle') {
+        } else if (z.k === 'kamikaze') {
           shock(s, z.x, z.y, z.r, z.dmg, z.stun, 'env');
           for (const e of s.en) if (!e.dead && e.ally <= 0 && hyp(e.x - z.x, e.y - z.y) < z.r + e.r) e.noShield = Math.max(e.noShield, 5);
           noise(s, z.x, z.y, 420);
@@ -1025,11 +1085,17 @@
     for (const pet of s.pets) {
       pet.t -= dt;
       pet.cd -= dt;
+      if (pet.kind === 'escort') {
+        // 跟著目前上場的人，在肩旁留出槍口和角色的空間。
+        const gx = clamp(p.x - 36, T + 14, W - T - 14), gy = clamp(p.y + 24, T + 14, H - T - 14);
+        const dx = gx - pet.x, dy = gy - pet.y, k = Math.min(1, 480 * dt / (hyp(dx, dy) || 1));
+        pet.x += dx * k; pet.y += dy * k;
+      }
       let best = null, bd = pet.sight;
       for (const e of s.en) {
         if (e.dead || e.ally > 0 || e.spawnT > 0) continue;
         const d = hyp(e.x - pet.x, e.y - pet.y);
-        if (d < bd && clear(s, pet.x, pet.y, e.x, e.y, true)) { bd = d; best = e; }
+        if (d < bd && clear(s, pet.x, pet.y, e.x, e.y, true) && (pet.kind !== 'escort' || !steamed(s, pet.x, pet.y, e.x, e.y))) { bd = d; best = e; }
       }
       if (!best) continue;
       pet.ang = Math.atan2(best.y - pet.y, best.x - pet.x);

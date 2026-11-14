@@ -768,6 +768,110 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     console.log('four people to start, volunteers, captures recorded, holding cells and rescues, strangers joining, bail, everyone freed on a win, the Curfew crew carried over, older saves');
   }
 
+  section('第三季：無人機與裝備存檔');
+  {
+    const gad = (id, lv = 1) => ({ id, lv });
+    const deploy = (s, x, y, shared = false) => sim.step(s, pad({ ax: x, ay: y, [shared ? 'g2' : 'g1']: true }));
+    const near = (a, b) => Math.abs(a - b) < 0.04;
+    const crew = R.crewFor('kit-save'), jobs = ['builder', 'docker', 'removals'];
+    for (const job of jobs) if (R.memberOf(Object.assign({}, crew[0], { occupation: job })).gadget.id !== 'cargo') fail('s3 kits: missing worker cargo: ' + job);
+    const common = { hacker: ['escort', 'kamikaze'], physical: ['sledge', 'mine'], social: ['lure', 'mask'], specialist: ['spider', 'mine'] };
+    for (const [k, ids] of Object.entries(common)) if (String(D.kits[k].gadget) !== String(ids)) fail('s3 kits: incorrect defaults for ' + k);
+    const people = [crew[0], Object.assign({}, crew[1], { occupation: 'builder' }), Object.assign({}, crew[2], { occupation: 'locksmith' })];
+    const old = R.start('kit-save', people, newMeta()); old.v = 2;
+    old.squad.forEach((m, i) => { m.gadget = gad(i ? 'sergei' : 'eagle', i ? 3 : 2); });
+    const roster = old.squad.map((m, i) => ({ p: m.p, status: i === 2 ? 'held' : 'ready', runs: 4, gadget: m.gadget }));
+    storage.set('watchdogs-echo.s3.meta', JSON.stringify({ v: 2, data: Object.assign(newMeta(), { roster }) }));
+    const migrated = R.meta(), fresh = R.start('kit-loaded', people, migrated);
+    const kit = (m) => m.gadget.id + ':' + m.gadget.lv;
+    const expected = 'kamikaze:2,cargo:3,mine:3';
+    if (migrated.roster.map(kit).join() !== expected || fresh.squad.map(kit).join() !== expected || migrated.roster[2].status !== 'held') fail('s3 save: old roster lost its loadouts or custody status');
+    for (const id of ['eagle', 'sergei']) {
+      old.gear = gad(id, 2); old.phase = 'reward'; old.pending = { kind: 'gadget', picks: ['hammer', 'blackout', id] };
+      old.shop = { items: [{ k: 'gadget', id: 'hammer', price: 75 }] };
+      storage.set('watchdogs-echo.s3.run', JSON.stringify({ v: 2, data: old }));
+      const r = R.load();
+      if (r.v !== 3 || r.squad.map(kit).join() !== expected || r.gear.id !== id || r.gear.lv !== 2 || r.phase !== old.phase || r.rng !== old.rng ||
+        r.pending.picks.includes('hammer') || r.pending.picks.includes('blackout') || r.shop.items[0].id !== 'sledge') fail('s3 save: own, shared or unclaimed gear migrated incorrectly');
+      sim.createRoom(arena(), R.simBuild(r), R.carry(r));
+      R.save(r); if (JSON.stringify(R.load()) !== JSON.stringify(r)) fail('s3 save: converted run did not round-trip');
+    }
+    R.saveMeta(migrated);
+    if (R.meta().roster.map(kit).join() !== expected) fail('s3 save: converted roster did not round-trip');
+    storage.clear();
+    // 房間獎勵和商店都不能提供還沒從事件拿到的專屬裝備。
+    for (let i = 0; i < 16; i++) {
+      const r = R.start('cameo-stock-' + i, crew, newMeta());
+      r.options = [{ type: 'shop' }]; R.enter(r, 0);
+      if (r.shop.items.some((it) => it.k === 'gadget' && D.gadgets[it.id].cameo)) fail('s3 kits: unearned cameo in shop');
+      r.pending = { kind: 'gadget', picks: [] }; r.rerolls = 1; R.reroll(r);
+      if (r.pending.picks.some((id) => D.gadgets[id].cameo)) fail('s3 kits: unearned cameo in reward');
+    }
+    // 跟隨機：掩體後不射擊。換人、移動之後能跟上並從新位置開火；蜘蛛留在原地。
+    const companion = (id) => build({ gadgets: [gad(id)] });
+    let s = sim.createRoom(arena({ enemies: [{ kind: 'heavy', x: 800, y: 475 }] }), { squad: [companion('escort'), companion('spider')] });
+    s.solid[A.idx(15, 12)] = s.solid[A.idx(16, 12)] = 1;
+    deploy(s, 800, 475); go(s, 20);
+    const pet = s.pets[0];
+    if (!pet || !near(pet.t, 7 - s.t) || s.en[0].hp !== s.en[0].maxHp || s.bul.some((b) => b.by === 'ally')) fail('s3 escort: duration or line of fire behind cover');
+    sim.swapTo(s, 1); deploy(s, 800, 475);
+    const spider = s.pets[1], origin = spider.x;
+    go(s, 70, pad({ mx: 1 }));
+    if (s.active !== 1 || pet.x < origin + 160 || Math.hypot(pet.x - s.p.x, pet.y - s.p.y) > 65 || spider.x !== origin || spider.t <= pet.t) fail('s3 escort: did not follow the new operative or spider moved');
+    s.en[0].x = pet.x + 170; s.en[0].y = pet.y; s.en[0].stun = 20; s.pets = [pet];
+    if (!go(s, 50).includes('pshot') || s.en[0].hp >= s.en[0].maxHp) fail('s3 escort: no effective fire on a visible enemy');
+    go(s, 330); if (s.pets.length) fail('s3 escort: remained after battery expired');
+
+    s = room({ enemies: [{ kind: 'heavy', x: 800, y: 375 }] }, { gadgets: [gad('kamikaze')] });
+    deploy(s, 800, 375); const target = s.en[0];
+    if (target.hp !== target.maxHp || !s.zones.some((z) => z.k === 'kamikaze')) fail('s3 kamikaze: no flight before impact');
+    if (!go(s, 31).includes('shock') || target.hp >= target.maxHp || target.stun < 2 || s.recon) fail('s3 kamikaze: no impact damage or shock');
+
+    const guard = { kind: 'heavy', x: 810, y: 380 };
+    s = room({ enemies: [guard] }, { gadgets: [gad('cargo')] }); deploy(s, 810, 380); go(s, 43);
+    const crate = s.props.find((p) => p.kind === 'crate');
+    if (!crate || !near(crate.temp, 10) || A.solidAt(s, crate.x, crate.y) !== 3 || !s.en[0] || s.en[0].hp >= s.en[0].maxHp || s.en[0].confused) fail('s3 cargo: missing impact, ordinary cover or clean targeting');
+
+    // 偵查機在真正到達前不能引爆。牆後也能標記，噪音的目的地不是玩家；偵查本身沒有傷害。
+    const arenaRecon = arena({ enemies: [{ kind: 'guard', x: 980, y: 370 }], props: [{ kind: 'camera', tx: 16, ty: 6, w: 1, h: 1, dir: 1 }] });
+    arenaRecon.tiles[A.idx(18, 7)] = 1;
+    const withEagle = () => build({ gadgets: [gad('mine'), gad('eagle')] });
+    s = sim.createRoom(arenaRecon, { squad: [withEagle(), withEagle()] });
+    s.p.cloak = 20;
+    deploy(s, 800, 375, true); deploy(s, 800, 375, true);
+    if (!s.recon || s.recon.orbit || s.p.gad[1].cd) fail('s3 eagle: flight input exploded the scout or started cooldown early');
+    const scoutGuard = s.en[0], scoutHp = scoutGuard.hp;
+    const pulses = go(s, 138);
+    if (!s.recon.orbit || scoutGuard.mark <= 0 || !scoutGuard.goal || scoutGuard.goal.x !== 800 || scoutGuard.goal.y !== 375 ||
+      scoutGuard.hp !== scoutHp || pulses.includes('pshot') || pulses.filter((k) => k === 'noise').length < 2 || s.alert) fail('s3 eagle: did not scout and lure quietly through the wall');
+    const drone = A.spawn(s, 'drone', 800, 330), jammer = A.spawn(s, 'jammer', 780, 365), ambush = A.spawn(s, 'guard', 855, 390);
+    for (const e of [drone, jammer]) { e.hp = e.maxHp = 300; e.state = 'combat'; }
+    sim.swapTo(s, 1); deploy(s, 800, 375, true);
+    if (s.recon || !ambush.dead || !near(drone.stun, 4) || !near(jammer.stun, 1.5) || !near(s.props[0].down, 4) || A.jammed(s, jammer.x, jammer.y) ||
+      s.team.some((m) => !near(m.gad[1].cd, 16)) || !s.ev.some((e) => e.k === 'shock')) fail('s3 eagle: manual pulse, trap, machine outage or shared cooldown wrong');
+    go(s, 100); if (jammer.stun > 0 || A.jammed(s, jammer.x, jammer.y) || s.props[0].aware) fail('s3 eagle: jammer electronics woke with the operator or camera spotted early');
+    go(s, 145); if (!A.jammed(s, jammer.x, jammer.y) || s.props[0].down > 0) fail('s3 eagle: electronics did not recover');
+    s = room({}, { gadgets: [gad('eagle', 2)] }); deploy(s, 2000, 775);
+    if (s.recon.x !== s.p.x + 520) fail('s3 eagle: exceeded launch range');
+    go(s, 504); if (!s.recon || !s.recon.orbit || s.p.gad[0].cd) fail('s3 eagle: level-two orbit ended early');
+    go(s, 10); if (s.recon || !near(s.eagleCd, 12.8 - 0.05)) fail('s3 eagle: no timed detonation or wrong cooldown');
+
+    // 先從投箱到命中，再觀察真正的敵人 AI；兩個交火目標之間放玩家，確認不會攔截干擾中的子彈。
+    s = room({ enemies: [{ kind: 'turret', x: 675, y: 450 }, { kind: 'turret', x: 925, y: 450 }] }, { gadgets: [gad('sergei')] });
+    s.p.cloak = 20; deploy(s, 800, 375); go(s, 43);
+    const [left, right] = s.en; s.p.x = 800; s.p.y = 450;
+    if (!s.props.some((p) => p.kind === 'crate') || !s.en.every((e) => e.confused > 5.9 && !e.ally && !e.call)) fail('s3 sergei: crate and scramble did not arrive together');
+    go(s, 205);
+    if (left.hp >= left.maxHp || right.hp >= right.maxHp || s.stats.hurt || s.alert || s.cleared) fail('s3 sergei: turrets did not trade real fire safely');
+    s = room({ enemies: [{ kind: 'rusher', x: 730, y: 410 }, { kind: 'heavy', x: 920, y: 420 }] }, { gadgets: [gad('sergei')] });
+    s.p.cloak = 20; deploy(s, 800, 530); go(s, 44);
+    const [runner, heavy] = s.en; heavy.stun = 15;
+    go(s, 120);
+    if (runner.x <= 765 || heavy.hp >= heavy.maxHp || s.alert || s.stats.hurt) fail('s3 sergei: melee did not chase and damage the other enemy');
+    go(s, 248); if (runner.confused > 0 || runner.call || s.alert || runner.state === 'combat') fail('s3 sergei: scrambled target did not recover to search');
+    console.log('own and shared save migration, cameo sources, escort and swap, impact and cover, recon lure and manual/timed EMP, melee and machine crossfire');
+  }
+
   // ===== 機器人打整趟 =====
   section('第三季：機器人');
   {

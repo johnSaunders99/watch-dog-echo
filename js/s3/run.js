@@ -4,15 +4,34 @@
 (function (E) {
   const S3 = (E.s3 = E.s3 || {});
   const D = () => S3.data;
-  // 第 1 版是單人的時代：沒有名冊，「更多人選」那個強化改成「加床位」。
-  const META = E.save.slot('watchdogs-echo.s3.meta', 2, {
+  const SAVE_VERSION = 3;
+  // 舊隊員自己的 Q 換成一般裝備；已經放在共用 E 的裝備是玩家的，不轉換。
+  function migrateMember(m) {
+    if (!m.gadget) return;
+    if (m.gadget.id === 'eagle') m.gadget.id = 'kamikaze';
+    else if (m.gadget.id === 'sergei') m.gadget.id = D().gadgetByJob[m.p.occupation] || 'mine';
+  }
+  const META = E.save.slot('watchdogs-echo.s3.meta', SAVE_VERSION, {
+    // 單人版沒有名冊，「更多人選」後來改成「加床位」。
     1: (m) => {
       const perks = Object.assign({}, m.perks);
       if (perks.fourth) { perks.bunks = perks.fourth; delete perks.fourth; }
       return Object.assign({ roster: [], vol: 0, story: {}, rescued: 0 }, m, { perks });
     },
+    2: (m) => { (m.roster || []).forEach(migrateMember); return m; },
   });
-  const RUN = E.save.slot('watchdogs-echo.s3.run', 2);
+  const RUN = E.save.slot('watchdogs-echo.s3.run', SAVE_VERSION, {
+    2: (run) => {
+      run.squad.forEach(migrateMember);
+      // 讀到尚未領取的舊獎勵或舊黑市時，也不能從普通房間新拿到客串裝備。
+      const replace = (id) => D().gadgets[id].cameo && (!run.gear || run.gear.id !== id)
+        ? { eagle: 'kamikaze', sergei: 'cargo', hammer: 'sledge', blackout: 'escort' }[id] : id;
+      if (run.pending && run.pending.kind === 'gadget') run.pending.picks = [...new Set(run.pending.picks.map(replace))];
+      if (run.shop) for (const it of run.shop.items) if (it.k === 'gadget' && !it.sold) it.id = replace(it.id);
+      run.v = SAVE_VERSION;
+      return run;
+    },
+  });
   const REWARD_WEIGHT = { fight: { exploit: 50, gadget: 12, data: 16, heal: 13, max: 9 }, elite: { exploit: 60, gadget: 40 } };
   const SQUAD = 3, ROSTER_MAX = 8, RECRUIT_COST = 2;
   // 名冊最多幾個人（「加床位」每級多兩個）。
@@ -127,12 +146,12 @@
   // ===== 小隊 =====
   // 一個隊員：路人本身，加上這一季用得到的東西（武器、自己的裝備、職業專長）。
   // 裝備只看這個人是誰，不看是哪一晚：同一個人每次出門帶的都是同一件。
-  function memberOf(p) {
+  function memberOf(p, saved) {
     const occ = occOf(p), kit = D().kits[occ.category];
     const r = E.rng.derive('s3-kit', p.district, p.id, p.occupation, p.age);
     return {
       p, cat: occ.category, job: occ.perk, weapon: D().weaponByJob[occ.id] || D().weaponByCategory[occ.category],
-      gadget: { id: r.pick(kit.gadget), lv: 1 }, hp: 0, down: false, escaped: false,
+      gadget: saved ? Object.assign({}, saved) : { id: D().gadgetByJob[occ.id] || r.pick(kit.gadget), lv: 1 }, hp: 0, down: false, escaped: false,
     };
   }
   // 第 i 個隊員交給戰鬥模擬的配置：自己的特質和專長，加上全隊共用的漏洞和永久強化。
@@ -156,8 +175,11 @@
   function start(seed, people, m) {
     m = m || meta();
     const run = {
-      v: 2, seed, sector: 0, depth: 0, roomNo: 0, data: 25 * perkLv(m, 'stash'), rerolls: perkLv(m, 'reroll'),
-      squad: people.slice(0, SQUAD).map((p) => memberOf(p)), active: 0, gear: null,
+      v: SAVE_VERSION, seed, sector: 0, depth: 0, roomNo: 0, data: 25 * perkLv(m, 'stash'), rerolls: perkLv(m, 'reroll'),
+      squad: people.slice(0, SQUAD).map((p) => {
+        const entry = (m.roster || []).find((x) => same(x.p, p));
+        return memberOf(p, entry && entry.gadget);
+      }), active: 0, gear: null,
       build: { exploits: {}, extra: { maxHp: 8 * perkLv(m, 'hp'), bwMax: perkLv(m, 'bw'), focusMul: perkLv(m, 'focus') ? 1.2 : 1 } },
       node: null, options: [], phase: 'route',
       seen: [], shops: {}, cells: {}, held: (m.roster || []).filter((x) => x.status === 'held').length,
@@ -335,7 +357,7 @@
   // 裝備：每個隊員有自己的一件（Q），全隊另外共用一件撿來的（E）。
   const gadgetOwner = (run, id) => run.squad.find((m) => m.gadget.id === id) || (run.gear && run.gear.id === id ? { gadget: run.gear } : null);
   function draftGadgets(run, r, n) {
-    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id); return !o || o.gadget.lv < 3; });
+    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id); return o ? o.gadget.lv < 3 : !D().gadgets[id].cameo; });
     return r.shuffle(pool).slice(0, n);
   }
   function addExploit(run, id) {
@@ -394,7 +416,7 @@
     let joined = false;
     if (slot >= 0 && !full) {
       run.lost.push(run.squad[slot].p); // 被換下來的人還是被抓走了，結算時要記進名冊
-      run.squad[slot] = memberOf(p);
+      run.squad[slot] = memberOf(p, held && held.gadget);
       run.squad[slot].hp = Math.round(maxHp(run, slot) * 0.6);
       joined = true;
     } else if (full) run.data += 40;

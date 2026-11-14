@@ -81,7 +81,7 @@
   }
   const SHOT = { pistol: 's3gun', taser: 's3taser', shotgun: 's3shotgun', nailgun: 's3nail', silenced: 's3silenced' };
   const EVENT_SOUND = { bluedoor: 'dream', cat: 'dream', wrench: 'cameo', darcy: 'cameo', aiden: 'cameo', marcus: 'cameo' };
-  const GADGET_SOUND = { eagle: 'emp', blackout: 'blackout', sergei: 'sergei', hammer: 'smash', sledge: 'smash', mask: 'dream', spider: 'droneJam', lure: 's3shriek', mine: 'lock' };
+  const GADGET_SOUND = { escort: 'droneJam', kamikaze: 'emp', cargo: 'sergei', eagle: 'prof', blackout: 'blackout', sergei: 'sergei', hammer: 'smash', sledge: 'smash', mask: 'dream', spider: 'droneJam', lure: 's3shriek', mine: 'lock' };
   function sound(ev) {
     switch (ev.k) {
       case 'shot': play(SHOT[ev.w] || 's3gun', 40); break;
@@ -362,14 +362,14 @@
 
   // ===== 安全屋：名冊、今晚的小隊、想加入的人、永久強化 =====
   // 還沒進基石的人長什麼樣：這個人的裝備和能力（含永久強化）。
-  function preview(p) {
-    const m = R.memberOf(p);
+  function preview(p, gadget) {
+    const m = R.memberOf(p, gadget);
     const extra = { maxHp: 8 * R.perkLv(meta, 'hp'), bwMax: R.perkLv(meta, 'bw'), focusMul: R.perkLv(meta, 'focus') ? 1.2 : 1 };
     const st = sim.stats({ person: p, cat: m.cat, job: m.job, weapon: m.weapon, skills: p.skills, traits: p.traits, flaw: p.flaw, quirks: p.quirks, exploits: {}, extra, gadgets: [m.gadget] }).st;
     return { m, st };
   }
   function personCard(p, o) {
-    const { m, st } = preview(p);
+    const { m, st } = preview(p, o.gadget);
     const line = (cls, name, key) => `<li class="${cls}"><b>${esc(name)}</b> — ${esc(t(key))}</li>`;
     const traits = E.people.traitsOf(p).map((x) => line('good', L(x.name), 's3.trait.' + x.id)).join('');
     const flaw = p.flaw ? line('bad', L(E.people.flawOf(p).name), 's3.flaw.' + p.flaw) : '';
@@ -429,7 +429,7 @@
       const n = picks.indexOf(i), held = x.status === 'held';
       const foot = `<div class="crew-foot"><span class="dim">${x.veteran ? `<b class="vet">${esc(t('s3.roster.vet'))}</b>　` : ''}${x.runs ? esc(t('s3.roster.runs', { n: x.runs })) : ''}</span>${!held && readyN > R.SQUAD ? `<button type="button" class="ghost small" data-dismiss="${i}">${esc(t('s3.roster.dismiss'))}</button>` : ''}</div>`;
       return personCard(x.p, {
-        cls: held ? 'held' : n >= 0 ? 'picked' : 'pickable', attr: held ? '' : `data-roster="${i}" role="button" tabindex="0"`,
+        gadget: x.gadget, cls: held ? 'held' : n >= 0 ? 'picked' : 'pickable', attr: held ? '' : `data-roster="${i}" role="button" tabindex="0"`,
         badge: held ? t('s3.roster.held') : n >= 0 ? t('s3.roster.picked', { n: n + 1 }) : t('s3.roster.pick'), foot,
       });
     }).join('');
@@ -720,7 +720,7 @@
   }
   function showEvent() {
     const ev = run.event, def = R.eventDef(ev.id);
-    const pic = pictures['ev-' + ev.id] ? `<img class="ev-pic" data-event="${esc(ev.id)}" src="${asset(pictures['ev-' + ev.id])}" alt="">` : '';
+    const pic = pictures['ev-' + ev.id] ? `<img class="ev-pic" src="${asset(pictures['ev-' + ev.id])}" alt="">` : '';
     const face = pic ? '' : `<div class="ev-face">${E.art.avatar(def.cameo)}</div>`;
     if (ev.result) {
       modal(`${pic}<div class="ev">${face}<div><h2>${esc(t('s3.ev.' + ev.id + '.t'))}</h2><p>${esc(t(ev.result.key))}</p>${fxLine(ev.result.fx)}</div></div>
@@ -878,7 +878,12 @@
     set('h-ammo', p.reload > 0 ? t('s3.hud.reload') : p.ammo + ' / ' + p.mag);
     set('h-weapon', t('s3.wp.' + s.build.weapon + '.n'));
     set('h-dash', Array.from({ length: st.dashCharges }, (_, i) => `<i class="${i < p.dashN ? 'on' : ''}"></i>`).join(''), 'innerHTML');
-    set('h-gad', p.gad.map((g, i) => { const cd = D.gadgets[g.id].cd * (1 - 0.2 * (g.lv - 1)); return `<div class="gad${g.cd > 0 ? ' cd' : ''}"><kbd>${i ? 'E' : 'Q'}</kbd><span>${esc(gadName(g.id))}</span><i style="width:${g.cd > 0 ? ((g.cd / cd) * 100).toFixed(0) : 0}%"></i>${g.cd > 0 ? `<em>${Math.ceil(g.cd)}</em>` : ''}</div>`; }).join(''), 'innerHTML');
+    set('h-gad', p.gad.map((g, i) => {
+      const cd = D.gadgets[g.id].cd * (1 - 0.2 * (g.lv - 1)), recon = g.id === 'eagle' && s.recon;
+      const name = recon ? t(recon.orbit ? 's3.gad.detonate' : 's3.gad.flying') : gadName(g.id);
+      const timer = recon && recon.orbit ? Math.ceil(recon.t) : Math.ceil(g.cd);
+      return `<div class="gad${recon && recon.orbit ? ' armed' : g.cd > 0 ? ' cd' : ''}"><kbd>${i ? 'E' : 'Q'}</kbd><span>${esc(name)}</span><i style="width:${g.cd > 0 ? ((g.cd / cd) * 100).toFixed(0) : 0}%"></i>${timer ? `<em>${timer}</em>` : ''}</div>`;
+    }).join(''), 'innerHTML');
     // 狀態：未被發現、被發現、警報、增援、清場
     let status = 'calm', text = t('s3.hud.calm');
     const calling = s.en.filter((e) => e.call > 0 && !e.dead);

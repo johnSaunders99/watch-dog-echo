@@ -414,7 +414,7 @@
     } else if (pr.kind === 'camera' || pr.kind === 'speaker') {
       ctx.translate(x, y);
       if (pr.kind === 'camera') {
-        const on = !pr.looped && !s.alert && !s.cleared;
+        const on = !pr.looped && pr.down <= 0 && !s.alert && !s.cleared;
         if (on) {
           const sight = pr.def.sight * A.sightMul(s);
           const col = pr.aware > 0 ? '255,93,108' : '255,181,71';
@@ -471,7 +471,7 @@
 
   // ===== 敵人 =====
   function drawCone(s, e) {
-    if (e.state === 'combat' || e.ally > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
+    if (e.state === 'combat' || e.ally > 0 || e.confused > 0 || e.stun > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
     const sight = e.def.sight * A.sightMul(s);
     const col = e.state === 'suspect' ? '255,181,71' : e.aware > 0.02 ? '255,140,90' : '236,232,225';
     const g = ctx.createRadialGradient(e.x, e.y, e.r, e.x, e.y, sight);
@@ -503,7 +503,7 @@
   }
   function drawTelegraph(s, e) {
     const a = e.atk;
-    if (!a || e.ally > 0) return;
+    if (!a || e.ally > 0 || e.confused > 0) return;
     ctx.save();
     if (a.k === 'burst' && a.n === undefined) {
       ctx.strokeStyle = 'rgba(255,181,71,0.55)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]);
@@ -554,7 +554,7 @@
     }
     const ally = e.ally > 0, fl = flashOf.get(e.id) || 0;
     ctx.save();
-    if (e.def.jam && !ally && e.stun <= 0) { ctx.strokeStyle = 'rgba(154,240,208,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([8, 10]); ctx.lineDashOffset = -clock * 30; circle(x, y, e.def.jam); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = 'rgba(154,240,208,0.04)'; ctx.fill(); }
+    if (e.def.jam && !ally && e.stun <= 0 && e.jamOff <= 0 && e.confused <= 0) { ctx.strokeStyle = 'rgba(154,240,208,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([8, 10]); ctx.lineDashOffset = -clock * 30; circle(x, y, e.def.jam); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = 'rgba(154,240,208,0.04)'; ctx.fill(); }
     if (e.elite) { ctx.strokeStyle = { armored: '#cfd6e4', firewall: C.green, volatile: C.warn, swift: C.echo }[e.elite]; ctx.lineWidth = 3; circle(x, y, r + 7); ctx.stroke(); }
     if (e.mark > 0) { ctx.strokeStyle = C.cyan; ctx.lineWidth = 2; ctx.setLineDash([4, 5]); circle(x, y, r + 12); ctx.stroke(); ctx.setLineDash([]); }
     const art = e.boss === 'keystone' ? null : e.boss || e.kind;
@@ -618,9 +618,10 @@
     // 狀態：電暈、起火、被引開、發現中、正在叫人
     if (e.stun > 0) { ctx.strokeStyle = C.cyan; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { const a = clock * 7 + (i * TAU) / 3; jagged(x + Math.cos(a) * (r + 4), y + Math.sin(a) * (r + 4), x + Math.cos(a + 0.9) * (r + 9), y + Math.sin(a + 0.9) * (r + 9), 3, 6); ctx.stroke(); } }
     if (e.burn > 0 && Math.random() < 0.5) parts.push({ x: x + rnd(-r, r), y: y + rnd(-r, r), vx: rnd(-10, 10), vy: rnd(-60, -20), life: 0.4, max: 0.4, col: '#ff8a3d', size: rnd(3, 6) });
-    if (e.distract > 0) label('…', x, y - r - 16, C.white, 20);
-    if (!ally && e.state !== 'combat' && e.aware > 0.02) { ctx.strokeStyle = e.aware > 0.6 ? C.bad : C.warn; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y - r - 14, 8, -Math.PI / 2, -Math.PI / 2 + TAU * e.aware); ctx.stroke(); }
-    if (e.state === 'suspect' && e.aware <= 0.02) label('?', x, y - r - 16, C.warn, 20);
+    if (e.distract > 0 && e.confused <= 0) label('…', x, y - r - 16, C.white, 20);
+    if (e.confused > 0) label('?', x, y - r - 18, C.green, 26);
+    else if (!ally && e.state !== 'combat' && e.aware > 0.02) { ctx.strokeStyle = e.aware > 0.6 ? C.bad : C.warn; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y - r - 14, 8, -Math.PI / 2, -Math.PI / 2 + TAU * e.aware); ctx.stroke(); }
+    if (e.confused <= 0 && e.state === 'suspect' && e.aware <= 0.02) label('?', x, y - r - 16, C.warn, 20);
     if (e.call > 0) {
       label('!', x, y - r - 18, C.bad, 24);
       ctx.strokeStyle = C.bad; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, r + 14, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - e.call / sim.CALL)); ctx.stroke();
@@ -672,39 +673,67 @@
       if (Math.random() < 0.7) parts.push({ x: z.x + rnd(-z.r, z.r) * 0.7, y: z.y + rnd(-z.r, z.r) * 0.7, vx: rnd(-12, 12), vy: rnd(-90, -30), life: 0.5, max: 0.5, col: Math.random() < 0.5 ? '#ffb547' : '#ff5d3a', size: rnd(4, 9) });
     } else if (z.k === 'tele') {
       const k = 1 - z.t / (z.t0 || 1), mine = z.side === 'p';
-      const col = mine ? '108,214,226' : '255,93,108';
+      const col = z.side === 'crossfire' ? '114,230,164' : mine ? '108,214,226' : '255,93,108';
       ctx.fillStyle = `rgba(${col},${0.1 + 0.15 * k})`; circle(z.x, z.y, z.r); ctx.fill();
       ctx.strokeStyle = `rgba(${col},0.9)`; ctx.lineWidth = 3; circle(z.x, z.y, z.r); ctx.stroke();
       ctx.lineWidth = 2; circle(z.x, z.y, z.r * Math.max(0, 1 - k)); ctx.stroke();
-      if (z.fx !== undefined && !z.quiet && z.t0 && !(z.cargo && gearItem('sergei'))) { const px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k - Math.sin(k * Math.PI) * 90; circle(px, py, 6); ctx.fillStyle = mine ? '#8a5a2c' : '#3a4a2a'; ctx.fill(); ctx.strokeStyle = C.out; ctx.stroke(); }
-    } else if (z.k === 'eagle') {
+      if (z.fx !== undefined && !z.quiet && z.t0 && !z.cargo) { const px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k - Math.sin(k * Math.PI) * 90; circle(px, py, 6); ctx.fillStyle = mine ? '#8a5a2c' : '#3a4a2a'; ctx.fill(); ctx.strokeStyle = C.out; ctx.stroke(); }
+    } else if (z.k === 'kamikaze') {
       const k = 1 - z.t / z.t0, px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k;
       ctx.strokeStyle = 'rgba(108,214,226,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); circle(z.x, z.y, z.r); ctx.stroke(); ctx.setLineDash([]);
-      // 達西的固定翼無人機：兩格只轉動翼尖旋翼。沒有第二格時維持第一格。
-      const frame = gearItem('eagle2') && Math.floor(clock * 12) % 2 ? 'eagle2' : 'eagle';
-      if (!inAir(px, py, frame, Math.atan2(z.y - z.fy, z.x - z.fx), 24)) {
-        ctx.save(); ctx.translate(px, py - 14); ctx.rotate(Math.atan2(z.y - z.fy, z.x - z.fx));
-        ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -12); ctx.lineTo(-3, 0); ctx.lineTo(-8, 12); ctx.closePath(); outline('#e8e6e0'); ctx.restore();
-      }
+      inAir(px, py, 'kamikaze', Math.atan2(z.y - z.fy, z.x - z.fx), 19);
     }
+  }
+  function drawRecon(z) {
+    const def = S3.data.gadgets.eagle, a = Math.atan2(z.y - z.fy, z.x - z.fx), age = z.dur - z.t;
+    let px, py, ang;
+    if (z.orbit) {
+      const phase = a + age * 2.5;
+      px = z.x + Math.cos(phase) * 22; py = z.y + Math.sin(phase) * 15; ang = phase + Math.PI / 2;
+      ctx.save(); ctx.strokeStyle = 'rgba(108,214,226,0.72)'; ctx.lineWidth = 2; ctx.setLineDash([7, 9]);
+      circle(z.x, z.y, def.scan); ctx.stroke(); ctx.setLineDash([]);
+      // 以模擬的噪音節拍畫波紋，即使已交戰仍看得出它在偵查。
+      const beat = 1 - z.beat / def.beat;
+      ctx.strokeStyle = `rgba(194,179,255,${0.52 * (1 - beat)})`;
+      circle(z.x, z.y, 12 + beat * (def.noise - 12)); ctx.stroke(); ctx.restore();
+    } else {
+      const k = 1 - z.t / def.flight;
+      px = z.fx + (z.x - z.fx) * k; py = z.fy + (z.y - z.fy) * k; ang = a;
+    }
+    const frame = gearItem('eagle2') && Math.floor(clock * 12) % 2 ? 'eagle2' : 'eagle';
+    inAir(px, py, frame, ang, 24);
   }
   // 先畫地面上的影子，再畫吊著的箱子（若有），最後把機身往上提 alt。
   function inAir(x, y, name, ang, r, alpha = 1, alt = 26, carrying = false) {
     ctx.save();
     ctx.globalAlpha = 0.28 * alpha; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x, y, r * 0.9, r * 0.55, 0, 0, TAU); ctx.fill();
     ctx.restore();
-    if (carrying) sprite('props', 'crate', x, y - 8, 0, 14, alpha, false);
-    return sprite('gear', name, x, y - alt, ang, r, alpha, false);
+    if (carrying && !sprite('props', 'crate', x, y - 8, 0, 14, alpha, false)) {
+      ctx.save(); ctx.fillStyle = '#93663e'; ctx.fillRect(x - 11, y - 18, 22, 20); ctx.restore();
+    }
+    const small = name === 'escort' || name === 'kamikaze';
+    if (sprite(small ? 'drones' : 'gear', name, x, y - alt, ang, r, alpha, false)) return;
+    // 原圖還沒到或載入失敗，機身仍清楚朝著飛行或射擊方向。
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y - alt); ctx.rotate(ang);
+    if (name.startsWith('eagle')) {
+      ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(-4, -r); ctx.lineTo(-1, -4); ctx.lineTo(-r / 2, 0); ctx.lineTo(-1, 4); ctx.lineTo(-4, r); ctx.closePath(); outline('#e8e6e0');
+    } else {
+      ctx.beginPath(); ctx.roundRect(-r * 0.72, -r * 0.45, r * 1.5, r * 0.9, 4);
+      outline(name === 'cargo' || name === 'kamikaze' ? '#eea23b' : name === 'escort' ? '#ae789e' : '#5b6469');
+      for (const dx of [-1, 1]) for (const dy of [-1, 1]) { circle(dx * r * 0.57, dy * r * 0.55, r * 0.23); outline('#929fa6', 2); }
+      ctx.fillStyle = C.white; ctx.fillRect(r * 0.65, -2, 5, 4);
+    }
+    ctx.restore();
   }
   // 扳手的裝備：箱子只在去程掛著；「粉碎女士」的光尾跟著鎚頭從一邊掃到另一邊。
   function drawGear(s) {
     for (const z of s.zones) {
-      if (z.k !== 'tele' || !z.cargo || z.fx === undefined || !gearItem('sergei')) continue;
+      if (z.k !== 'tele' || !z.cargo || z.fx === undefined) continue;
       const k = Math.min(1, 1 - z.t / (z.t0 || 1)), ease = 1 - (1 - k) * (1 - k);
       const x = z.fx + (z.x - z.fx) * ease, y = z.fy + (z.y - z.fy) * ease, ang = Math.atan2(z.y - z.fy, z.x - z.fx);
-      inAir(x, y, 'sergei', ang, 32, 1, 38, true);
+      inAir(x, y, z.cargo, ang, 32, 1, 38, true);
     }
-    if (gearItem('sergei')) for (const f of flyers) inAir(f.x, f.y, 'sergei', f.ang, 32, f.life / f.max, 38 + (1 - f.life / f.max) * 50);
+    for (const f of flyers) inAir(f.x, f.y, f.id, f.ang, 32, f.life / f.max, 38 + (1 - f.life / f.max) * 50);
     for (const w of swings) {
       const k = 1 - w.life / w.max, a = w.ang - w.arc + 2 * w.arc * k;
       ctx.save(); ctx.translate(w.x, w.y); ctx.rotate(a);
@@ -784,6 +813,7 @@
       case 'dash': for (let i = 0; i < 6; i++) parts.push({ x: ev.x - Math.cos(ev.ang) * i * 8, y: ev.y - Math.sin(ev.ang) * i * 8, vx: 0, vy: 0, life: 0.22, max: 0.22, col: C.pink, size: 12 - i }); break;
       case 'hack': beams.push({ x: ev.x, y: ev.y, x2: ev.x2, y2: ev.y2, life: 0.28, max: 0.28, col: C.cyan, amp: 9 }); ring(ev.x2, ev.y2, 36, C.cyan, 0.3); break;
       case 'arc': beams.push({ x: ev.x, y: ev.y, x2: ev.x2, y2: ev.y2, life: 0.22, max: 0.22, col: '#bdf3ff', amp: 14 }); break;
+      case 'scramble': beams.push({ x: ev.x, y: ev.y, x2: ev.x2, y2: ev.y2, life: 0.28, max: 0.28, col: C.green, amp: 5 }); ring(ev.x2, ev.y2, 23, C.green, 0.35, 3); break;
       case 'snipe': beams.push({ x: ev.x, y: ev.y, x2: ev.x2, y2: ev.y2, life: 0.16, max: 0.16, col: '#fff', amp: 0, w: 5 }); shake = Math.max(shake, 4); break;
       case 'boom': ring(ev.x, ev.y, ev.r, '#ffb547', 0.4, 8); burst(ev.x, ev.y, 26, '#ff8a3d', 380, 8, 0.6); burst(ev.x, ev.y, 10, '#3a3f4a', 160, 12, 0.9); shake = Math.max(shake, 12); whiteFlash = Math.max(whiteFlash, 0.12); break;
       case 'shock': ring(ev.x, ev.y, ev.r, C.cyan, 0.4, 7); for (let i = 0; i < 7; i++) { const a = rnd(0, TAU); beams.push({ x: ev.x, y: ev.y, x2: ev.x + Math.cos(a) * ev.r, y2: ev.y + Math.sin(a) * ev.r, life: 0.2, max: 0.2, col: '#bdf3ff', amp: 16 }); } shake = Math.max(shake, 7); break;
@@ -797,7 +827,7 @@
       case 'clang': burst(ev.x, ev.y, 5, '#dfeaff', 200, 3, 0.2); break;
       case 'takedown': ring(ev.x, ev.y, 46, C.pink, 0.3, 6); shake = Math.max(shake, 6); break;
       case 'melee': case 'swing': rings.push({ x: ev.x, y: ev.y, r: ev.k === 'melee' ? 62 : 84, col: ev.k === 'melee' ? C.white : C.warn, life: 0.16, max: 0.16, w: 6, arc: ev.ang }); break;
-      case 'drop': flyers.push({ x: ev.x, y: ev.y, ang: ev.ang, vx: Math.cos(ev.ang) * 170, vy: Math.sin(ev.ang) * 170, life: 0.7, max: 0.7 }); break;
+      case 'drop': flyers.push({ id: ev.id, x: ev.x, y: ev.y, ang: ev.ang, vx: Math.cos(ev.ang) * 170, vy: Math.sin(ev.ang) * 170, life: 0.7, max: 0.7 }); break;
       case 'smash': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.arc || 1.25, id: ev.id, life: 0.24, max: 0.24 }); rings.push({ x: ev.x, y: ev.y, r: ev.r, col: ev.id === 'hammer' ? SMASH_GLOW : C.warn, life: 0.25, max: 0.25, w: 12, arc: ev.ang, wide: 1.25 }); shake = Math.max(shake, 10); break;
       case 'pickup': if (ev.what !== 'cache' && ev.n) texts.push({ x: ev.x, y: ev.y - 14, vy: -40, life: 0.5, max: 0.5, str: '+' + ev.n, col: ev.what === 'med' ? C.green : C.cyan, size: 14 }); break;
       case 'crash': ring(ev.x, ev.y, 100, C.white, 0.35, 8); burst(ev.x, ev.y, 18, '#cfd6e4', 300, 6, 0.5); shake = Math.max(shake, 14); break;
@@ -842,12 +872,14 @@
     for (const k of s.picks) drawPick(k, s);
     for (const pr of s.props) if (pr.def.solid || pr.kind === 'camera' || pr.kind === 'speaker') drawProp(s, pr, ui);
     for (const d of s.decoys) { ctx.globalAlpha = 0.5 + 0.2 * Math.sin(clock * 12); if (d.ghost) person(d.x, d.y, 14, 0, { body: C.echo, head: '#fff' }, 0, 0.5); else { circle(d.x, d.y, 10); outline(C.echo, 2); } ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(194,179,255,0.4)'; ctx.lineWidth = 2; circle(d.x, d.y, 18 + ((clock * 60) % 30)); ctx.stroke(); }
-    for (const pet of s.pets) { if (sprite('gear', 'spider', pet.x, pet.y, pet.ang, 17) || sprite('props', 'spider', pet.x, pet.y, pet.ang, 16)) continue; ctx.save(); ctx.translate(pet.x, pet.y); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.strokeStyle = C.out; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.stroke(); } ctx.rotate(pet.ang); ctx.fillStyle = '#0d1118'; ctx.fillRect(0, -3, 20, 6); circle(0, 0, 9); outline(C.pink, 2); ctx.restore(); }
+    for (const pet of s.pets) { if (pet.kind === 'escort') continue; if (sprite('gear', 'spider', pet.x, pet.y, pet.ang, 17) || sprite('props', 'spider', pet.x, pet.y, pet.ang, 16)) continue; ctx.save(); ctx.translate(pet.x, pet.y); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.strokeStyle = C.out; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.stroke(); } ctx.rotate(pet.ang); ctx.fillStyle = '#0d1118'; ctx.fillRect(0, -3, 20, 6); circle(0, 0, 9); outline(C.pink, 2); ctx.restore(); }
     for (const e of s.en) drawTelegraph(s, e);
     for (const e of s.en) if (!e.def.fly) drawEnemy(s, e, ui);
     drawPlayer(s);
     for (const e of s.en) if (e.def.fly) drawEnemy(s, e, ui);
-    for (const z of s.zones) if (z.k === 'steam' || z.k === 'eagle') drawZone(s, z);
+    for (const pet of s.pets) if (pet.kind === 'escort') inAir(pet.x, pet.y, 'escort', pet.ang, 18, 1, 16);
+    for (const z of s.zones) if (z.k === 'steam' || z.k === 'kamikaze') drawZone(s, z);
+    if (s.recon) drawRecon(s.recon);
     drawGear(s);
 
     // 子彈

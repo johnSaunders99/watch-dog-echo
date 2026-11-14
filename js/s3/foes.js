@@ -10,7 +10,7 @@
     s.bul.push(Object.assign({
       x: e.x + Math.cos(ang) * (e.r + 4), y: e.y + Math.sin(ang) * (e.r + 4), vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
       r: 5, side: 'e', dmg: dmg * s.dmgScale, life: 3.2, pierce: 0, bounce: 0,
-    }, o));
+    }, e.confused > 0 ? { side: 'p', by: 'ally', shooter: e.id } : null, o));
     s.ev.push({ k: 'eshot', x: e.x, y: e.y, ang, kind: e.kind });
   }
   function summon(s, kinds) {
@@ -83,6 +83,15 @@
   // ===== 戰鬥中的目標 =====
   // 誘餌優先；看不到玩家（隱形、停電、被致盲）就去最後看到的位置附近找。
   function target(s, e, dt) {
+    if (e.confused > 0) {
+      let best = null, bd = Infinity;
+      for (const o of s.en) {
+        if (o === e || o.dead || o.ally > 0 || o.spawnT > 0) continue;
+        const d = hyp(o.x - e.x, o.y - e.y);
+        if (d < bd) { best = o; bd = d; }
+      }
+      return best && { x: best.x, y: best.y, foe: best, seen: A.clear(s, e.x, e.y, best.x, best.y) && !A.steamed(s, e.x, e.y, best.x, best.y) };
+    }
     let best = null, bd = 1e9;
     for (const d of s.decoys) {
       const dd = hyp(d.x - e.x, d.y - e.y);
@@ -129,7 +138,7 @@
       a.n = c.n;
       a.t = 0;
       // 開火的瞬間往玩家移動的方向修正一點（抓一半的提前量），所以一直往同一邊跑會被打到。
-      if (c.lead && s.p.cloak <= 0 && s.blackout <= 0) {
+      if (c.lead && e.confused <= 0 && s.p.cloak <= 0 && s.blackout <= 0) {
         const p = s.p, tt = (hyp(p.x - e.x, p.y - e.y) / c.speed) * c.lead;
         const la = Math.atan2(p.y + p.vy * tt - e.y, p.x + p.vx * tt - e.x);
         if (Math.abs(A.angDiff(la, e.ang)) < 0.5) e.ang = la;
@@ -150,7 +159,10 @@
   };
 
   function combat(s, e, dt) {
-    const p = s.p, tg = target(s, e, dt);
+    const tg = target(s, e, dt);
+    if (!tg) { e.atk = null; return; }
+    const p = tg.foe || s.p;
+    const strike = (dmg, push) => tg.foe ? A.hurt(s, p, dmg, { by: 'ally', quiet: true }) : A.hitPlayer(s, dmg, push);
     const d = hyp(tg.x - e.x, tg.y - e.y), want = Math.atan2(tg.y - e.y, tg.x - e.x);
     const quick = e.elite === 'swift' ? 0.75 : 1, dmg = e.def.dmg * s.dmgScale, a = e.atk;
     e.cd -= dt;
@@ -183,7 +195,7 @@
           a.t -= dt;
           if (a.t > 0) return;
           s.ev.push({ k: 'swing', x: e.x, y: e.y, ang: e.ang });
-          if (hyp(p.x - e.x, p.y - e.y) < 84 && Math.abs(A.angDiff(Math.atan2(p.y - e.y, p.x - e.x), e.ang)) < 1.1) A.hitPlayer(s, dmg, { kx: Math.cos(e.ang) * 260, ky: Math.sin(e.ang) * 260 });
+          if (hyp(p.x - e.x, p.y - e.y) < 84 && Math.abs(A.angDiff(Math.atan2(p.y - e.y, p.x - e.x), e.ang)) < 1.1) strike(dmg, { kx: Math.cos(e.ang) * 260, ky: Math.sin(e.ang) * 260 });
           e.atk = null;
           e.cd = 0.7 * quick;
           return;
@@ -198,7 +210,7 @@
           a.t -= dt;
           if (!a.go) { if (a.t <= 0) { a.go = true; a.t = 0.3; a.ang = e.ang; s.ev.push({ k: 'leap', x: e.x, y: e.y }); } return; }
           A.moveCircle(s, e, Math.cos(a.ang) * 720 * dt, Math.sin(a.ang) * 720 * dt);
-          if (!a.hit && hyp(p.x - e.x, p.y - e.y) < e.r + p.r + 6) { a.hit = true; A.hitPlayer(s, dmg, { hound: true, kx: Math.cos(a.ang) * 220, ky: Math.sin(a.ang) * 220 }); }
+          if (!a.hit && hyp(p.x - e.x, p.y - e.y) < e.r + p.r + 6) { a.hit = true; strike(dmg, { hound: true, kx: Math.cos(a.ang) * 220, ky: Math.sin(a.ang) * 220 }); }
           if (a.t <= 0) { e.atk = null; e.cd = 1.2 * quick; }
           return;
         }
@@ -215,7 +227,7 @@
           if (a.t > 0) return;
           const end = A.rayEnd(s, e.x, e.y, a.ang, 1500, true);
           s.ev.push({ k: 'snipe', x: e.x, y: e.y, x2: end.x, y2: end.y });
-          if (A.segDist(p.x, p.y, e.x, e.y, end.x, end.y) < p.r + 3) A.hitPlayer(s, dmg, { kx: Math.cos(a.ang) * 200, ky: Math.sin(a.ang) * 200 });
+          if (A.segDist(p.x, p.y, e.x, e.y, end.x, end.y) < p.r + 3) strike(dmg, { kx: Math.cos(a.ang) * 200, ky: Math.sin(a.ang) * 200 });
           e.atk = null;
           e.cd = 2.3 * quick;
           e.strafe = -e.strafe;
@@ -230,7 +242,7 @@
         if (a) {
           a.t -= dt;
           if (a.t > 0) return;
-          s.zones.push({ k: 'tele', x: a.x, y: a.y, r: 95, t: 1.05, t0: 1.05, dmg, side: 'e', fx: e.x, fy: e.y });
+          s.zones.push({ k: 'tele', x: a.x, y: a.y, r: 95, t: 1.05, t0: 1.05, dmg, side: tg.foe ? 'crossfire' : 'e', fx: e.x, fy: e.y });
           s.ev.push({ k: 'lob', x: e.x, y: e.y, x2: a.x, y2: a.y });
           e.atk = null;
           e.cd = 3 * quick;
@@ -256,6 +268,15 @@
         if (d > 300 || !line) A.moveToward(s, e, tg.x, tg.y, e.speed, dt); else hold(s, e, tg, 150, 330, dt);
         e.ang = A.turn(e.ang, want, 2.2 * dt);
         if (line && e.cd <= 0 && d < 520) e.atk = { k: 'spray', t: 0.75 };
+        return;
+      }
+      case 'boss': {
+        // 干擾期間不發動首領的場地招式或召援，改用朝同伴的短點射。
+        if (!e.def.static && (!tg.seen || d > 300)) A.moveToward(s, e, tg.x, tg.y, e.speed, dt);
+        e.ang = A.turn(e.ang, want, 4 * dt);
+        if (e.cd <= 0 && d < 600 && tg.seen && A.clear(s, e.x, e.y, tg.x, tg.y, true) && Math.abs(A.angDiff(want, e.ang)) < 0.2) {
+          bullet(s, e, e.ang, 500, e.def.dmg); e.cd = 0.55;
+        }
         return;
       }
     }
@@ -481,6 +502,7 @@
       if (e.burnT <= 0) { e.burnT = 0.5; A.hurt(s, e, 2.5 * s.st.burnMul, { by: 'env', quiet: true }); if (e.dead) return; }
     }
     if (e.mark > 0) e.mark -= dt;
+    if (e.jamOff > 0) e.jamOff -= dt;
     if (e.blind > 0) e.blind -= dt;
     if (e.resist > 0) e.resist -= dt;
     if (e.noShield > 0) e.noShield -= dt;
@@ -496,6 +518,13 @@
       }
       allyThink(s, e, dt);
       return;
+    }
+    if (e.confused > 0) {
+      e.confused = Math.max(0, e.confused - dt);
+      if (!e.confused) {
+        e.atk = null; e.cd = 0.6; e.aware = 0; e.call = 0;
+        e.state = s.alert ? 'combat' : 'suspect'; e.goal = { x: e.x, y: e.y }; e.look = 0;
+      } else if (e.stun <= 0) { combat(s, e, dt); return; }
     }
     if (e.stun > 0) { e.stun -= dt; return; }
     if (e.boss) { BOSS[e.boss](s, e, dt); return; }

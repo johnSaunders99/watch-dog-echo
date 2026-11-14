@@ -165,10 +165,14 @@
   // ===== 裝備（Q、E 兩格）=====
   // cd 冷卻秒數。同一件再拿一次會升級（最多 3 級）：冷卻 −20%，效果變強。
   const gadgets = {
-    eagle: { cd: 14, range: 520, r: 170, stun: 2.4, dmg: 15 },            // Darcy 的老鷹無人機：飛到游標處，電磁脈衝
-    blackout: { cd: 28, dur: 5 },                                         // 艾登的大停電：全場敵人看不到你
-    sergei: { cd: 12, range: 560, r: 95, dmg: 60, fuse: 0.7, crate: 10 }, // Wrench 的謝爾蓋：把貨箱丟到游標處
-    hammer: { cd: 6, r: 115, arc: 1.35, dmg: 65, knock: 300, stun: 1.1 }, // Wrench 的 Lady Smash（只有 Wrench 的事件拿得到）
+    escort: { cd: 16, dur: 7, dmg: 6, rate: 4, sight: 400 },
+    kamikaze: { cd: 14, range: 520, r: 170, stun: 2.4, dmg: 15, flight: 0.5 },
+    cargo: { cd: 12, range: 560, r: 95, dmg: 60, fuse: 0.7, crate: 10 },
+    // cameo：只能從客串事件取得；戰利品和黑市只能升級已經持有的裝備。
+    eagle: { cameo: true, cd: 16, range: 520, flight: 0.5, dur: 7, scan: 250, noise: 340, beat: 1.6, r: 170, dmg: 35, emp: 4, stun: 1.5 },
+    blackout: { cameo: true, cd: 28, dur: 5 },
+    sergei: { cameo: true, cd: 12, range: 560, r: 95, dmg: 70, fuse: 0.7, crate: 10, jamRange: 260, targets: 5, dur: 6 },
+    hammer: { cameo: true, cd: 6, r: 115, arc: 1.35, dmg: 65, knock: 300, stun: 1.1 },
     sledge: { cd: 6, r: 95, arc: 1.05, dmg: 45, knock: 210, stun: 0.7 },  // 工地的大鐵鎚（身體類的人自己帶的）
     mask: { cd: 18, dur: 4, mult: 3 },                                    // 第二張臉：隱形
     spider: { cd: 20, dur: 11, dmg: 7, rate: 5, sight: 420 },             // 蜘蛛機器人：自動砲塔
@@ -177,11 +181,12 @@
   };
   // 職業分類的起始裝備和起始漏洞（各從裡面隨機一個）。
   const kits = {
-    hacker: { gadget: ['eagle', 'mine'], exploit: ['chain', 'fiber', 'antenna', 'ransom'] },
+    hacker: { gadget: ['escort', 'kamikaze'], exploit: ['chain', 'fiber', 'antenna', 'ransom'] },
     physical: { gadget: ['sledge', 'mine'], exploit: ['kevlar', 'adrenal', 'scavenger', 'static'] },
     social: { gadget: ['lure', 'mask'], exploit: ['silencer', 'afterimage', 'miner', 'profiler'] },
-    specialist: { gadget: ['spider', 'sergei'], exploit: ['puppet', 'extmag', 'medic', 'thermal'] },
+    specialist: { gadget: ['spider', 'mine'], exploit: ['puppet', 'extmag', 'medic', 'thermal'] },
   };
+  const gadgetByJob = { builder: 'cargo', docker: 'cargo', removals: 'cargo' };
 
   // ===== 敵人 =====
   // cost 佔用房間的威脅額度、data 掉多少資料、from 從第幾個房間開始出現（整趟算）、sight 看多遠、fov 視角的一半（弧度）。
@@ -245,7 +250,8 @@
   // 小隊有三個人可以輪流上，所以敵人的傷害整體乘上這個倍率：一趟下來通常會有一兩個人被抓。
   // 2026-11-12 陷阱打到沒發現你的敵人會直接放倒、急救包會補場下的人、車變強之後，機器人的勝率從約六成升到八成；調到 2.1 回到約六成。
   // 2026-11-13 被電暈、在蒸汽裡的敵人可以撲過去制伏之後，勝率又升到八成；調到 2.45 回到約六成（120 個種子 62%）。
-  const enemyDmg = 2.45;
+  // 無人機分工後，以同一批 120 個種子實測：2.45 通關 91 次，2.95 通關 68 次。
+  const enemyDmg = 2.95;
 
   // ===== 區段 =====
   // rooms 首領前有幾個房間；budget 第一間和最後一間的威脅額度；scale 敵人血量和傷害的倍率；layouts 房間骨架；props 各種設施最少和最多幾個。
@@ -293,6 +299,6 @@
 
   S3.data = {
     weapons, weaponByCategory, weaponByJob, baseStats, addStats, traitFx, flawFx, quirkFx, jobFx,
-    exploits, rarityWeight, price, gadgets, kits, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
+    exploits, rarityWeight, price, gadgets, kits, gadgetByJob, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
   };
 })(window.ECHO = window.ECHO || {});

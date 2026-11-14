@@ -65,7 +65,7 @@
       }
       for (const e of s.en) {
         const a = e.atk;
-        if (e.dead || e.ally > 0 || !a) continue;
+        if (e.dead || e.ally > 0 || e.confused > 0 || !a) continue;
         const line = (ang, len, width, soon) => {
           const ex = e.x + Math.cos(ang) * len, ey = e.y + Math.sin(ang) * len;
           const d = A.segDist(p.x, p.y, e.x, e.y, ex, ey);
@@ -128,10 +128,18 @@
         const key = i === 0 ? 'g1' : 'g2';
         const nearMe = foes.filter((e) => hyp(e.x - p.x, e.y - p.y) < 110 + e.r).length;
         const far = foes.slice().sort((a, b) => hyp(a.x - p.x, a.y - p.y) - hyp(b.x - p.x, b.y - p.y))[0];
-        const cluster = (r) => { let best = null, n = 0; for (const e of foes) { const c = foes.filter((o) => hyp(o.x - e.x, o.y - e.y) < r).length; if (c > n) { n = c; best = e; } } return { e: best, n }; };
+        const cluster = (r, reach) => { let best = null, n = 0; for (const e of foes) { if (hyp(e.x - p.x, e.y - p.y) > reach) continue; const c = foes.filter((o) => hyp(o.x - e.x, o.y - e.y) < r).length; if (c > n) { n = c; best = e; } } return { e: best, n }; };
         if (g.id === 'hammer' || g.id === 'sledge') { if (nearMe) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; } }
-        else if (g.id === 'eagle') { const c = cluster(160); if (c.n >= 2 || foes.some((e) => e.boss)) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; } }
-        else if (g.id === 'sergei') { const c = cluster(90); if (c.e && hyp(c.e.x - p.x, c.e.y - p.y) > 120) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; } }
+        else if (g.id === 'eagle' && s.recon) {
+          const z = s.recon;
+          if (z.orbit && z.dur - z.t >= 1.6 && foes.filter((e) => hyp(e.x - z.x, e.y - z.y) < z.r + e.r).length >= 2) inp[key] = true;
+        } else if (g.id === 'eagle' || g.id === 'kamikaze') {
+          const c = cluster(160, S3.data.gadgets[g.id].range);
+          if (c.e && (c.n >= 2 || c.e.boss || (g.id === 'eagle' && !s.alert))) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
+        } else if (g.id === 'sergei' || g.id === 'cargo') {
+          const def = S3.data.gadgets[g.id], c = cluster(def.jamRange || def.r, def.range);
+          if (c.e && hyp(c.e.x - p.x, c.e.y - p.y) > 120) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
+        } else if (g.id === 'escort') { if (s.alert || foes.some((e) => e.state === 'combat')) inp[key] = true; }
         else if (g.id === 'spider') { if (s.alert) inp[key] = true; }
         else if (g.id === 'mine') { if (foes.some((e) => (e.kind === 'rusher' || e.kind === 'hound' || e.boss === 'bulldog') && hyp(e.x - p.x, e.y - p.y) < 260)) inp[key] = true; }
         else if (g.id === 'mask') { if (p.hp < p.maxHp * 0.5 && foes.length >= 2) inp[key] = true; }

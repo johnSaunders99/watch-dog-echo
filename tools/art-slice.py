@@ -4,8 +4,10 @@
 # 這是製作素材時才用的工具，遊戲本身和 node tools/check.js 都不需要它。需要 Pillow 和 numpy：
 #   python tools/art-slice.py
 # 原圖放在專案旁邊的 watchdogs-echo-art-src/（不進版本庫），輸出到 assets/s3/ 和 content-s3/atlas.js。
+# 跨階段共用素材資料夾時可加 --sources 路徑，只處理這批已交付的原圖；預設位置不變。
 # 俯視合集用純綠色（#00FF00）背景，每格一個物件、全部朝右。預設 4×4，其他排列見 grid。
 # 事件插圖和頭像是另一種合集圖：一張幾格（事件 2×2、頭像 3×3），中間用黑線隔開，切開之後各存一張 JPEG。
+import argparse
 import json
 import os
 import sys
@@ -29,6 +31,8 @@ SHEETS = [
     # 上排：扳手的巨鎚、謝爾蓋、工人的貨運無人機。下排：達西的固定翼無人機（兩格只轉旋翼）、我方蜘蛛機器人。
     {'file': 'gear-3.png', 'atlas': 'gear', 'anchor': 'box', 'scale': 0.4, 'grid': (3, 2),
      'names': ['smash', 'sergei', 'cargo', 'eagle', 'eagle2', 'spider']},
+    {'file': 'drones-1.png', 'atlas': 'drones', 'anchor': 'box', 'scale': 0.4, 'grid': (2, 2),
+     'names': ['escort', 'kamikaze', 'expert', 'missile']},
 ]
 
 # 用黑線隔開的格子圖：檔名、幾欄幾列、每一格的名字（由左到右、由上到下）。square：切成正方形（頭像）。
@@ -52,8 +56,8 @@ DOLLS = {'file': 'doll-1.png', 'atlas': 'doll', 'scale': 0.4, 'grid': (4, 2),
 # 舊合集留作對照，不當成單張插圖輸出。
 RETIRED = {'gear-1.png', 'gear-2.png'}
 
-# 這四張原圖一起換版。少一張就保留現有圖集和事件圖，不能先寫出不完整的清單。
-GEAR_AND_CAMEOS = ('gear-3.png', 'ev-wrench.png', 'ev-darcy.png', 'ev-aiden.png')
+# 少一張就保留現有圖集和事件圖，不能先寫出不完整的清單。
+REQUIRED = ('gear-3.png', 'ev-wrench.png', 'ev-darcy.png', 'ev-aiden.png', 'drones-1.png')
 
 
 def background(spill):
@@ -333,7 +337,7 @@ def pictures():
 
 
 def main():
-    missing = [name for name in GEAR_AND_CAMEOS if not os.path.isfile(os.path.join(SRC, name))]
+    missing = [name for name in REQUIRED if not os.path.isfile(os.path.join(SRC, name))]
     if missing:
         print('Art sources missing (no outputs changed):', ', '.join(missing), file=sys.stderr)
         return 1
@@ -359,4 +363,7 @@ def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sources', default=SRC, help='Source PNG directory (defaults to the sibling art workspace)')
+    SRC = os.path.abspath(parser.parse_args().sources)
     sys.exit(main())

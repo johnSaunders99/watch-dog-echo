@@ -294,7 +294,7 @@
     n('Has failed the civil service exam four times. Sitting it again in spring.', '公務員考試考了四次都沒過，明年春天要考第五次。', '公务员考试考了四次都没过，明年春天考第五次。'),
     n('Has the drone patrol schedule pinned to the kitchen wall.', '廚房牆上貼著無人機的巡邏時刻表。', '厨房墙上贴着无人机的巡逻时刻表。'),
     n('Secretly filmed a drone stop-and-search. Never posted it.', '偷偷錄下了一次無人機盤查，一直沒敢發出去。', '偷偷录下了一次无人机盘查，一直没敢发出去。'),
-    n('Is convinced Bagley is a real person doing a voice.', '一直相信 Bagley 是真人假扮的。', '一直相信 Bagley 是真人假扮的。'),
+    n('Is convinced Bagley is a real person doing a voice.', '一直相信貝格利是真人假扮的。', '一直相信贝格利是真人假扮的。'),
     n('Switches the lights off at 22:01 every night. Has never broken curfew.', '每晚 22:01 準時關燈，從來沒有違反過宵禁。', '每晚 22:01 准时关灯，从来没有违反过宵禁。'),
     n('Went on three dates with someone from Lionheart Defence.', '和一個獅心防務的員工約會過三次。', '和一个狮心防务的员工约会过三次。'),
     n('Their grandfather was on the picket lines in the seventies.', '祖父七〇年代參加過罷工糾察線。', '祖父七十年代参加过罢工纠察队。'),

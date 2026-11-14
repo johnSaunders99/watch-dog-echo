@@ -50,7 +50,7 @@
     quietstep: {
       kind: 'passive', effect: 'quietstep',
       name: n('Soft steps', '無聲的腳步', '无声的脚步'),
-      desc: n("Darcy's lesson: every action raises 2 less alert.", 'Darcy 教的：每個動作少 2 點警戒。', 'Darcy 教的：每个动作少 2 点警戒。'),
+      desc: n("Darcy's lesson: every action raises 2 less alert.", '達西教的：每個動作少 2 點警戒。', '达西教的：每个动作少 2 点警戒。'),
       tac: n('Never makes a sound, and guards and cameras have to come 1 square closer to notice.', '做什麼都不會發出聲音；守衛和攝影機要再近一格才會發現。', '做什么都不会发出声音；守卫和摄像头要再近一格才会发现。'),
     },
     // 扳手的第二件禮物：謝爾蓋拆得了門，拆不了無人機。一次行動只能用一次，而且很大聲。
@@ -64,7 +64,7 @@
     eagle: {
       kind: 'active', effect: 'eagle',
       name: n('Eagle Drone', '老鷹無人機', '老鹰无人机'),
-      desc: n("Darcy's scout drone goes on ahead: the first stage's hidden approach is known from the start. Card: it self-destructs for alert −15, and +15% success for the whole team on this stage.", 'Darcy 的偵察無人機先飛出去：第一關的隱藏解法一開始就知道。卡：讓它自爆，警戒 −15，這一關全隊成功率 +15%。', 'Darcy 的侦察无人机先飞出去：第一关的隐藏解法一开始就知道。卡：让它自爆，警戒 −15，这一关全队成功率 +15%。'),
+      desc: n("Darcy's scout drone goes on ahead: the first stage's hidden approach is known from the start. Card: it self-destructs for alert −15, and +15% success for the whole team on this stage.", '達西的偵察無人機先飛出去：第一關的隱藏解法一開始就知道。卡：讓它自爆，警戒 −15，這一關全隊成功率 +15%。', '达西的侦察无人机先飞出去：第一关的隐藏解法一开始就知道。卡：让它自爆，警戒 −15，这一关全队成功率 +15%。'),
       tac: n('Patrol routes are visible while this person is on the map. Card: fly it to an enemy within 6 squares and self-destruct: a short-range EMP knocks out guards, dogs, cameras and drones within 2 squares for 2 turns (1 AP).', '這個人在地圖上時看得到巡邏路線。卡：飛去六格內的敵人再自爆，短距離電磁脈衝讓兩格內的守衛、狗、攝影機、無人機停擺兩回合（1 點）。', '这个人在地图上时看得到巡逻路线。卡：飞去六格内的敌人再自爆，短距离电磁脉冲让两格内的守卫、狗、摄像头、无人机停摆两回合（1 点）。'),
     },
     focus: {
