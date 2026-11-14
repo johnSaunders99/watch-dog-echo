@@ -81,7 +81,7 @@
     if (!sh || !person || !E.faces || !E.faces.look) return null;
     const key = person.id + '|' + person.occupation;
     if (dolls.has(key)) return dolls.get(key);
-    const L = E.faces.look(person), body = DOLL_OF[L.o.top] || 'jacket';
+    const L = person.elite ? S3.ops.profiles[person.elite].look : E.faces.look(person), body = DOLL_OF[L.o.top] || 'jacket';
     const it = sh.items[body], ic = sh.items[body + '.c'], is = sh.items[body + '.s'];
     if (!it || !ic || !is) return null;
     const make = () => Object.assign(document.createElement('canvas'), { width: it.w, height: it.h });
@@ -112,6 +112,7 @@
     hammer: { len: 4.5, grip: 0.16 },
   };
   function heldItem(id, x, y, R) {
+    if (id === 'match') id = 'silenced';
     const h = HELD[id] || HELD.pistol, len = h.len * R;
     const sh = id === 'hammer' ? sheets.gear : sheets.doll, it = sh && sh.items[id === 'hammer' ? 'smash' : 'held-' + id];
     if (it) {
@@ -133,7 +134,7 @@
     else bar('#2a2d36', 0, 1, w);
   }
 
-  // 頭髮和帽子（俯視，臉朝 +x）：跟頭像用同一份 E.faces.look，髮型、髮色、帽子都對得上。R：光頭那一圈的半徑。
+  // 頭髮和帽子（俯視，臉朝 +x）：一般人沿用頭像外觀，特工使用固定設定。R：光頭那一圈的半徑。
   function headTop(L, R) {
     const tone = E.faces.tone, o = L.o, st = L.style, lw = Math.max(0.8, R * 0.12);
     const hc = L.hairC, hd = tone(hc, -0.32), hl = tone(hc, 0.22);
@@ -205,7 +206,12 @@
     const hat = o.hat;
     if (!hat) return;
     const col = o.hatCol || '#3a3a42', dk = tone(col, -0.25), lt = tone(col, 0.25);
-    if (hat === 'hardhat') { shape(dk, oval(0.05, 0, 1.3, 1.22)); shape(col, disc(-0.05, 0, 0.98)); line(lt, 0.2, [[-0.85, 0], [0.85, 0]]); }
+    if (hat === 'beekeeper') {
+      shape('#344047', oval(0.34, 0, 1.26, 1.14));
+      for (const y of [-0.65, -0.3, 0.05, 0.4, 0.72]) line('#8c9290', 0.06, [[0.67, y], [1.42 - Math.abs(y) * 0.2, y]]);
+      for (const x of [1.04, 1.23, 1.4]) line('#9caaa8', 0.05, [[x, -0.45], [x, 0.45]]);
+      shape(col, oval(-0.22, 0, 1.25, 1.34)); shape(lt, oval(-0.28, 0, 0.78, 0.87));
+    } else if (hat === 'hardhat') { shape(dk, oval(0.05, 0, 1.3, 1.22)); shape(col, disc(-0.05, 0, 0.98)); line(lt, 0.2, [[-0.85, 0], [0.85, 0]]); }
     else if (hat === 'firehelmet') { shape(dk, oval(-0.45, 0, 1.55, 1.25)); shape(col, disc(0, 0, 0.98)); line(lt, 0.18, [[-0.85, 0], [0.85, 0]]); shape('#ffd23f', disc(0.95, 0, 0.22)); }
     else if (hat === 'bikehelmet') { shape(col, oval(-0.12, 0, 1.25, 1.04)); for (const y of [-0.42, 0, 0.42]) line('#1c2028', 0.13, [[-0.65, y * 0.9], [0.45, y]]); }
     else if (hat === 'cap') { shape(dk, oval(0.95, 0, 0.62, 0.72)); shape(col, disc(-0.08, 0, 1.0)); shape(dk, disc(-0.08, 0, 0.1)); }
@@ -226,8 +232,8 @@
   }
 
   // 主角：影子、手上的武器、上好色的身體、頭髮和帽子。回傳有沒有畫出來（圖還沒載入時退回分類的圖）。
-  function drawDoll(s, p, alpha) {
-    const d = dollOf(s.build && s.build.person);
+  function drawDoll(s, p, alpha, subject = s.build) {
+    const d = dollOf(subject && subject.person);
     if (!d) return false;
     const it = d.it, size = p.r * 1.3, k = size / it.r, R = it.hr * k;
     ctx.save();
@@ -235,7 +241,7 @@
     ctx.globalAlpha = alpha * 0.32; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(3, 6, size * 1.05, size * 0.9, 0, 0, TAU); ctx.fill();
     ctx.globalAlpha = alpha;
     ctx.rotate(p.ang);
-    heldItem(s.build.weapon, (it.gx - it.ax) * k, (it.gy - it.ay) * k, R); // 武器先畫，兩手握在上面
+    if (subject.weapon) heldItem(subject.weapon, (it.gx - it.ax) * k, (it.gy - it.ay) * k, R);
     ctx.drawImage(d.cv, -it.ax * k, -it.ay * k, it.w * k, it.h * k);
     headTop(d.L, R);
     ctx.restore();
@@ -471,8 +477,8 @@
 
   // ===== 敵人 =====
   function drawCone(s, e) {
-    if (e.state === 'combat' || e.ally > 0 || e.confused > 0 || e.stun > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
-    const sight = e.def.sight * A.sightMul(s);
+    if (e.state === 'combat' || e.ally > 0 || e.confused > 0 || e.stun > 0 || e.trance > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
+    const sight = e.def.sight * A.sightMul(s, e);
     const col = e.state === 'suspect' ? '255,181,71' : e.aware > 0.02 ? '255,140,90' : '236,232,225';
     const g = ctx.createRadialGradient(e.x, e.y, e.r, e.x, e.y, sight);
     g.addColorStop(0, `rgba(${col},${0.16 + e.aware * 0.3})`); g.addColorStop(1, `rgba(${col},0)`);
@@ -678,6 +684,19 @@
       ctx.strokeStyle = `rgba(${col},0.9)`; ctx.lineWidth = 3; circle(z.x, z.y, z.r); ctx.stroke();
       ctx.lineWidth = 2; circle(z.x, z.y, z.r * Math.max(0, 1 - k)); ctx.stroke();
       if (z.fx !== undefined && !z.quiet && z.t0 && !z.cargo) { const px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k - Math.sin(k * Math.PI) * 90; circle(px, py, 6); ctx.fillStyle = mine ? '#8a5a2c' : '#3a4a2a'; ctx.fill(); ctx.strokeStyle = C.out; ctx.stroke(); }
+    } else if (z.k === 'strike') {
+      const k = Math.min(1, z.t / S3.data.gadgets.strike.flight);
+      ctx.strokeStyle = C.cyan; ctx.lineWidth = 2; ctx.setLineDash([12, 7]); circle(z.x, z.y, z.r); ctx.stroke(); ctx.setLineDash([]);
+      for (let i = 0; i < z.left; i++) { ctx.fillStyle = C.cyan; ctx.fillRect(z.x - 12 + i * 9, z.y + 8, 5, 4); }
+      if (z.t <= S3.data.gadgets.strike.flight) inAir(z.x - 125 * k, z.y - 165 * k, 'missile', 0.92, 21, 1, 8);
+    } else if (z.k === 'swarm') {
+      ctx.fillStyle = 'rgba(246,179,50,.07)'; ctx.strokeStyle = 'rgba(255,195,62,.8)'; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); circle(z.x, z.y, z.r); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      for (let i = 0; i < 28; i++) {
+        const a = i * 2.4 + clock * (i % 2 ? 1.8 : -1.2), rad = z.r * (0.2 + 0.75 * (i % 9) / 9);
+        const x = z.x + Math.cos(a) * rad, y = z.y + Math.sin(a) * rad + 3 * Math.sin(clock * 11 + i);
+        ctx.fillStyle = '#d2e8e1'; ctx.fillRect(x + 1, y - 2, 3, 2); ctx.fillRect(x + 1, y + 2, 3, 2);
+        ctx.fillStyle = '#ffcc53'; ctx.fillRect(x, y, 6, 2.5); ctx.fillStyle = '#36271b'; ctx.fillRect(x + 2, y, 1.5, 2.5);
+      }
     } else if (z.k === 'kamikaze') {
       const k = 1 - z.t / z.t0, px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k;
       ctx.strokeStyle = 'rgba(108,214,226,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); circle(z.x, z.y, z.r); ctx.stroke(); ctx.setLineDash([]);
@@ -711,11 +730,13 @@
     if (carrying && !sprite('props', 'crate', x, y - 8, 0, 14, alpha, false)) {
       ctx.save(); ctx.fillStyle = '#93663e'; ctx.fillRect(x - 11, y - 18, 22, 20); ctx.restore();
     }
-    const small = name === 'escort' || name === 'kamikaze';
+    const small = ['escort', 'kamikaze', 'expert', 'missile'].includes(name);
     if (sprite(small ? 'drones' : 'gear', name, x, y - alt, ang, r, alpha, false)) return;
     // 原圖還沒到或載入失敗，機身仍清楚朝著飛行或射擊方向。
     ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y - alt); ctx.rotate(ang);
-    if (name.startsWith('eagle')) {
+    if (name === 'missile') {
+      ctx.beginPath(); ctx.moveTo(r,0); ctx.lineTo(-r, -r * 0.4); ctx.lineTo(-r * 0.75, 0); ctx.lineTo(-r,r * 0.4); ctx.closePath(); outline('#e8c189');
+    } else if (name.startsWith('eagle')) {
       ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(-4, -r); ctx.lineTo(-1, -4); ctx.lineTo(-r / 2, 0); ctx.lineTo(-1, 4); ctx.lineTo(-4, r); ctx.closePath(); outline('#e8e6e0');
     } else {
       ctx.beginPath(); ctx.roundRect(-r * 0.72, -r * 0.45, r * 1.5, r * 0.9, 4);
@@ -737,6 +758,10 @@
     for (const w of swings) {
       const k = 1 - w.life / w.max, a = w.ang - w.arc + 2 * w.arc * k;
       ctx.save(); ctx.translate(w.x, w.y); ctx.rotate(a);
+      if (w.id === 'eightball') {
+        ctx.beginPath(); ctx.moveTo(16, 0); ctx.quadraticCurveTo(74, -19, 128, 0); ctx.strokeStyle = C.white; ctx.lineWidth = 2.5; ctx.stroke();
+        circle(128, 0, 10); outline('#232834'); circle(131, -2, 3); ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore(); continue;
+      }
       if (w.id === 'hammer') {
         const h = HELD.hammer, head = 24 + (0.86 - h.grip) * h.len * 17;
         ctx.lineCap = 'round'; ctx.strokeStyle = SMASH_GLOW; ctx.shadowColor = SMASH_GLOW; ctx.shadowBlur = 12;
@@ -826,6 +851,9 @@
       case 'alarm': whiteFlash = 0.18; shake = Math.max(shake, 6); break;
       case 'clang': burst(ev.x, ev.y, 5, '#dfeaff', 200, 3, 0.2); break;
       case 'takedown': ring(ev.x, ev.y, 46, C.pink, 0.3, 6); shake = Math.max(shake, 6); break;
+      case 'eightball': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: Math.PI, id: ev.k, life: 0.38, max: 0.38 }); break;
+      case 'hypnosis': rings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.ang, wide: 0.85, r: ev.r, col: '#eac86a', w: 4, life: 0.65, max: 0.65 }); break;
+      case 'punch': rings.push({ x: ev.x, y: ev.y, arc: ev.ang, r: 35, col: C.green, w: 4, life: 0.18, max: 0.18 }); break;
       case 'melee': case 'swing': rings.push({ x: ev.x, y: ev.y, r: ev.k === 'melee' ? 62 : 84, col: ev.k === 'melee' ? C.white : C.warn, life: 0.16, max: 0.16, w: 6, arc: ev.ang }); break;
       case 'drop': flyers.push({ id: ev.id, x: ev.x, y: ev.y, ang: ev.ang, vx: Math.cos(ev.ang) * 170, vy: Math.sin(ev.ang) * 170, life: 0.7, max: 0.7 }); break;
       case 'smash': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.arc || 1.25, id: ev.id, life: 0.24, max: 0.24 }); rings.push({ x: ev.x, y: ev.y, r: ev.r, col: ev.id === 'hammer' ? SMASH_GLOW : C.warn, life: 0.25, max: 0.25, w: 12, arc: ev.ang, wide: 1.25 }); shake = Math.max(shake, 10); break;
@@ -872,20 +900,29 @@
     for (const k of s.picks) drawPick(k, s);
     for (const pr of s.props) if (pr.def.solid || pr.kind === 'camera' || pr.kind === 'speaker') drawProp(s, pr, ui);
     for (const d of s.decoys) { ctx.globalAlpha = 0.5 + 0.2 * Math.sin(clock * 12); if (d.ghost) person(d.x, d.y, 14, 0, { body: C.echo, head: '#fff' }, 0, 0.5); else { circle(d.x, d.y, 10); outline(C.echo, 2); } ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(194,179,255,0.4)'; ctx.lineWidth = 2; circle(d.x, d.y, 18 + ((clock * 60) % 30)); ctx.stroke(); }
-    for (const pet of s.pets) { if (pet.kind === 'escort') continue; if (sprite('gear', 'spider', pet.x, pet.y, pet.ang, 17) || sprite('props', 'spider', pet.x, pet.y, pet.ang, 16)) continue; ctx.save(); ctx.translate(pet.x, pet.y); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.strokeStyle = C.out; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.stroke(); } ctx.rotate(pet.ang); ctx.fillStyle = '#0d1118'; ctx.fillRect(0, -3, 20, 6); circle(0, 0, 9); outline(C.pink, 2); ctx.restore(); }
+    for (const pet of s.pets) {
+      if (pet.kind === 'brawler') {
+        ctx.strokeStyle = C.green; ctx.lineWidth = 2; circle(pet.x, pet.y, 16); ctx.stroke();
+        if (!drawDoll(s, pet, 1, { person: pet.person })) person(pet.x, pet.y, pet.r, pet.ang, { body: C.green, head: '#dfbd91' }, false);
+      } else if (pet.kind === 'spider' && !sprite('gear', 'spider', pet.x, pet.y, pet.ang, 17) && !sprite('props', 'spider', pet.x, pet.y, pet.ang, 16)) {
+        ctx.save(); ctx.translate(pet.x, pet.y); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.strokeStyle = C.out; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.stroke(); }
+        ctx.rotate(pet.ang); ctx.fillStyle = '#0d1118'; ctx.fillRect(0, -3, 20, 6); circle(0, 0, 9); outline(C.pink, 2); ctx.restore();
+      }
+    }
     for (const e of s.en) drawTelegraph(s, e);
     for (const e of s.en) if (!e.def.fly) drawEnemy(s, e, ui);
     drawPlayer(s);
     for (const e of s.en) if (e.def.fly) drawEnemy(s, e, ui);
-    for (const pet of s.pets) if (pet.kind === 'escort') inAir(pet.x, pet.y, 'escort', pet.ang, 18, 1, 16);
-    for (const z of s.zones) if (z.k === 'steam' || z.k === 'kamikaze') drawZone(s, z);
+    for (const pet of s.pets) if (pet.kind === 'escort' || pet.kind === 'expert') inAir(pet.x, pet.y, pet.kind, pet.ang, pet.kind === 'expert' ? 26 : 18, 1, 16);
+    for (const z of s.zones) if (['steam', 'kamikaze', 'strike', 'swarm'].includes(z.k)) drawZone(s, z);
+    for (const e of s.en) if (e.trance > 0) { ctx.strokeStyle = '#fadc86'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(e.x, e.y - e.r - 7, 10 + 2 * Math.sin(clock * 4), 3, 0, 0, TAU); ctx.stroke(); }
     if (s.recon) drawRecon(s.recon);
     drawGear(s);
 
     // 子彈
     for (const b of s.bul) {
       const mine = b.side === 'p', l = hyp(b.vx, b.vy) || 1, tail = mine ? 22 : 12;
-      ctx.strokeStyle = mine ? (b.by === 'ally' ? C.pink : '#fff3c4') : '#ff7a4a'; ctx.lineWidth = mine ? 3.5 : 0.1;
+      ctx.strokeStyle = mine ? (b.tracer ? C.cyan : b.by === 'ally' ? C.pink : '#fff3c4') : '#ff7a4a'; ctx.lineWidth = mine ? 3.5 : 0.1;
       if (mine) { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - (b.vx / l) * tail, b.y - (b.vy / l) * tail); ctx.stroke(); }
       else { circle(b.x, b.y, b.r + 3); ctx.fillStyle = 'rgba(255,122,74,0.35)'; ctx.fill(); circle(b.x, b.y, b.r); ctx.fillStyle = '#ffd9b0'; ctx.fill(); ctx.strokeStyle = '#ff5d3a'; ctx.lineWidth = 2; ctx.stroke(); }
     }

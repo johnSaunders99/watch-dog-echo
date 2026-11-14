@@ -6,7 +6,7 @@
 # 原圖放在專案旁邊的 watchdogs-echo-art-src/（不進版本庫），輸出到 assets/s3/ 和 content-s3/atlas.js。
 # 跨階段共用素材資料夾時可加 --sources 路徑，只處理這批已交付的原圖；預設位置不變。
 # 俯視合集用純綠色（#00FF00）背景，每格一個物件、全部朝右。預設 4×4，其他排列見 grid。
-# 事件插圖和頭像是另一種合集圖：一張幾格（事件 2×2、頭像 3×3），中間用黑線隔開，切開之後各存一張 JPEG。
+# 事件插圖和頭像是另一種合集圖（事件 2×2；頭像 3×3 或 3×2），中間用黑線隔開，切開之後各存一張 JPEG。
 import argparse
 import json
 import os
@@ -44,6 +44,8 @@ PANELS = [
     {'file': 'events-3.png', 'grid': (2, 2), 'names': ['ev-terminal', 'ev-courier', 'ev-dealer', 'ev-bagley']},
     {'file': 'portraits-1.png', 'grid': (3, 3), 'square': True,
      'names': ['pt-bagley', 'pt-echo', 'pt-maya', 'pt-harlow', 'pt-keystone', 'pt-hastings', 'pt-kahn', 'pt-hale', 'pt-cassie']},
+    {'file': 'elite-1.png', 'grid': (3, 2), 'square': True,
+     'names': [None, 'pt-elite-spy', 'pt-elite-drone', 'pt-elite-hooligan', 'pt-elite-beekeeper', 'pt-elite-statue']},
 ]
 
 # 主角的紙娃娃（切法見 dolls()）：身體 4×2，全部光頭、朝右、兩手在胸前，衣服畫成洋紅（#FF00FF）、皮膚畫成青色（#00FFFF），
@@ -57,7 +59,7 @@ DOLLS = {'file': 'doll-1.png', 'atlas': 'doll', 'scale': 0.4, 'grid': (4, 2),
 RETIRED = {'gear-1.png', 'gear-2.png'}
 
 # 少一張就保留現有圖集和事件圖，不能先寫出不完整的清單。
-REQUIRED = ('gear-3.png', 'ev-wrench.png', 'ev-darcy.png', 'ev-aiden.png', 'drones-1.png')
+REQUIRED = ('gear-3.png', 'ev-wrench.png', 'ev-darcy.png', 'ev-aiden.png', 'drones-1.png', 'elite-1.png', 'pt-elite-hitman.png')
 
 
 def background(spill):

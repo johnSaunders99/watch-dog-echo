@@ -711,6 +711,7 @@
     "ev-darcy": "assets/s3/ev-darcy.jpg",
     "ev-tarot": "assets/s3/ev-tarot.jpg",
     "ev-wrench": "assets/s3/ev-wrench.jpg",
+    "pt-elite-hitman": "assets/s3/pt-elite-hitman.jpg",
     "title": "assets/s3/title.jpg",
     "ev-marcus": "assets/s3/ev-marcus.jpg",
     "ev-bluedoor": "assets/s3/ev-bluedoor.jpg",
@@ -728,6 +729,11 @@
     "pt-hastings": "assets/s3/pt-hastings.jpg",
     "pt-kahn": "assets/s3/pt-kahn.jpg",
     "pt-hale": "assets/s3/pt-hale.jpg",
-    "pt-cassie": "assets/s3/pt-cassie.jpg"
+    "pt-cassie": "assets/s3/pt-cassie.jpg",
+    "pt-elite-spy": "assets/s3/pt-elite-spy.jpg",
+    "pt-elite-drone": "assets/s3/pt-elite-drone.jpg",
+    "pt-elite-hooligan": "assets/s3/pt-elite-hooligan.jpg",
+    "pt-elite-beekeeper": "assets/s3/pt-elite-beekeeper.jpg",
+    "pt-elite-statue": "assets/s3/pt-elite-statue.jpg"
   };
 })(window.ECHO = window.ECHO || {});

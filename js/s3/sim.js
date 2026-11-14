@@ -38,6 +38,7 @@
     st.detectMul *= 1 - 0.1 * sk.social;
     st.dataMul *= 1 + 0.08 * sk.social;
     apply(D.jobFx[build.job], 1);
+    for (const id of (build.person && build.person.imprints) || []) apply(D.imprints[id], 1);
     for (const t of build.traits || []) apply(D.traitFx[t], 1);
     apply(D.flawFx[build.flaw], 1);
     for (const q of build.quirks || []) apply(D.quirkFx[q], 1);
@@ -178,7 +179,7 @@
     const mag = Math.round(weapon.mag * made.st.magMul);
     return {
       build: b, st: made.st, fl: made.fl, weapon, hp, maxHp: made.st.maxHp, ammo: mag, mag, down: hp <= 0,
-      guard: made.fl.guard ? 1 : 0, escaped: !!b.escaped, fresh: true,
+      guard: made.fl.guard ? 1 : 0, escaped: !!b.escaped, fresh: true, execCd: 0,
       gad: (b.gadgets || []).map((g) => ({ id: g.id, lv: g.lv || 1, cd: 0 })),
     };
   }
@@ -187,6 +188,8 @@
     if (i === s.active || !s.team[i]) return false;
     const m = makeMember(b, hp), eagle = m.gad.find((g) => g.id === 'eagle');
     if (eagle) eagle.cd = s.eagleCd;
+    const shared = s.team[s.active].gad[1];
+    if (m.gad[1] && m.gad[1].id === 'eightball' && shared && shared.id === 'eightball') m.gad[1].cd = shared.cd;
     s.team[i] = m;
     return true;
   }
@@ -342,7 +345,7 @@
     if (s.fl.salvage && e.def.machine && !src.expire) shock(s, e.x, e.y, 110, 8, 1, 'env');
     if (e.boss) for (const o of s.en) if (!o.dead && o !== e) kill(s, o, { by: 'env', expire: true });
     // 倒下的時候，旁邊正好看著的同伴會起疑。
-    if (!s.alert) for (const o of s.en) if (!o.dead && o.state === 'calm' && o.distract <= 0 && hyp(o.x - e.x, o.y - e.y) < 260 && Math.abs(angDiff(Math.atan2(e.y - o.y, e.x - o.x), o.ang)) < o.def.fov * 1.3 && clear(s, o.x, o.y, e.x, e.y)) { o.state = 'suspect'; o.goal = { x: e.x, y: e.y }; o.look = 0; }
+    if (!s.alert) for (const o of s.en) if (!o.dead && o.state === 'calm' && o.distract <= 0 && hyp(o.x - e.x, o.y - e.y) < (src.assassin ? 80 : 260) && Math.abs(angDiff(Math.atan2(e.y - o.y, e.x - o.x), o.ang)) < o.def.fov * 1.3 && clear(s, o.x, o.y, e.x, e.y)) { o.state = 'suspect'; o.goal = { x: e.x, y: e.y }; o.look = 0; }
   }
   function drop(s, e) {
     const total = e.def.data * s.spec.dataMul * s.st.dataMul * (e.elite ? 2 : 1) + s.gainAcc;
@@ -659,17 +662,20 @@
   // 可以制伏的敵人：身邊（62 以內）背對你、被引開、被電暈、在蒸汽裡的；被電暈或在蒸汽裡的，隔 LUNGE 以內也能撲過去
   // （中間不能有牆或掩體）。打得到的裡面挑最近的。
   const REACH = 62, LUNGE = 150;
+  const combatExec = (s, e) => s.fl.combatExec && !e.boss && e.state === 'combat' && s.team[s.active].execCd <= 0;
   function takedownTarget(s) {
     const p = s.p;
     let best = null, bd = Infinity;
     for (const e of s.en) {
       if (e.dead || e.ally > 0 || e.spawnT > 0) continue;
       const d = hyp(e.x - p.x, e.y - p.y) - e.r;
-      if (d >= LUNGE || d >= bd) continue;
+      const reach = s.fl.assassin ? 105 : REACH;
+      if (d >= (s.fl.assassin ? 200 : LUNGE) || d >= bd) continue;
       const dazed = e.stun > 0 || (!e.boss && inSteam(s, e));
-      if (d >= REACH && !(dazed && clear(s, p.x, p.y, e.x, e.y, true))) continue;
+      if (d >= reach && !dazed) continue;
+      if ((d >= REACH || combatExec(s, e)) && !clear(s, p.x, p.y, e.x, e.y, true)) continue;
       const behind = e.state !== 'combat' && Math.abs(angDiff(Math.atan2(p.y - e.y, p.x - e.x), e.ang)) > 1.7;
-      const ok = dazed || (e.state !== 'combat' && e.distract > 0) || behind || (s.fl.exec && !e.boss && e.hp < e.maxHp * 0.25);
+      const ok = dazed || (e.state !== 'combat' && e.distract > 0) || behind || combatExec(s, e) || (s.fl.exec && !e.boss && e.hp < e.maxHp * 0.25);
       if (ok) { bd = d; best = e; }
     }
     return best;
@@ -688,6 +694,7 @@
     p.fireCd -= dt; p.meleeCd -= dt; p.hackCd -= dt; p.inv -= dt; p.lock -= dt; p.hurtT -= dt;
     if (p.cloak > 0) p.cloak -= dt;
     s.eagleCd = Math.max(0, s.eagleCd - dt);
+    for (const m of s.team) if (m.execCd > 0) m.execCd -= dt;
     for (const m of s.team) for (const g of m.gad) g.cd = g.id === 'eagle' ? s.eagleCd : Math.max(0, g.cd - dt); // 待命的人，裝備也在冷卻
     p.bw = Math.min(st.bwMax, p.bw + st.bwRegen * (s.spec.mod === 'jam' ? 0.6 : 1) * dt);
     if (p.dashN < st.dashCharges) { p.dashCd -= dt; if (p.dashCd <= 0) { p.dashN++; p.dashCd = st.dashCd; } }
@@ -718,6 +725,7 @@
       p.dvy = dy * 950 * st.dashLen;
       p.inv = Math.max(p.inv, 0.24);
       p.dashN--;
+      if (fl.combatExec) { p.reload = 0; p.ammo = p.mag; }
       p.dashHit = new Set();
       if (fl.decoy) s.decoys.push({ x: p.x, y: p.y, t: 2.5, r: 380, ghost: true });
       s.ev.push({ k: 'dash', x: p.x, y: p.y, ang: Math.atan2(dy, dx) });
@@ -739,7 +747,7 @@
           s.bul.push({
             x: p.x + Math.cos(p.ang) * 18, y: p.y + Math.sin(p.ang) * 18, vx: Math.cos(a) * w.speed, vy: Math.sin(a) * w.speed, r: 4, side: 'p',
             dmg: gunDamage(s, crit) * (cloaked ? S3.data.gadgets.mask.mult : 1), crit, life: w.range / w.speed, pierce: (w.pierce || 0) + st.pierce, bounce: st.bounce,
-            stun: shockShot, burn: fl.incend && s.rng.chance(0.15 * fl.incend) ? 3 : 0, knock: w.knock || 0, sneak: w.sneak * (fl.silent ? 1.5 : 1), hit: null,
+            stun: shockShot, burn: fl.incend && s.rng.chance(0.15 * fl.incend) ? 3 : 0, knock: w.knock || 0, sneak: w.sneak * (fl.assassin ? 1.5 : 1) * (fl.silent ? 1.5 : 1), assassin: !!fl.assassin, hit: null,
           });
         }
         s.ev.push({ k: 'shot', x: p.x, y: p.y, ang: p.ang, w: s.build.weapon });
@@ -772,8 +780,9 @@
         p.ang = Math.atan2(t.y - p.y, t.x - p.x);
         s.stats.takedowns++;
         s.ev.push({ k: 'takedown', x: t.x, y: t.y });
-        if (t.boss || t.def.big || t.elite) hurt(s, t, 70 + st.meleeDmg, { by: 'melee' });
-        else kill(s, t, { by: 'melee' });
+        if (combatExec(s, t)) { s.team[s.active].execCd = 4; kill(s, t, { by: 'melee' }); }
+        else if (t.boss || t.def.big || t.elite) hurt(s, t, 70 + st.meleeDmg, { by: 'melee', assassin: !!fl.assassin });
+        else kill(s, t, { by: 'melee', assassin: !!fl.assassin });
         p.bw = Math.min(st.bwMax, p.bw + 1);
         p.focus = Math.min(st.focusMax, p.focus + 12);
         if (fl.lifesteal) p.hp = Math.min(p.maxHp, p.hp + 5 * fl.lifesteal);
@@ -824,6 +833,7 @@
       return;
     }
     if (g.id !== 'eagle') g.cd = def.cd * (1 - 0.2 * lv);
+    if (g.id === 'eightball') for (const m of s.team) if (m.gad[1] && m.gad[1].id === g.id) m.gad[1].cd = g.cd;
     // 游標太遠就拉回射程內。
     const reach = (range) => {
       const d = hyp(ax - p.x, ay - p.y);
@@ -863,8 +873,25 @@
     } else if (g.id === 'mask') {
       p.cloak = def.dur + lv;
       for (const e of s.en) { e.aware = 0; if (e.call > 0) e.call = CALL; }
-    } else if (g.id === 'spider' || g.id === 'escort') {
-      s.pets.push({ kind: g.id, x: p.x, y: p.y, t: def.dur + (g.id === 'escort' ? 1 : 3) * lv, cd: 0, ang: p.ang, dmg: def.dmg + 2 * lv, rate: def.rate, sight: def.sight });
+    } else if (g.id === 'spider' || g.id === 'escort' || g.id === 'expert') {
+      s.pets.push({ kind: g.id, x: p.x, y: p.y, t: def.dur + (g.id === 'escort' ? 1 : g.id === 'expert' ? 2 : 3) * lv, cd: 0, ang: p.ang, dmg: def.dmg + 2 * lv, rate: def.rate, sight: def.sight, pierce: def.pierce || 0 });
+    } else if (g.id === 'strike') {
+      const at = reach(def.range);
+      s.zones.push({ k: 'strike', ...at, r: def.r, t: def.flight, left: 3, dmg: (def.dmg + 12 * lv) * s.st.aoeDmg });
+    } else if (g.id === 'brawl') {
+      const first = s.rng.int(0, 255);
+      for (let i = 0; i < 3; i++) s.pets.push({ kind: 'brawler', slot: i, person: E.people.generate('terrace', 'camden', 4000 + (first + i) % 256),
+        x: p.x, y: p.y, r: 12, def: {}, ang: p.ang, t: def.dur + lv, cd: 0.15 * i, dmg: def.dmg + 4 * lv });
+    } else if (g.id === 'swarm') {
+      s.zones.push({ k: 'swarm', ...reach(def.range), r: def.r, t: def.dur + lv, tick: 0.5, dmg: def.dmg + 3 * lv });
+    } else if (g.id === 'hypnosis' || g.id === 'eightball') {
+      const ball = g.id === 'eightball';
+      s.ev.push({ k: g.id, x: p.x, y: p.y, ang: p.ang, r: def.r });
+      for (const e of s.en) {
+        if (e.dead || e.ally > 0 || e.spawnT > 0 || hyp(e.x - p.x, e.y - p.y) - e.r > def.r || !clear(s, p.x, p.y, e.x, e.y, true)) continue;
+        if (ball) { e.noShield = Math.max(e.noShield, 3); stun(s, e, def.stun); hurt(s, e, def.dmg + 15 * lv, { by: 'melee' }); }
+        else if (Math.abs(angDiff(Math.atan2(e.y - p.y, e.x - p.x), p.ang)) <= def.arc) { e.trance = (def.dur + lv) * (e.boss ? 0.25 : 1); e.atk = null; e.kx = e.ky = 0; }
+      }
     } else if (g.id === 'lure') {
       const at = reach(def.range);
       s.decoys.push({ x: at.x, y: at.y, t: def.dur + lv, r: def.r });
@@ -953,7 +980,7 @@
           if (b.stun) { stun(s, e, b.stun); s.ev.push({ k: 'zap', x: e.x, y: e.y }); }
           if (b.burn) e.burn = Math.max(e.burn, b.burn);
           if (b.knock) { const l = hyp(b.vx, b.vy) || 1; e.kx += (b.vx / l) * b.knock; e.ky += (b.vy / l) * b.knock; }
-          hurt(s, e, b.dmg * (sneak ? b.sneak || 1 : 1), { by: b.by || 'gun', crit: b.crit, quiet: !!b.shooter });
+          hurt(s, e, b.dmg * (sneak ? b.sneak || 1 : 1), { by: b.by || 'gun', crit: b.crit, quiet: !!b.shooter, assassin: sneak && b.assassin });
           if (b.pierce > 0) { b.pierce--; (b.hit = b.hit || new Set()).add(e); } else { b.life = 0; break; }
         }
       } else if (segDist(p.x, p.y, ox, oy, b.x, b.y) < p.r + b.r - 2) {
@@ -1030,12 +1057,27 @@
         const sight = def.sight * sightMul(s);
         const d = hyp(p.x - pr.x, p.y - pr.y);
         const sees = !s.fl.keys && s.blackout <= 0 && p.cloak <= 0 && d < sight && Math.abs(angDiff(Math.atan2(p.y - pr.y, p.x - pr.x), pr.look)) < def.fov && clear(s, pr.x, pr.y, p.x, p.y) && !steamed(s, pr.x, pr.y, p.x, p.y);
-        pr.aware = clamp(pr.aware + (sees ? 1.25 * s.st.detectMul : -0.6) * dt, 0, 1);
+        pr.aware = clamp(pr.aware + (sees ? 1.25 * detectMul(s) : -0.6) * dt, 0, 1);
         if (pr.aware >= 1) { s.ev.push({ k: 'spotted', x: pr.x, y: pr.y }); raise(s); }
       }
     }
   }
-  const sightMul = (s) => (s.spec.mod === 'fog' ? 0.65 : s.spec.mod === 'dark' ? 0.6 : 1);
+  const sightMul = (s, e) => (s.spec.mod === 'fog' ? 0.65 : s.spec.mod === 'dark' ? 0.6 : 1) * (e && e.bees > 0 ? 0.38 : 1);
+  const detectMul = (s) => s.st.detectMul * (s.fl.still && hyp(s.p.vx, s.p.vy) < 2 && s.p.fireCd <= 0 && s.p.lock <= 0 ? 0.25 : 1);
+
+  function brawler(s, mate, dt) {
+    const angle = mate.slot * TAU / 3, foes = s.en.filter((e) => !e.dead && e.ally <= 0 && e.spawnT <= 0);
+    const dist = (e) => hyp(e.x - mate.x, e.y - mate.y);
+    const foe = foes.sort((a, b) => dist(a) - dist(b))[0];
+    const target = foe || s.p, offset = foe ? target.r + 12 : 38;
+    mate.ang = Math.atan2(target.y - mate.y, target.x - mate.x);
+    moveToward(s, mate, target.x + Math.cos(angle) * offset, target.y + Math.sin(angle) * offset, 275, dt);
+    if (foe && dist(foe) <= foe.r + 45 && mate.cd <= 0 && clear(s, mate.x, mate.y, foe.x, foe.y, true)) {
+      mate.cd = S3.data.gadgets.brawl.gap;
+      hurt(s, foe, mate.dmg, { by: 'ally' });
+      s.ev.push({ k: 'punch', x: mate.x, y: mate.y, ang: mate.ang });
+    }
+  }
 
   // ===== 範圍效果、寵物、地雷、誘餌 =====
   function stepZones(s, dt) {
@@ -1043,7 +1085,16 @@
     if (s.recon) stepRecon(s, dt);
     for (const z of s.zones) {
       z.t -= dt;
-      if (z.k === 'steam' || z.k === 'fire') {
+      if (z.k === 'strike' && z.t <= 0) {
+        blast(s, z.x, z.y, z.r, z.dmg, { by: 'env' }); noise(s, z.x, z.y, 500);
+        if (--z.left) z.t = S3.data.gadgets.strike.gap;
+      } else if (z.k === 'swarm') {
+        z.tick -= dt;
+        for (const e of s.en) if (!e.dead && e.ally <= 0 && e.spawnT <= 0 && hyp(e.x - z.x, e.y - z.y) < z.r + e.r) {
+          e.bees = 0.12; if (z.tick <= 0) hurt(s, e, z.dmg * 0.5, { by: 'env', quiet: true });
+        }
+        if (z.tick <= 0) z.tick += 0.5;
+      } else if (z.k === 'steam' || z.k === 'fire') {
         z.tick -= dt;
         if (z.tick <= 0) {
           z.tick = 0.5;
@@ -1085,7 +1136,9 @@
     for (const pet of s.pets) {
       pet.t -= dt;
       pet.cd -= dt;
-      if (pet.kind === 'escort') {
+      if (pet.kind === 'brawler') { brawler(s, pet, dt); continue; }
+      const following = pet.kind === 'escort' || pet.kind === 'expert';
+      if (following) {
         // 跟著目前上場的人，在肩旁留出槍口和角色的空間。
         const gx = clamp(p.x - 36, T + 14, W - T - 14), gy = clamp(p.y + 24, T + 14, H - T - 14);
         const dx = gx - pet.x, dy = gy - pet.y, k = Math.min(1, 480 * dt / (hyp(dx, dy) || 1));
@@ -1095,13 +1148,13 @@
       for (const e of s.en) {
         if (e.dead || e.ally > 0 || e.spawnT > 0) continue;
         const d = hyp(e.x - pet.x, e.y - pet.y);
-        if (d < bd && clear(s, pet.x, pet.y, e.x, e.y, true) && (pet.kind !== 'escort' || !steamed(s, pet.x, pet.y, e.x, e.y))) { bd = d; best = e; }
+        if (d < bd && clear(s, pet.x, pet.y, e.x, e.y, true) && (!following || !steamed(s, pet.x, pet.y, e.x, e.y))) { bd = d; best = e; }
       }
       if (!best) continue;
       pet.ang = Math.atan2(best.y - pet.y, best.x - pet.x);
       if (pet.cd <= 0) {
         pet.cd = 1 / pet.rate;
-        s.bul.push({ x: pet.x, y: pet.y, vx: Math.cos(pet.ang) * 820, vy: Math.sin(pet.ang) * 820, r: 3, side: 'p', by: 'ally', dmg: pet.dmg * s.st.hijackMul, life: 0.7, pierce: 0, bounce: 0 });
+        s.bul.push({ x: pet.x, y: pet.y, vx: Math.cos(pet.ang) * 820, vy: Math.sin(pet.ang) * 820, r: 3, side: 'p', by: 'ally', dmg: pet.dmg * s.st.hijackMul, life: 0.7, pierce: pet.pierce, tracer: pet.kind === 'expert', bounce: 0 });
         s.ev.push({ k: 'pshot', x: pet.x, y: pet.y, ang: pet.ang });
       }
     }
@@ -1251,6 +1304,6 @@
     GW, GH, T, W, H, DT, CALL,
     stats, createRoom, step, pickHack, takedownTarget, swapTo, teamState, setMember, carPath, SWAP_CD, REACH, LUNGE, think() {},
     // 給 js/s3/foes.js 和機器人用的內部工具
-    api: { idx, clamp, angDiff, turn, segDist, solidAt, clear, steamed, inSteam, rayEnd, moveCircle, moveToward, field, spawn, noise, engage, raise, hurt, trapHurt, kill, stun, hitPlayer, blast, shock, sightMul, shielded, jammed },
+    api: { idx, clamp, angDiff, turn, segDist, solidAt, clear, steamed, inSteam, rayEnd, moveCircle, moveToward, field, spawn, noise, engage, raise, hurt, trapHurt, kill, stun, hitPlayer, blast, shock, sightMul, detectMul, shielded, jammed },
   };
 })(window.ECHO = window.ECHO || {});

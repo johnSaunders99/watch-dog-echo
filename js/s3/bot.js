@@ -139,7 +139,13 @@
         } else if (g.id === 'sergei' || g.id === 'cargo') {
           const def = S3.data.gadgets[g.id], c = cluster(def.jamRange || def.r, def.range);
           if (c.e && hyp(c.e.x - p.x, c.e.y - p.y) > 120) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
-        } else if (g.id === 'escort') { if (s.alert || foes.some((e) => e.state === 'combat')) inp[key] = true; }
+        } else if (g.id === 'escort' || g.id === 'expert' || g.id === 'brawl') { if (s.alert || foes.some((e) => e.state === 'combat')) inp[key] = true; }
+        else if (g.id === 'strike' || g.id === 'swarm') {
+          const def = S3.data.gadgets[g.id], c = cluster(def.r, def.range);
+          if (c.e) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
+        } else if (g.id === 'hypnosis' || g.id === 'eightball') {
+          if (hyp(far.x - p.x, far.y - p.y) < S3.data.gadgets[g.id].r) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; }
+        }
         else if (g.id === 'spider') { if (s.alert) inp[key] = true; }
         else if (g.id === 'mine') { if (foes.some((e) => (e.kind === 'rusher' || e.kind === 'hound' || e.boss === 'bulldog') && hyp(e.x - p.x, e.y - p.y) < 260)) inp[key] = true; }
         else if (g.id === 'mask') { if (p.hp < p.maxHp * 0.5 && foes.length >= 2) inp[key] = true; }
@@ -295,7 +301,7 @@
   // 自己打完一整趟。o：{ perks 永久強化、held 名冊裡有幾個人被關、limit 每間最多幾步 }。回傳 { won, run, rooms: [...] }。
   function playRun(seed, o = {}) {
     const m = { echoes: 0, perks: o.perks || {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [] };
-    const run = S3.run.start(seed, S3.run.crewFor(seed), m);
+    const run = S3.run.start(seed, o.crew || S3.run.crewFor(seed), m);
     if (o.held) run.held = o.held;
     const limit = o.limit || 60 * 150, rooms = [];
     for (let guard = 0; guard < 80 && run.phase === 'route'; guard++) {

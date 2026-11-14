@@ -7,6 +7,7 @@
   const clamp = A.clamp;
 
   function bullet(s, e, ang, speed, dmg, o) {
+    if (e.bees > 0) ang += (s.rng.next() - 0.5) * 0.95;
     s.bul.push(Object.assign({
       x: e.x + Math.cos(ang) * (e.r + 4), y: e.y + Math.sin(ang) * (e.r + 4), vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
       r: 5, side: 'e', dmg: dmg * s.dmgScale, life: 3.2, pierce: 0, bounce: 0,
@@ -28,7 +29,7 @@
     const p = s.p;
     if (s.blackout > 0 || p.cloak > 0 || e.blind > 0) return false;
     const d = hyp(p.x - e.x, p.y - e.y);
-    if (d > e.def.sight * A.sightMul(s)) return false;
+    if (d > e.def.sight * A.sightMul(s, e)) return false;
     if (Math.abs(A.angDiff(Math.atan2(p.y - e.y, p.x - e.x), e.ang)) > e.def.fov) return false;
     return A.clear(s, e.x, e.y, p.x, p.y) && !A.steamed(s, e.x, e.y, p.x, p.y);
   }
@@ -42,7 +43,7 @@
     if (e.distract > 0) { e.distract -= dt; e.aware = Math.max(0, e.aware - dt); return; }
     const d = hyp(p.x - e.x, p.y - e.y);
     if (sees(s, e)) {
-      let rate = (1 + 1.9 * (1 - d / (e.def.sight * A.sightMul(s)))) * s.st.detectMul * (e.state === 'suspect' ? 1.7 : 1);
+      let rate = (1 + 1.9 * (1 - d / (e.def.sight * A.sightMul(s, e)))) * A.detectMul(s) * (e.state === 'suspect' ? 1.7 : 1);
       if (e.kind === 'hound' && s.fl.dogfriend) rate *= 0.5;
       e.aware += rate * dt;
     } else if (d < e.r + p.r + 6 && p.cloak <= 0 && s.blackout <= 0) e.aware += 2.5 * dt; // 撞到人了
@@ -99,7 +100,7 @@
     }
     if (best) return { x: best.x, y: best.y, seen: true, decoy: true };
     const p = s.p;
-    if (s.blackout > 0 || p.cloak > 0 || e.blind > 0) {
+    if (s.blackout > 0 || p.cloak > 0 || e.blind > 0 || (e.bees > 0 && hyp(p.x - e.x, p.y - e.y) > e.def.sight * A.sightMul(s, e))) {
       if (!e.last) e.last = { x: e.x, y: e.y };
       if (hyp(e.last.x - e.x, e.last.y - e.y) < 34) {
         const a = s.rng.next() * TAU;
@@ -225,6 +226,7 @@
           if (a.t > 0.28) { if (!tg.seen) { e.atk = null; e.cd = 0.8; return; } a.ang = want; }
           e.ang = a.ang;
           if (a.t > 0) return;
+          if (e.bees > 0) a.ang += (s.rng.next() - 0.5) * 0.95;
           const end = A.rayEnd(s, e.x, e.y, a.ang, 1500, true);
           s.ev.push({ k: 'snipe', x: e.x, y: e.y, x2: end.x, y2: end.y });
           if (A.segDist(p.x, p.y, e.x, e.y, end.x, end.y) < p.r + 3) strike(dmg, { kx: Math.cos(a.ang) * 200, ky: Math.sin(a.ang) * 200 });
@@ -502,6 +504,8 @@
       if (e.burnT <= 0) { e.burnT = 0.5; A.hurt(s, e, 2.5 * s.st.burnMul, { by: 'env', quiet: true }); if (e.dead) return; }
     }
     if (e.mark > 0) e.mark -= dt;
+    if (e.bees > 0) e.bees -= dt;
+    if (e.trance > 0) { e.trance -= dt; return; }
     if (e.jamOff > 0) e.jamOff -= dt;
     if (e.blind > 0) e.blind -= dt;
     if (e.resist > 0) e.resist -= dt;

@@ -13,10 +13,12 @@
     shotgun: { dmg: 6.5, rate: 1.35, mag: 5, reload: 1.5, speed: 860, spread: 0.24, pellets: 6, range: 430, noise: 520, sneak: 2, knock: 130 },
     nailgun: { dmg: 5, rate: 8, mag: 30, reload: 1.6, speed: 880, spread: 0.07, pellets: 1, range: 760, noise: 300, sneak: 2, pierce: 1 },
     silenced: { dmg: 11, rate: 3.4, mag: 10, reload: 1.1, speed: 950, spread: 0.02, pellets: 1, range: 900, noise: 0, sneak: 3 },
+    match: { dmg: 16, rate: 5.2, mag: 14, reload: 1, speed: 1050, spread: 0.014, pellets: 1, range: 950, noise: 0, sneak: 3 },
   };
   // 職業分類決定武器；少數職業有自己的。
   const weaponByCategory = { hacker: 'taser', physical: 'shotgun', social: 'silenced', specialist: 'pistol' };
-  const weaponByJob = { builder: 'nailgun', locksmith: 'nailgun', drone_op: 'pistol', parkour: 'pistol' };
+  const weaponByJob = { builder: 'nailgun', locksmith: 'nailgun', drone_op: 'pistol', parkour: 'pistol',
+    hitman: 'match', spy: 'silenced', drone_expert: 'pistol', hooligan: 'shotgun', beekeeper: 'taser', statue: 'silenced' };
 
   // ===== 能力值 =====
   // addStats 裡的能力用加的，其他用乘的（每疊一層再乘一次）。
@@ -100,7 +102,12 @@
     pirate_radio: { mods: { stunMul: 1.3 }, flags: { worm: 1 } },
     master_keys: { flags: { keys: 1 } },
     rooftops: { mods: { dashCharges: 1 } },
+    hitman: { flags: { combatExec: 1 } }, spy: { flags: { assassin: 1 } }, statue: { flags: { still: 1 } },
+    drone_expert: {}, hooligan: {}, beekeeper: {},
   };
+  // 個人留下的經歷只生效一次；比對的是人，不是小隊的位置。
+  const imprints = { softstep: { mods: { detectMul: 0.85 } }, tidebreath: { mods: { focusRegen: 1.2 } },
+    arcscar: { mods: { meleeDmg: 10, maxHp: -6 } }, lining: { mods: { maxHp: 12 } } };
 
   // ===== 漏洞（升級）=====
   // rar：c 常見、u 少見、r 稀有。tag：net 網路、shock 電擊、blast 爆破、puppet 傀儡、gun 槍、body 身體。max 最多疊幾層。
@@ -178,6 +185,12 @@
     spider: { cd: 20, dur: 11, dmg: 7, rate: 5, sight: 420 },             // 蜘蛛機器人：自動砲塔
     lure: { cd: 10, range: 520, dur: 4.5, r: 330 },                       // 誘餌喇叭
     mine: { cd: 8, r: 120, stun: 2, dmg: 25, max: 3 },                    // 電擊地雷
+    strike: { signature: true, cd: 21, range: 620, r: 120, dmg: 60, flight: 0.55, gap: 0.65 },
+    expert: { signature: true, cd: 23, dur: 16, dmg: 12, rate: 5, sight: 520, pierce: 1 },
+    brawl: { signature: true, cd: 23, dur: 10, dmg: 22, gap: 0.8 },
+    swarm: { signature: true, cd: 17, range: 520, r: 132, dur: 6, dmg: 12 },
+    hypnosis: { signature: true, cd: 18, r: 235, arc: 0.85, dur: 5 },
+    eightball: { cameo: true, cd: 7, r: 145, dmg: 85, stun: 2 },
   };
   // 職業分類的起始裝備和起始漏洞（各從裡面隨機一個）。
   const kits = {
@@ -186,7 +199,8 @@
     social: { gadget: ['lure', 'mask'], exploit: ['silencer', 'afterimage', 'miner', 'profiler'] },
     specialist: { gadget: ['spider', 'mine'], exploit: ['puppet', 'extmag', 'medic', 'thermal'] },
   };
-  const gadgetByJob = { builder: 'cargo', docker: 'cargo', removals: 'cargo' };
+  const gadgetByJob = { builder: 'cargo', docker: 'cargo', removals: 'cargo', hitman: 'mask', spy: 'strike',
+    drone_expert: 'expert', hooligan: 'brawl', beekeeper: 'swarm', statue: 'hypnosis' };
 
   // ===== 敵人 =====
   // cost 佔用房間的威脅額度、data 掉多少資料、from 從第幾個房間開始出現（整趟算）、sight 看多遠、fov 視角的一半（弧度）。
@@ -271,10 +285,10 @@
   // once：一趟只會遇到一次。cameo：頭像（js/ui/art.js）。choices 的效果由 js/s3/run.js 處理。
   // roll：[累計機率, 效果, 文字後綴]，擲出來的數字小於哪一個的累計機率就是哪一個（最後一個一定是 1）。cost：要先付多少資料。
   const events = [
-    { id: 'wrench', cameo: 'wrench', once: true, choices: [{ fx: { gadget: 'sergei' } }, { fx: { gadget: 'hammer' } }] },
-    { id: 'darcy', cameo: 'darcy', once: true, choices: [{ fx: { gadget: 'eagle' } }, { fx: { data: 45 } }] },
-    { id: 'aiden', cameo: 'aiden', once: true, choices: [{ fx: { exploit: 'deepfocus' } }, { fx: { gadget: 'blackout' } }] },
-    { id: 'marcus', cameo: 'marcus', once: true, choices: [{ fx: { draft: 'u' } }, { fx: { data: 50 } }] },
+    { id: 'wrench', cameo: 'wrench', premium: true, choices: [{ fx: { gadget: 'sergei' } }, { fx: { gadget: 'hammer' } }] },
+    { id: 'darcy', cameo: 'darcy', premium: true, choices: [{ fx: { gadget: 'eagle' } }, { fx: { data: 45 } }] },
+    { id: 'aiden', cameo: 'aiden', premium: true, choices: [{ fx: { exploit: 'deepfocus' } }, { fx: { gadget: 'blackout' } }] },
+    { id: 'marcus', cameo: 'marcus', premium: true, choices: [{ fx: { gadget: 'eightball' } }, { fx: { data: 50 } }] },
     { id: 'bluedoor', cameo: 'bluedoor', once: true, choices: [{ fx: { gadget: 'mask' } }, { fx: { heal: 25 } }] },
     { id: 'cat', cameo: 'cat', once: true, choices: [{ fx: { heal: 30 } }, { fx: { maxBw: 1, hurt: 10 } }] },
     { id: 'tarot', cameo: 'device', once: true, choices: [{ roll: [[0.34, { maxHp: 15 }, 'a'], [0.67, { rerolls: 2 }, 'b'], [1, { data: 40 }, 'c']] }, { fx: {} }] },
@@ -283,7 +297,18 @@
     { id: 'courier', cameo: 'crowd', choices: [{ fx: { hurt: 15, draft: 'u' } }, { fx: {} }] },
     { id: 'dealer', cameo: 'agent', choices: [{ fx: { maxHp: -15, draft: 'r' } }, { fx: {} }] },
     { id: 'bagley', cameo: 'bagley', choices: [{ roll: [[0.65, { recompile: 1 }, 'a'], [1, { recompile: -1 }, 'b']] }, { fx: {} }] },
+    { id: 'haylift', cameo: 'crowd', choices: [{ fx: { heal: 22, data: 12 } }, { fx: { data: 16 } }] },
+    { id: 'giltfruit', cameo: 'device', choices: [{ fx: { data: 32 } }, { fx: { hurt: 8, curse: 'sweep' } }] },
+    { id: 'sandglass', cameo: 'device', choices: [{ fx: { rerolls: 2 } }, { fx: { data: 18 } }] },
+    { id: 'hotwash', cameo: 'device', once: true, choices: [{ fx: { imprint: 'softstep' } }, { fx: { curse: 'sweep' } }] },
+    { id: 'yellowtag', cameo: 'device', choices: [{ fx: { maxBw: 1 } }, { fx: { heal: 20, curse: 'sweep' } }] },
+    { id: 'lastferry', cameo: 'crowd', once: true, choices: [{ fx: { imprint: 'tidebreath' } }, { fx: { data: 27 } }] },
+    { id: 'coldchain', cameo: 'device', choices: [{ fx: { heal: 32 } }, { fx: { draft: 'u' } }] },
+    { id: 'bellwire', cameo: 'device', once: true, choices: [{ fx: { imprint: 'arcscar', data: 40 } }, { fx: { data: 18 } }] },
+    { id: 'nightbus', cameo: 'crowd', choices: [{ fx: { rerolls: 1, data: 15 } }, { fx: { heal: 18 } }] },
+    { id: 'seamstress', cameo: 'crowd', once: true, choices: [{ fx: { imprint: 'lining' } }, { fx: { data: 28 } }] },
   ];
+  const endingContacts = { return: 'aiden', burn: 'wrench', open: 'marcus', teach: 'darcy' };
 
   // ===== 永久強化（用殘響買）=====
   const perks = [
@@ -298,7 +323,7 @@
   ];
 
   S3.data = {
-    weapons, weaponByCategory, weaponByJob, baseStats, addStats, traitFx, flawFx, quirkFx, jobFx,
+    weapons, weaponByCategory, weaponByJob, baseStats, addStats, traitFx, flawFx, quirkFx, jobFx, imprints, endingContacts,
     exploits, rarityWeight, price, gadgets, kits, gadgetByJob, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
   };
 })(window.ECHO = window.ECHO || {});

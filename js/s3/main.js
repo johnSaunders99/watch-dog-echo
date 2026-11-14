@@ -79,9 +79,10 @@
     lastPlayed[name] = now;
     sfx.play(name);
   }
-  const SHOT = { pistol: 's3gun', taser: 's3taser', shotgun: 's3shotgun', nailgun: 's3nail', silenced: 's3silenced' };
+  const SHOT = { pistol: 's3gun', taser: 's3taser', shotgun: 's3shotgun', nailgun: 's3nail', silenced: 's3silenced', match: 's3silenced' };
   const EVENT_SOUND = { bluedoor: 'dream', cat: 'dream', wrench: 'cameo', darcy: 'cameo', aiden: 'cameo', marcus: 'cameo' };
-  const GADGET_SOUND = { escort: 'droneJam', kamikaze: 'emp', cargo: 'sergei', eagle: 'prof', blackout: 'blackout', sergei: 'sergei', hammer: 'smash', sledge: 'smash', mask: 'dream', spider: 'droneJam', lure: 's3shriek', mine: 'lock' };
+  const GADGET_SOUND = { escort: 'droneJam', kamikaze: 'emp', cargo: 'sergei', eagle: 'prof', blackout: 'blackout', sergei: 'sergei', hammer: 'smash', sledge: 'smash', mask: 'dream', spider: 'droneJam', lure: 's3shriek', mine: 'lock',
+    strike: 'lock', expert: 'droneJam', brawl: 's3wave', swarm: 's3shriek', hypnosis: 'dream', eightball: 's3swing' };
   function sound(ev) {
     switch (ev.k) {
       case 'shot': play(SHOT[ev.w] || 's3gun', 40); break;
@@ -129,13 +130,19 @@
 
   // ===== 文字小工具 =====
   const nameOf = (p) => L(E.people.name(p));
-  const jobOf = (p) => L(E.people.occupationOf(p).name);
+  const jobOf = (p) => L(S3.ops.jobOf(p).name);
+  function face(p, options) {
+    const elite = S3.ops.profiles[p.elite];
+    if (!elite) return E.faces.of(p, options);
+    const src = pictures[elite.portrait];
+    return src ? `<img src="${asset(src)}" alt="">` : E.art.avatar('agent');
+  }
   const pid = (p) => p.district + ':' + p.id + ':' + p.occupation;
   const exName = (id) => t('s3.ex.' + id + '.n');
   const gadName = (id) => t('s3.gad.' + id + '.n');
   const listOf = (names) => names.join(E.i18n.lang === 'en' ? ', ' : '、');
   // 場上是誰：在房間裡看房間（清場之後也能換人）；不在房間裡看這一趟的紀錄。
-  const activeIdx = () => (s ? s.active : run ? run.active : 0);
+  const activeIdx = () => (inRoom && s ? s.active : run ? run.active : 0);
   const activePerson = () => (run ? run.squad[activeIdx()].p : null);
   // 台詞裡的變數：{name} 是場上那個人，{n} 是名單上給這個人的威脅評分，{flaw} 是這個人的弱點。
   function lineVars() {
@@ -183,10 +190,10 @@
     const b = run.build, act = activeIdx();
     const rows = run.squad.map((m, i) => {
       // 房間還在打（暫停的時候），體力看房間裡的；其他時候看這一趟的紀錄。
-      const tm = s && !rewarded ? s.team[i] : null, on = tm && i === s.active, down = tm ? tm.down : m.down;
+      const tm = inRoom && s && !rewarded ? s.team[i] : null, on = tm && i === s.active, down = tm ? tm.down : m.down;
       const max = tm ? (on ? s.p.maxHp : tm.maxHp) : R.maxHp(run, i);
       const hp = down ? 0 : Math.round(tm ? (on ? s.p.hp : tm.hp) : m.hp);
-      return `<div class="sq-row${down ? ' down' : ''}${i === act ? ' on' : ''}"><kbd>${i + 1}</kbd><span class="sq-row-face">${E.faces.of(m.p, { round: true })}</span>
+      return `<div class="sq-row${down ? ' down' : ''}${i === act ? ' on' : ''}"><kbd>${i + 1}</kbd><span class="sq-row-face">${face(m.p, { round: true })}</span>
         <span class="sq-row-name"><b>${esc(nameOf(m.p))}</b><small>${esc(jobOf(m.p))}</small></span>
         <span class="sq-row-hp">${down ? esc(t('s3.squad.down')) : hp + ' / ' + max}</span>
         <span class="chip">${esc(t('s3.wp.' + m.weapon + '.n'))}</span>
@@ -383,17 +390,19 @@
     const traits = E.people.traitsOf(p).map((x) => line('good', L(x.name), 's3.trait.' + x.id)).join('');
     const flaw = p.flaw ? line('bad', L(E.people.flawOf(p).name), 's3.flaw.' + p.flaw) : '';
     const quirks = E.people.quirksOf(p).filter((q) => D.quirkFx[q.id]).map((q) => line('quirk', L(q.name), 's3.quirk.' + q.id)).join('');
+    const imprints = (p.imprints || []).map((id) => `<li class="imprint">${esc(t('s3.mark.' + id))}</li>`).join('');
     return `<article class="crew-card cat-${m.cat}${p.rare ? ' rare' : ''}${o.cls ? ' ' + o.cls : ''}" ${o.attr || ''}>
-      <div class="crew-head"><div class="crew-face">${E.faces.of(p)}</div>
+      <div class="crew-head"><div class="crew-face">${face(p)}</div>
         <div class="crew-id"><h3>${esc(nameOf(p))}</h3><p>${esc(t('s3.card.job', { age: p.age, job: jobOf(p) }))}</p>
         <p class="crew-stats"><span>${esc(t('s3.hud.hp'))} <b>${st.maxHp}</b></span><span>${esc(t('s3.hud.bw'))} <b>${st.bwMax}</b></span></p></div>
         ${o.badge ? `<span class="crew-badge">${esc(o.badge)}</span>` : ''}</div>
+      ${p.elite ? `<p class="operative-bio">${esc(L(S3.ops.profiles[p.elite].bio))}</p>` : ''}
       <div class="crew-kit">
         <p><span class="k">${esc(t('s3.card.perk'))}</span><b class="perk-line">${esc(t('s3.job.' + m.job))}</b></p>
-        <p><span class="k">${esc(t('s3.card.weapon'))}</span><b>${esc(t('s3.wp.' + m.weapon + '.n'))}</b><span class="dim"> ${esc(t('s3.wp.' + m.weapon + '.d'))}</span></p>
+        <p><span class="k">${esc(t('s3.card.weapon'))}</span><b>${esc(t('s3.wp.' + m.weapon + '.n'))}</b> <span class="dim">${esc(t(p.elite === 'spy' ? 's3.ops.spyWeapon' : 's3.wp.' + m.weapon + '.d'))}</span></p>
         <p><span class="k">${esc(t('s3.card.gadget'))}</span><b>${esc(gadName(m.gadget.id))}</b><span class="dim"> ${esc(t('s3.gad.' + m.gadget.id + '.d'))}</span></p>
       </div>
-      <ul class="crew-traits">${traits}${flaw}${quirks}</ul>
+      <ul class="crew-traits">${traits}${flaw}${quirks}${imprints}</ul>
       ${o.foot || ''}
     </article>`;
   }
@@ -444,9 +453,15 @@
       ${noteHtml()}<div class="crew">${cards}</div>`;
     const full = meta.roster.length >= max;
     const vols = R.volunteers(meta).map((p, i) => personCard(p, {
-      cls: 'vol', foot: `<div class="crew-foot"><span></span><button type="button" data-vol="${i}" ${full || meta.echoes < R.RECRUIT_COST ? 'disabled' : ''}>${esc(full ? t('s3.vol.full') : t('s3.vol.join', { n: R.RECRUIT_COST }))}</button></div>`,
+      cls: p.elite ? 'vol invited' : 'vol', badge: p.elite ? t('s3.ops.invited') : '',
+      foot: `<div class="crew-foot"><span></span><button type="button" data-vol="${i}" ${full || (!p.elite && meta.echoes < R.RECRUIT_COST) ? 'disabled' : ''}>${esc(full ? t('s3.vol.full') : p.elite ? t('s3.ops.free') : t('s3.vol.join', { n: R.RECRUIT_COST }))}</button></div>`,
     })).join('');
     $('s3-vols').innerHTML = `<h3>${esc(t('s3.vol.title'))}<small>${esc(t('s3.ui.echoes', { n: meta.echoes }))}</small></h3><p class="dim">${esc(t('s3.vol.hint', { n: R.RECRUIT_COST }))}</p><div class="crew">${vols}</div>`;
+    const book = $('s3-contacts'), u = meta.unlocks, names = (a) => a.map(esc).join(' · ');
+    const jobs = u.jobs.filter((id) => S3.ops.profiles[id]), events = u.events.filter((id) => (R.eventDef(id) || {}).premium);
+    book.querySelector('summary').textContent = t('s3.ops.book', { jobs: jobs.length, events: events.length });
+    book.querySelector('p').innerHTML = [names(jobs.map((id) => L(S3.ops.profiles[id].name))),
+      names(events.map((id) => t('s3.ev.' + id + '.t')))].filter(Boolean).join('<br>') || esc(t('s3.ops.first'));
     $('s3-perks').innerHTML = `<h3>${esc(t('s3.ui.lobby.perks'))}<small>${esc(t('s3.ui.echoes', { n: meta.echoes }))}</small></h3>` + D.perks.map((p) => {
       const lv = R.perkLv(meta, p.id), isFull = lv >= p.max, cost = p.cost[lv];
       return `<button type="button" class="perk${isFull ? ' full' : ''}" data-perk="${p.id}" ${isFull || meta.echoes < cost ? 'disabled' : ''}>
@@ -455,7 +470,7 @@
     }).join('');
     const slots = Array.from({ length: R.SQUAD }, (_, n) => {
       const x = meta.roster[picks[n]];
-      return `<span class="slot${x ? ' on' : ''}"><kbd>${n + 1}</kbd>${x ? `<span class="slot-face">${E.faces.of(x.p, { round: true })}</span><b>${esc(nameOf(x.p))}</b>` : '<i></i>'}</span>`;
+      return `<span class="slot${x ? ' on' : ''}"><kbd>${n + 1}</kbd>${x ? `<span class="slot-face">${face(x.p, { round: true })}</span><b>${esc(nameOf(x.p))}</b>` : '<i></i>'}</span>`;
     }).join('');
     const need = R.SQUAD - picks.length;
     const exposed = !need && meta.wins >= 1 && readyN === R.SQUAD;
@@ -738,7 +753,7 @@
     const lines = [t(res.known ? 's3.rescue.known' : 's3.rescue.new', { name, job: jobOf(res.p) })];
     if (res.joined) lines.push(t('s3.rescue.joined', { name, n: res.slot + 1 }));
     if (res.full) lines.push(t('s3.rescue.full', { name }));
-    const show = () => modal(`<div class="ev"><div class="ev-face">${E.faces.of(res.p)}</div><div><h2>${esc(t('s3.rescue.title'))}</h2>${lines.map((x) => `<p>${esc(x)}</p>`).join('')}
+    const show = () => modal(`<div class="ev"><div class="ev-face">${face(res.p)}</div><div><h2>${esc(t('s3.rescue.title'))}</h2>${lines.map((x) => `<p>${esc(x)}</p>`).join('')}
       <p class="perk-line">${esc(t('s3.job.' + R.memberOf(res.p).job))}</p></div></div>
       <div class="s3-actions"><button type="button" class="primary" data-act="ok">${esc(t('s3.ui.ok'))}</button></div>`, () => { closeModal(); next(); });
     beat('cells', {}, show);
@@ -777,25 +792,32 @@
   }
   function showEvent() {
     const ev = run.event, def = R.eventDef(ev.id);
-    const pic = pictures['ev-' + ev.id] ? `<img class="ev-pic" src="${asset(pictures['ev-' + ev.id])}" alt="">` : '';
+    const path = pictures['ev-' + ev.id], im = path && images.all[path];
+    const pic = im && im.naturalWidth ? `<img class="ev-pic" src="${asset(path)}" alt="">` : '';
     const face = pic ? '' : `<div class="ev-face">${E.art.avatar(def.cameo)}</div>`;
+    const heading = `<h2>${esc(t('s3.ev.' + ev.id + '.t'))}${def.premium ? `<small class="contact-badge">${esc(t('s3.ops.premium'))}</small>` : ''}</h2>`;
     if (ev.result) {
-      modal(`${pic}<div class="ev">${face}<div><h2>${esc(t('s3.ev.' + ev.id + '.t'))}</h2><p>${esc(t(ev.result.key))}</p>${fxLine(ev.result.fx)}</div></div>
+      modal(`${pic}<div class="ev">${face}<div>${heading}<p>${esc(t(ev.result.key))}</p>${fxLine(ev.result.fx)}</div></div>
         <div class="s3-actions"><button type="button" class="primary" data-act="ok">${esc(t('s3.ui.ok'))}</button></div>`, () => { closeModal(); afterNode(); }, pic ? 'pic' : '');
       return;
     }
     play(EVENT_SOUND[def.cameo] || 'event');
-    const btn = (i) => `<button type="button" data-act="c" data-id="${i}" ${R.canChoose(run, i) ? '' : 'disabled'} class="${i ? '' : 'primary'}">${esc(t('s3.ev.' + ev.id + '.c' + i))}${def.choices[i].cost ? '（◆ ' + def.choices[i].cost + '）' : ''}</button>`;
-    modal(`${pic}<div class="ev">${face}<div><h2>${esc(t('s3.ev.' + ev.id + '.t'))}</h2><p>${esc(t('s3.ev.' + ev.id + '.x'))}</p></div></div>
+    const btn = (i) => {
+      const c = def.choices[i], mark = c.fx && c.fx.imprint, p = run.squad[run.active].p;
+      return `<button type="button" data-act="c" data-id="${i}" ${R.canChoose(run, i) ? '' : 'disabled'} class="${i ? '' : 'primary'}">${esc(t('s3.ev.' + ev.id + '.c' + i))}${c.cost ? ' (◆ ' + c.cost + ')' : ''}
+        ${mark ? `<small class="mark-preview">${esc(t((p.imprints || []).includes(mark) ? 's3.ops.markKnown' : 's3.ops.markChoice', { name: nameOf(p), mark: t('s3.mark.' + mark) }))}</small>` : ''}</button>`;
+    };
+    modal(`${pic}<div class="ev">${face}<div>${heading}<p>${esc(t('s3.ev.' + ev.id + '.x'))}</p></div></div>
       <div class="s3-actions">${btn(0)}${btn(1)}</div>${squadSummary()}`, (act, i) => {
       const c = def.choices[Number(i)], g = c.fx && c.fx.gadget;
-      const go = () => { R.choose(run, Number(i)); R.save(run); showEvent(); };
+      const go = () => { R.choose(run, Number(i), AUTO ? null : meta); R.save(run); showEvent(); };
       if (g && replacesGear(g)) askGear(g, go, showEvent); else go();
     }, pic ? 'pic' : '');
   }
   // 事件結果下面那一行：實際拿到、失去什麼。
   function fxLine(fx) {
     const out = [];
+    if (fx.imprint) out.push(t(fx.known ? 's3.ops.markKnown' : 's3.ops.markChoice', { name: nameOf(fx.person), mark: t('s3.mark.' + fx.imprint) }));
     if (fx.data) out.push(t('s3.fx.data', { n: fx.data }));
     if (fx.heal) out.push(t('s3.fx.heal', { n: fx.heal }));
     if (fx.hurt) out.push(t('s3.fx.hurt', { n: fx.hurt }));
@@ -856,15 +878,12 @@
       const lack = (e.need || 0) - (meta.rescued || 0);
       return `<button type="button" class="s3-card ending end-${e.id}" data-act="end" data-id="${e.id}" ${lack > 0 ? 'disabled' : ''}>
         <b>${esc(t('s3.end.' + e.id + '.c'))}</b><span class="card-d">${esc(t('s3.end.' + e.id + '.d'))}</span>
-        <span class="card-foot mod">${lack > 0 ? esc(t('s3.end.teach.lock', { n: lack })) : meta.endings[e.id] ? '✓' : ''}</span></button>`;
+        <span class="card-foot mod">${lack > 0 ? esc(t('s3.end.teach.lock', { n: lack })) : (meta.endings[e.id] ? '✓　' : '') + esc(t('s3.ops.contact', { name: t('s3.ev.' + D.endingContacts[e.id] + '.t') }))}</span></button>`;
     }).join('');
     modal(`<h2>${esc(t('s3.end.choose'))}</h2><div class="s3-cards">${cards}</div>`, (act, id) => {
       const e = ST.endings.find((x) => x.id === id);
       if (!e) return;
       closeModal();
-      meta.endings[id] = 1;
-      meta.story.ended = id;
-      R.saveMeta(meta);
       play('ending');
       talk(e.lines, { bg: 'title', banner: t('s3.end.' + id + '.t'), vars: {} }, () => showEnd(true, false, id));
     }, 'wide');
@@ -888,7 +907,7 @@
   function showEnd(won, quit, ending) {
     const lastName = run.squad[run.active] ? nameOf(run.squad[run.active].p) : '';
     // 機器人模式不動存檔。
-    const res = AUTO ? { earned: 0, meta, captured: run.squad.filter((m) => m.down).map((m) => m.p), freed: 0 } : R.finish(run, won, meta);
+    const res = AUTO ? { earned: 0, meta, captured: run.squad.filter((m) => m.down).map((m) => m.p), freed: 0 } : R.finish(run, won, meta, ending);
     meta = res.meta;
     const st = run.stats, sec = D.sectors[run.sector];
     S3.music.set(null);
@@ -900,11 +919,15 @@
     const title = won ? t('s3.end.' + ending + '.t') : t(quit ? 's3.quit.title' : 's3.dead.title');
     const text = won ? t('s3.win.text') : t(quit ? 's3.dead.quit' : 's3.dead.text', { sector: t('s3.sec.' + sec.id + '.n'), n: run.roomNo });
     const people = won ? (res.freed ? t('s3.end.freed', { n: res.freed }) : '') : res.captured.length ? t('s3.end.captured', { names: listOf(res.captured.map(nameOf)) }) : t('s3.end.safe');
+    const u = res.unlocked, hire = u && u.job && S3.ops.person(u.job);
+    const unlocks = u && (hire || u.events.length) ? `<div class="win-contacts">${hire ? face(hire) : ''}<div>
+      ${hire ? `<b>${esc(t('s3.ops.arrival', { name: nameOf(hire), job: jobOf(hire) }))}</b>` : ''}
+      ${u.events.map((id) => `<div>${esc(t('s3.ops.contact', { name: t('s3.ev.' + id + '.t') }))}</div>`).join('')}</div></div>` : '';
     const show = () => {
       mode = 'menu';
       modal(`<h2 class="${won ? 'win' : 'lose'}">${esc(title)}</h2>
         <p>${esc(text)}</p>${people ? `<p class="${won ? 'good' : 'warn'}">${esc(people)}</p>` : ''}
-        <div class="stats">${stat('rooms', st.rooms)}${stat('kills', st.kills)}${stat('hacks', st.hacks)}${stat('takedowns', st.takedowns)}${stat('silent', st.silent)}${stat('bosses', st.bosses)}${stat('rescued', st.rescued)}${stat('captured', res.captured.length)}</div>
+        ${unlocks}<div class="stats">${stat('rooms', st.rooms)}${stat('kills', st.kills)}${stat('hacks', st.hacks)}${stat('takedowns', st.takedowns)}${stat('silent', st.silent)}${stat('bosses', st.bosses)}${stat('rescued', st.rescued)}${stat('captured', res.captured.length)}</div>
         <p class="echo-gain">${esc(t('s3.dead.echoes', { n: res.earned, total: meta.echoes }))}</p>${won ? `<p class="dim">${esc(t('s3.end.note'))}</p>` : ''}
         <div class="s3-actions"><button type="button" class="ghost" data-act="title">${esc(t('s3.dead.title.btn'))}</button><button type="button" class="primary" data-act="again">${esc(t('s3.dead.again'))}</button></div>`, (act) => {
         closeModal();
@@ -926,7 +949,7 @@
   function hud() {
     const p = s.p, st = s.st, live = !rewarded;
     const me = run.squad[activeIdx()];
-    if (hudCache.faceKey !== pid(me.p)) { hudCache.faceKey = pid(me.p); $('h-face').innerHTML = E.faces.of(me.p, { round: true }); }
+    if (hudCache.faceKey !== pid(me.p)) { hudCache.faceKey = pid(me.p); $('h-face').innerHTML = face(me.p, { round: true }); }
     set('h-face', 'cat-' + me.cat, 'className');
     set('h-name', nameOf(me.p) + '　' + jobOf(me.p));
     set('h-hp', Math.max(0, (p.hp / p.maxHp) * 100).toFixed(1) + '%', 'width');
@@ -939,7 +962,7 @@
     const sqKey = run.squad.map((m) => pid(m.p)).join('|') + E.i18n.lang;
     if (hudCache.sqKey !== sqKey) {
       hudCache.sqKey = sqKey;
-      $('h-squad').innerHTML = run.squad.map((m, i) => `<div id="sq-${i}" class="sq"><kbd>${i + 1}</kbd><span class="sq-face">${E.faces.of(m.p, { round: true })}</span><span class="sq-n">${esc(nameOf(m.p))}</span><span class="sq-bar"><i id="sq-${i}-hp"></i></span></div>`).join('');
+      $('h-squad').innerHTML = run.squad.map((m, i) => `<div id="sq-${i}" class="sq"><kbd>${i + 1}</kbd><span class="sq-face">${face(m.p, { round: true })}</span><span class="sq-n">${esc(nameOf(m.p))}</span><span class="sq-bar"><i id="sq-${i}-hp"></i></span></div>`).join('');
       for (const k of Object.keys(hudCache)) if (k.startsWith('sq-')) delete hudCache[k];
     }
     run.squad.forEach((m, i) => {

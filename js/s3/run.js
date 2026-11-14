@@ -40,14 +40,14 @@
   const rngOf = (run) => E.rng.restore(run.rng);
   const keep = (run, r) => { run.rng = r.state; };
   const exploitDef = (id) => D().exploits.find((x) => x.id === id);
-  const occOf = (p) => E.people.occupationOf(p);
+  const occOf = (p) => S3.ops.jobOf(p);
 
   // ===== 永久進度 =====
   // roster：名冊，每一筆是 { p 路人, status: 'ready' 待命｜'held' 被關, runs 出過幾趟 }。
   // story：看過哪些劇情。rescued：一共救出過幾個人。seed：這份存檔的路人種子。
   function blankMeta(campaign, endings = {}) {
     return { campaign, echoes: 0, perks: {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [], vol: 0, story: {}, rescued: 0, seed: '',
-      unlocks: { jobs: [], events: [] }, endings: Object.assign({}, endings) };
+      unlocks: { jobs: [], events: [] }, invitations: [], endings: Object.assign({}, endings) };
   }
   function meta() {
     const stored = META.read();
@@ -180,12 +180,18 @@
     for (const p of fresh) m.roster.push({ p, status: 'ready', runs: 0 });
     return fresh;
   }
-  // 這一晚願意加入的志願者（兩個）。
-  const volunteers = (m) => findPeople(m.seed || 'meta', 'vol' + m.vol, 2, m.roster.map((x) => x.p));
+  // 一般志願者每晚更換，尚未接受的邀約則保留（包括名冊已滿時）。
+  const volunteers = (m) => (m.invitations || []).filter((id) => S3.ops.profiles[id]).map(S3.ops.person).concat(findPeople(m.seed || 'meta', 'vol' + m.vol, 2, m.roster.map((x) => x.p)));
   function recruit(m, i) {
     const p = volunteers(m)[i];
-    if (!p || m.roster.length >= rosterMax(m) || m.echoes < RECRUIT_COST) return false;
-    m.echoes -= RECRUIT_COST;
+    if (!p || m.roster.length >= rosterMax(m)) return false;
+    if (p.elite) {
+      if (m.roster.some((x) => x.p.elite === p.elite)) return false;
+      m.invitations.splice(m.invitations.indexOf(p.elite), 1);
+    } else {
+      if (m.echoes < RECRUIT_COST) return false;
+      m.echoes -= RECRUIT_COST;
+    }
     m.roster.push({ p, status: 'ready', runs: 0 });
     m.vol++;
     saveMeta(m);
@@ -238,6 +244,7 @@
       }), active: 0, gear: null,
       build: { exploits: {}, extra: { maxHp: 8 * perkLv(m, 'hp'), bwMax: perkLv(m, 'bw'), focusMul: perkLv(m, 'focus') ? 1.2 : 1 } },
       node: null, options: [], phase: 'route',
+      contacts: m.unlocks ? m.unlocks.events.slice() : [],
       seen: [], shops: {}, cells: {}, held: (m.roster || []).filter((x) => x.status === 'held').length,
       lost: [], revived: false, bailUsed: false, curse: null, kit: perkLv(m, 'kit'), insight: perkLv(m, 'insight'), pending: null, shop: null, event: null, notes: [],
       stats: { kills: 0, hacks: 0, takedowns: 0, silent: 0, rooms: 0, hurt: 0, bosses: 0, rescued: 0, captured: 0 },
@@ -413,7 +420,7 @@
   // 裝備：每個隊員有自己的一件（Q），全隊另外共用一件撿來的（E）。
   const gadgetOwner = (run, id) => run.squad.find((m) => m.gadget.id === id) || (run.gear && run.gear.id === id ? { gadget: run.gear } : null);
   function draftGadgets(run, r, n) {
-    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id); return o ? o.gadget.lv < 3 : !D().gadgets[id].cameo; });
+    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id), g = D().gadgets[id]; return o ? o.gadget.lv < 3 : !g.cameo && !g.signature; });
     return r.shuffle(pool).slice(0, n);
   }
   function addExploit(run, id) {
@@ -549,8 +556,10 @@
   // ===== 事件 =====
   function pickEvent(run) {
     const r = rngOf(run);
-    const pool = D().events.filter((e) => !(e.once && run.seen.includes(e.id)) && !(run.seen[run.seen.length - 1] === e.id));
-    const ev = r.pick(pool.length ? pool : D().events);
+    const met = run.seen.some((id) => (eventDef(id) || {}).premium);
+    const pool = D().events.filter((e) => (!e.premium || (!met && (run.contacts || []).includes(e.id))) &&
+      !(e.once && run.seen.includes(e.id)) && run.seen[run.seen.length - 1] !== e.id);
+    const ev = r.weighted(pool, (e) => e.premium ? 0.25 : 1);
     run.seen.push(ev.id);
     keep(run, r);
     return { id: ev.id, result: null };
@@ -558,10 +567,10 @@
   const eventDef = (id) => D().events.find((e) => e.id === id);
   function canChoose(run, i) {
     const c = eventDef(run.event.id).choices[i];
-    return !!c && (!c.cost || run.data >= c.cost);
+    return !run.event.result && !!c && (!c.cost || run.data >= c.cost);
   }
   // 選事件的第 i 個選項。回傳 { key 結果文字的 key、fx 發生了什麼 }。
-  function choose(run, i) {
+  function choose(run, i, m) {
     const def = eventDef(run.event.id), c = def.choices[i];
     if (!canChoose(run, i)) return null;
     if (c.cost) run.data -= c.cost;
@@ -573,14 +582,22 @@
       tail = '.' + hit[2];
       keep(run, r);
     }
-    const got = applyFx(run, fx || {});
+    const got = applyFx(run, fx || {}, m);
     run.event.result = { key: 's3.ev.' + def.id + '.r' + i + tail, fx: got };
     if (run.phase !== 'reward') run.phase = 'done';
     return run.event.result;
   }
   // 事件的效果。治療是全隊的；受傷算在場上那個人身上（不會因此倒下）。
-  function applyFx(run, fx) {
+  function applyFx(run, fx, m) {
     const out = Object.assign({}, fx);
+    if (fx.imprint) {
+      const mem = run.squad[run.active], p = mem.p, entry = m && m.roster.find((x) => same(x.p, p));
+      if (!(p.imprints || []).includes(fx.imprint)) withMaxHp(run, () => { mem.p = Object.assign({}, p, { imprints: (p.imprints || []).concat(fx.imprint) }); });
+      else out.known = true;
+      out.person = mem.p;
+      // 不靠兩份存檔共用物件；試玩或機器人沒有名冊，不會動到傳入的小隊。
+      if (entry) { entry.p = Object.assign({}, entry.p, { imprints: mem.p.imprints.slice() }); saveMeta(m); }
+    }
     if (fx.data) run.data += fx.data;
     if (fx.heal) heal(run, fx.heal);
     if (fx.hurt) { const me = run.squad[run.active]; me.hp = Math.max(1, me.hp - fx.hurt); }
@@ -622,12 +639,25 @@
 
   // ===== 結束：算殘響，更新名冊 =====
   // 倒下的隊員被關進基石（打通的話，所有被關的人都放出來）。回傳 { earned, meta, captured: [路人], freed: 幾個人 }。
-  function finish(run, won, m) {
+  function winUnlocks(run, m, ending) {
+    const u = m.unlocks || (m.unlocks = { jobs: [], events: [] });
+    const r = E.rng.derive(m.seed, run.seed, 'victory', m.wins);
+    const jobs = Object.keys(S3.ops.profiles).filter((id) => !u.jobs.includes(id));
+    const job = jobs.length ? r.pick(jobs) : null, events = [];
+    if (job) { u.jobs.push(job); (m.invitations || (m.invitations = [])).push(job); }
+    const contact = D().endingContacts[ending];
+    if (contact && !u.events.includes(contact)) { u.events.push(contact); events.push(contact); }
+    const extra = Object.values(D().endingContacts).filter((id) => !u.events.includes(id));
+    if (extra.length && r.chance(0.5)) { const id = r.pick(extra); u.events.push(id); events.push(id); }
+    return { job, events };
+  }
+  function finish(run, won, m, ending) {
     m = m || meta();
     const earned = run.stats.rooms + 5 * run.stats.bosses + 2 * run.stats.rescued + (won ? 15 : 0);
     m.echoes += earned;
     m.runs++;
-    if (won) m.wins++;
+    if (won) { m.wins++; if (ending) { m.endings[ending] = 1; m.story.ended = ending; } }
+    const unlocked = won ? winUnlocks(run, m, ending) : null;
     m.best = Math.max(m.best, run.roomNo);
     const captured = [];
     const entryOf = (p) => (m.roster || []).find((x) => same(x.p, p));
@@ -646,7 +676,7 @@
     if (wiped) { m = blankMeta('wiped', m.endings); m.endings.wipe = 1; }
     saveMeta(m);
     RUN.clear();
-    return { earned: wiped ? 0 : earned, meta: m, captured, freed, wiped };
+    return { earned: wiped ? 0 : earned, meta: m, captured, freed, wiped, unlocked };
   }
 
   S3.run = {

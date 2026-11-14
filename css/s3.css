@@ -54,7 +54,7 @@ body.s3 { overflow: hidden; }
 .crew-card.held { opacity: 0.55; filter: grayscale(0.7); }
 .crew-card.vol { border-style: dashed; border-top-style: solid; }
 .crew-head { position: relative; display: flex; gap: 14px; align-items: center; }
-.crew-face svg { width: 76px; height: 76px; border-radius: 8px; display: block; }
+.crew-face :is(svg,img) { object-fit: cover; width: 76px; height: 76px; border-radius: 8px; display: block; }
 .crew-head h3 { margin: 0; font-size: 18px; color: #fff; }
 .crew-head p { margin: 3px 0 0; font-size: 13.5px; color: var(--muted); }
 .crew-badge { position: absolute; right: 0; top: 0; padding: 2px 9px; border: 1px solid var(--line); border-radius: 10px; font-size: 11.5px; letter-spacing: 0.08em; color: var(--dim); background: var(--panel); }
@@ -82,11 +82,21 @@ body.s3 { overflow: hidden; }
 .squadbar .k { font-size: 12px; letter-spacing: 0.25em; color: var(--muted); }
 .slot { display: inline-flex; align-items: center; gap: 8px; min-width: 150px; padding: 5px 10px; border: 1px dashed var(--line); border-radius: 6px; }
 .slot.on { border-style: solid; border-color: var(--accent); }
-.slot-face svg { width: 30px; height: 30px; border-radius: 50%; display: block; }
+.slot-face :is(svg,img) { object-fit: cover; width: 30px; height: 30px; border-radius: 50%; display: block; }
 .slot b { color: #fff; font-size: 14px; white-space: nowrap; }
 .slot i { width: 30px; height: 30px; border-radius: 50%; background: #161b26; }
 .bar-note { margin-left: auto; font-size: 13px; color: var(--muted); }
 .bar-note.exposed { color: var(--warn); }
+.operative-bio { margin: 2px 0 8px; font-size: 14px; line-height: 1.6; color: var(--text); }
+.crew-card.invited { border-top-color: var(--echo); }
+.crew-card.invited .crew-badge, .imprint { color: var(--echo); }
+#s3-contacts summary { cursor: pointer; font-size: 15px; color: var(--sys); }
+#s3-contacts p { line-height: 1.7; margin-bottom: 0; }
+.s3-box h2 .contact-badge { border: 1px solid #67547e; color: #e7c7ff; background: #271e32; border-radius: 4px; padding: 3px 8px; white-space: nowrap; }
+.s3-box .ev h2 { flex-wrap: wrap; gap: 8px 12px; }
+.mark-preview { display: block; font-weight: 400; font-size: 13px; margin-top: 4px; letter-spacing: normal; }
+.win-contacts { display: flex; align-items: center; gap: 12px; padding: 12px 0; color: var(--echo); line-height: 1.6; }
+.win-contacts img, .win-contacts svg { width: 58px; height: 58px; border-radius: 6px; }
 .s3 .squadbar .primary { min-width: 130px; padding: 10px 26px; letter-spacing: 0.2em; }
 /* 標題有畫好的背景圖就用圖。 */
 .title-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -103,7 +113,7 @@ body.s3 { overflow: hidden; }
 #s3-hud .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0; transition: none; }
 .hud-tl { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .hud-me { display: flex; gap: 10px; align-items: center; }
-#h-face svg { width: 58px; height: 58px; display: block; border-radius: 50%; box-shadow: 0 0 0 2px var(--cat, var(--accent)); }
+#h-face :is(svg,img) { object-fit: cover; width: 58px; height: 58px; display: block; border-radius: 50%; box-shadow: 0 0 0 2px var(--cat, var(--accent)); }
 #h-face.cat-hacker { --cat: #2ff3e0; } #h-face.cat-physical { --cat: #ffb347; } #h-face.cat-social { --cat: #ff2e88; } #h-face.cat-specialist { --cat: #5cf29a; }
 /* 小隊：三個人，按 1、2、3 換人。亮框的是場上那一個；灰掉的被帶走了。 */
 .squad { display: flex; gap: 6px; }
@@ -112,7 +122,7 @@ body.s3 { overflow: hidden; }
 .sq.wait { opacity: 0.6; }
 .sq.down { opacity: 0.45; filter: grayscale(1); }
 .sq.down .sq-n { text-decoration: line-through; }
-.sq-face svg { width: 26px; height: 26px; display: block; border-radius: 50%; }
+.sq-face :is(svg,img) { object-fit: cover; width: 26px; height: 26px; display: block; border-radius: 50%; }
 .sq-n { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #fff; }
 .sq-bar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
 .sq-bar i { display: block; height: 100%; background: #ff5d6c; transition: width 0.12s; }
@@ -200,7 +210,7 @@ body.s3 { overflow: hidden; }
 .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 5px 18px; margin-top: 10px; }
 .guide-grid div { line-height: 1.55; } .guide-grid b { margin-right: 8px; color: #fff; } .guide-grid span { color: var(--muted); }
 .ev { display: flex; gap: 18px; align-items: flex-start; }
-.ev-face svg { width: 96px; height: 96px; border-radius: 8px; display: block; }
+.ev-face :is(svg,img) { object-fit: cover; width: 96px; height: 96px; border-radius: 8px; display: block; }
 .fx-line { color: var(--sys); font-family: var(--mono); font-size: 13.5px; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; margin: 14px 0; }
 .stats div { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: #0e1118; }
@@ -212,7 +222,7 @@ body.s3 { overflow: hidden; }
 .sq-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: #0e1118; font-size: 13px; }
 .sq-row.on { border-color: var(--accent); }
 .sq-row.down { opacity: 0.5; }
-.sq-row-face svg { width: 28px; height: 28px; display: block; border-radius: 50%; }
+.sq-row-face :is(svg,img) { object-fit: cover; width: 28px; height: 28px; display: block; border-radius: 50%; }
 .sq-row-name { display: flex; flex-direction: column; min-width: 130px; }
 .sq-row-name b { font-size: 14px; color: #fff; } .sq-row-name small { font-size: 11.5px; color: var(--dim); }
 .sq-row-hp { min-width: 74px; font-family: var(--mono); color: #ff8d98; }
