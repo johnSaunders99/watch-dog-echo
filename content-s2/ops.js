@@ -329,8 +329,8 @@
         { id: 'stash', name: n('Hide the drive in the wall', '把硬碟藏進牆裡', '把硬盘藏进墙里'), tags: ['hands'], risk: 0.35, exposure: 2,
           ok: n('{name} slides the only drive that matters behind a loose brick.', '{name}把唯一重要的那顆硬碟塞到一塊鬆動的磚頭後面。', '{name}把唯一重要的那块硬盘塞到一块松动的砖头后面。') },
       ],
-      hidden: { id: 'bagley_wipe', name: n('Ask Bagley', '請 Bagley 處理', '请 Bagley 处理'), tags: [], risk: 0.05, exposure: 0,
-        ok: n('"Already done," says Bagley. "I wiped it the moment I heard boots." {name} just unplugs the server.', '「已經處理好了，」Bagley 說，「我一聽到靴子聲就清掉了。」{name}只需要拔掉伺服器的電源。', '“已经处理好了，”Bagley 说，“我一听到靴子声就清掉了。”{name}只需要拔掉服务器的电源。') },
+      hidden: { id: 'bagley_wipe', name: n('Ask Bagley', '請貝格利處理', '请贝格利处理'), tags: [], risk: 0.05, exposure: 0,
+        ok: n('"Already done," says Bagley. "I wiped it the moment I heard boots." {name} just unplugs the server.', '「已經處理好了，」貝格利說，「我一聽到靴子聲就清掉了。」{name}只需要拔掉伺服器的電源。', '“已经处理好了，”贝格利说，“我一听到靴子声就清掉了。”{name}只需要拔掉服务器的电源。') },
     },
     back_door: {
       art: 'tunnels', tags: ['exit', 'tunnel'],

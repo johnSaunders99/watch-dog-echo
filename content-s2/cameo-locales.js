@@ -42,11 +42,11 @@
     's2.dev.wrench_tv.thanksDone': '{name}傳了一個讚過去。回傳的是一張扳手吃{name}冰箱裡最後一盒外賣的照片。',
 
     's2.dev.darcy_eagle.title': '窗台上的老鷹',
-    's2.dev.darcy_eagle.text': 'Darcy 又出現在窗台上，手上托著一架灰色的偵察無人機。「它看得很遠。真的走投無路，它會自爆，附近的電子設備全部停擺。」說完看了{name}一眼。',
+    's2.dev.darcy_eagle.text': '達西又出現在窗台上，手上托著一架灰色的偵察無人機。「它看得很遠。真的走投無路，它會自爆，附近的電子設備全部停擺。」說完看了{name}一眼。',
     's2.dev.darcy_eagle.take': '收下（佔一個時段）',
     's2.dev.darcy_eagle.pass': '下次吧',
-    's2.dev.darcy_eagle.takeDone': '{name}花了一個早上學會放飛和引爆。Darcy 只留下一句：「該炸的時候別捨不得。」',
-    's2.dev.darcy_eagle.passDone': 'Darcy 把無人機收進斗篷裡。窗台上只留下一根白色的線頭。',
+    's2.dev.darcy_eagle.takeDone': '{name}花了一個早上學會放飛和引爆。達西只留下一句：「該炸的時候別捨不得。」',
+    's2.dev.darcy_eagle.passDone': '達西把無人機收進斗篷裡。窗台上只留下一根白色的線頭。',
 
     's2.dev.aiden_focus.title': '戴鴨舌帽的人',
     's2.dev.aiden_focus.text': '公園長椅上有個人戴著鴨舌帽，圍巾拉到鼻子，手機沒有離手過。這人自稱艾登・皮爾斯，從芝加哥來。「你動手之前想太多了。」說的是{name}。「我教你怎麼把時間拉慢。」',
@@ -63,11 +63,11 @@
     's2.dev.aiden_blackout.passDone': '艾登收回手機：「聰明。」然後就走了。',
 
     's2.dev.marcus.title': '舊金山來的訊息',
-    's2.dev.marcus.text': '{name}的手機跳出一則加密訊息，署名 Marcus，舊金山的 DedSec：「聽說倫敦缺人。我在那邊認識一個靠得住的人，要我幫你們牽線嗎？」',
+    's2.dev.marcus.text': '{name}的手機跳出一則加密訊息，署名馬庫斯，舊金山的 DedSec：「聽說倫敦缺人。我在那邊認識一個靠得住的人，要我幫你們牽線嗎？」',
     's2.dev.marcus.yes': '麻煩牽個線',
     's2.dev.marcus.no': '現在不方便',
-    's2.dev.marcus.yesDone': 'Marcus 回了一個笑臉和一個地址。人還在舊金山，事情已經辦好了：隔天有人報上 Marcus 的名字，出現在門口。',
-    's2.dev.marcus.noDone': 'Marcus 回：「懂。需要的時候再說。」',
+    's2.dev.marcus.yesDone': '馬庫斯回了一個笑臉和一個地址。人還在舊金山，事情已經辦好了：隔天有人報上馬庫斯的名字，出現在門口。',
+    's2.dev.marcus.noDone': '馬庫斯回：「懂。需要的時候再說。」',
 
     // ===== 白天的奇遇 =====
     's2.dev.blue_door.title': '巷子裡的藍色的門',
@@ -205,11 +205,11 @@
     's2.dev.wrench_tv.thanksDone': '{name}发了一个赞过去。回过来的是一张扳手吃{name}冰箱里最后一盒外卖的照片。',
 
     's2.dev.darcy_eagle.title': '窗台上的老鹰',
-    's2.dev.darcy_eagle.text': 'Darcy 又出现在窗台上，手上托着一架灰色的侦察无人机。“它看得很远。真的走投无路，它会自爆，附近的电子设备全部停摆。”说完看了{name}一眼。',
+    's2.dev.darcy_eagle.text': '达西又出现在窗台上，手上托着一架灰色的侦察无人机。“它看得很远。真的走投无路，它会自爆，附近的电子设备全部停摆。”说完看了{name}一眼。',
     's2.dev.darcy_eagle.take': '收下（占一个时段）',
     's2.dev.darcy_eagle.pass': '下次吧',
-    's2.dev.darcy_eagle.takeDone': '{name}花了一个早上学会放飞和引爆。Darcy 只留下一句：“该炸的时候别舍不得。”',
-    's2.dev.darcy_eagle.passDone': 'Darcy 把无人机收进斗篷里。窗台上只留下一根白色的线头。',
+    's2.dev.darcy_eagle.takeDone': '{name}花了一个早上学会放飞和引爆。达西只留下一句：“该炸的时候别舍不得。”',
+    's2.dev.darcy_eagle.passDone': '达西把无人机收进斗篷里。窗台上只留下一根白色的线头。',
 
     's2.dev.aiden_focus.title': '戴鸭舌帽的人',
     's2.dev.aiden_focus.text': '公园长椅上有个人戴着鸭舌帽，围巾拉到鼻子，手机没有离手过。这人自称艾登・皮尔斯，从芝加哥来。“你动手之前想太多了。”说的是{name}。“我教你怎么把时间拉慢。”',
@@ -226,11 +226,11 @@
     's2.dev.aiden_blackout.passDone': '艾登收回手机：“聪明。”然后就走了。',
 
     's2.dev.marcus.title': '旧金山来的消息',
-    's2.dev.marcus.text': '{name}的手机跳出一条加密消息，署名 Marcus，旧金山的 DedSec：“听说伦敦缺人。我在那边认识一个靠得住的人，要我帮你们牵线吗？”',
+    's2.dev.marcus.text': '{name}的手机跳出一条加密消息，署名马库斯，旧金山的 DedSec：“听说伦敦缺人。我在那边认识一个靠得住的人，要我帮你们牵线吗？”',
     's2.dev.marcus.yes': '麻烦牵个线',
     's2.dev.marcus.no': '现在不方便',
-    's2.dev.marcus.yesDone': 'Marcus 回了一个笑脸和一个地址。人还在旧金山，事情已经办好了：隔天有人报上 Marcus 的名字，出现在门口。',
-    's2.dev.marcus.noDone': 'Marcus 回：“懂。需要的时候再说。”',
+    's2.dev.marcus.yesDone': '马库斯回了一个笑脸和一个地址。人还在旧金山，事情已经办好了：隔天有人报上马库斯的名字，出现在门口。',
+    's2.dev.marcus.noDone': '马库斯回：“懂。需要的时候再说。”',
 
     's2.dev.blue_door.title': '巷子里的蓝色的门',
     's2.dev.blue_door.text': '{name}发誓，昨天这条巷子里还没有这扇蓝色的门。门里传来很轻的钢琴声，一位鼻子非常长的老先生示意{name}坐下，说想谈一份契约。',

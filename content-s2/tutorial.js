@@ -33,7 +33,7 @@
 
   S2.tutorial = {
     map: 'training',
-    name: n('Training: Bagley\'s back alley', '教學：Bagley 的後巷模擬', '教学：Bagley 的后巷模拟'),
+    name: n('Training: Bagley\'s back alley', '教學：貝格利的後巷模擬', '教学：贝格利的后巷模拟'),
     // 照開場自願者的順序（駭客、身體、社交）換成固定的職業和特質，沒有弱點，好讓每一步都照教的做得到。
     people: [
       { role: 'hacker', occupation: 'programmer', traits: ['calm', 'nightowl'] },

@@ -193,10 +193,10 @@
 
   // ===== 敵人 =====
   const WEIGHT = { guard: 3, rusher: 3, drone: 2, hound: 2, shield: 1.5, turret: 1, sniper: 1.2, bomber: 1.2, jammer: 0.8, heavy: 0.7 };
-  function compose(r, sectorIdx, depth, roomNo, node) {
+  function compose(r, sectorIdx, depth, roomNo, node, signal) {
     const D = S3.data, sector = D.sectors[sectorIdx];
     const t = sector.rooms > 1 ? Math.min(1, depth / (sector.rooms - 1)) : 0;
-    let budget = sector.budget[0] + (sector.budget[1] - sector.budget[0]) * t;
+    let budget = signal ? signal.budget : sector.budget[0] + (sector.budget[1] - sector.budget[0]) * t;
     const mod = node.mod && D.mods[node.mod];
     if (mod && mod.threat) budget *= mod.threat;
     if (node.type === 'elite' || node.type === 'cells') budget *= 1.1;
@@ -308,13 +308,13 @@
   };
 
   // 生成一個房間。node：{ type, mod, reward }；doors：打完之後有幾扇門。
-  function room(seed, sectorIdx, depth, roomNo, node, doors) {
+  function room(seed, sectorIdx, depth, roomNo, node, doors, signal) {
     const D = S3.data, sector = D.sectors[sectorIdx];
     const r = E.rng.derive(seed, 'room', roomNo, node.type, node.mod || '');
     const mod = node.mod ? D.mods[node.mod] : null;
     const spec = {
       seed: E.rng.hash([seed, roomNo, 'sim'].join(':')), sector: sectorIdx, depth, roomNo, theme: sector.id,
-      type: node.type, mod: node.mod || null, scale: sector.scale, dataMul: (mod && mod.data) || 1,
+      type: node.type, mod: node.mod || null, scale: signal ? signal.scale : sector.scale, ...(signal ? {omni:signal} : {}), dataMul: (mod && mod.data) || 1,
       doors: (DOORS[doors] || DOORS[1]).map((tx) => ({ tx, x: (tx + 1) * T, y: T })),
       entry: { x: (ENTRY.tx + 1) * T, y: (ENTRY.ty + 0.5) * T },
       boss: null, waves: [], supply: node.mod === 'supply', cells: node.type === 'cells',
@@ -340,11 +340,14 @@
         if (P.put[kind](lastCrate) && kind === 'crate') lastCrate = P.props[P.props.length - 1];
       }
     }
-    const squad = compose(r, sectorIdx, depth, roomNo, node);
+    const squad = compose(r, sectorIdx, depth, roomNo, node, signal);
     spec.tiles = g;
     spec.props = P.props;
     spec.enemies = placeEnemies(r, g, P, squad.first, node, sectorIdx);
     spec.waves = squad.waves.map((w) => w.map((kind) => ({ kind })));
+    if(signal){
+      for(const e of spec.enemies.concat(...spec.waves))if(!e.elite && r.chance(signal.elite))e.elite=r.pick(D.affixes);
+    }
     spec.gates = gates(r, g, P);
     return spec;
   }

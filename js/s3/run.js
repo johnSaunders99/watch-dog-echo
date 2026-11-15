@@ -4,15 +4,62 @@
 (function (E) {
   const S3 = (E.s3 = E.s3 || {});
   const D = () => S3.data;
-  // 第 1 版是單人的時代：沒有名冊，「更多人選」那個強化改成「加床位」。
-  const META = E.save.slot('watchdogs-echo.s3.meta', 2, {
+  const SAVE_VERSION = 5;
+  function migrateWeapon(m) {
+    const id = m.p.elite || m.p.occupation;
+    if (m.weapon && (id === 'hitman' || id === 'spy')) m.weapon = D().weaponByJob[id];
+  }
+  function migrateKit(m, inRun) {
+    if (!m.p || (!m.p.elite && m.p.occupation!=='drone_op')) return;
+    m.p=S3.ops.fit(m.p);
+    const kit=S3.ops.templateOf(m.p), occ=S3.ops.jobOf(m.p);
+    if (inRun || m.weapon) m.weapon=kit.weapon;
+    if (inRun || m.gadget) m.gadget={id:kit.gadget,lv:m.gadget?.lv || 1};
+    if(inRun){m.cat=occ.category;m.job=occ.perk;}
+  }
+  const invitePerson=(m,id)=>m.offers?.[id] || S3.ops.person(id,m.seed || 'legacy-invite');
+  const isInvitation=p=>!!p.elite && p.id==='elite-'+p.elite;
+  // 舊隊員自己的 Q 換成一般裝備；已經放在共用 E 的裝備是玩家的，不轉換。
+  function migrateMember(m) {
+    if (!m.gadget) return;
+    if (m.gadget.id === 'eagle') m.gadget.id = 'kamikaze';
+    else if (m.gadget.id === 'sergei') m.gadget.id = D().gadgetByJob[m.p.occupation] || 'mine';
+  }
+  const META = E.save.slot('watchdogs-echo.s3.meta', SAVE_VERSION, {
+    // 單人版沒有名冊，「更多人選」後來改成「加床位」。
     1: (m) => {
       const perks = Object.assign({}, m.perks);
       if (perks.fourth) { perks.bunks = perks.fourth; delete perks.fourth; }
       return Object.assign({ roster: [], vol: 0, story: {}, rescued: 0 }, m, { perks });
     },
+    2: (m) => { (m.roster || []).forEach(migrateMember); return m; },
+    3: (m) => { (m.roster || []).forEach(migrateWeapon); return m; },
+    4: m=>{(m.roster||[]).forEach(e=>migrateKit(e,false)); m.offers={};
+      for(const id of m.invitations||[])if(S3.ops.profiles[id])m.offers[id]=invitePerson(m,id);return m;},
+
   });
-  const RUN = E.save.slot('watchdogs-echo.s3.run', 2);
+  const RUN = E.save.slot('watchdogs-echo.s3.run', SAVE_VERSION, {
+    2: (run) => {
+      run.squad.forEach(migrateMember);
+      // 讀到尚未領取的舊獎勵或舊黑市時，也不能從普通房間新拿到客串裝備。
+      const replace = (id) => D().gadgets[id].cameo && (!run.gear || run.gear.id !== id)
+        ? { eagle: 'kamikaze', sergei: 'cargo', hammer: 'sledge', blackout: 'escort' }[id] : id;
+      if (run.pending && run.pending.kind === 'gadget') run.pending.picks = [...new Set(run.pending.picks.map(replace))];
+      if (run.shop) for (const it of run.shop.items) if (it.k === 'gadget' && !it.sold) it.id = replace(it.id);
+      run.v = 3;
+      return run;
+    },
+    3: (run) => { run.squad.forEach(migrateWeapon); run.v = 4; return run; },
+    4: run=>{
+      const changed=new Map();
+      for(const m of run.squad){const old=m.gadget?.id;migrateKit(m,true);if(old && D().gadgets[old]?.signature && old!==m.gadget.id)changed.set(old,m.gadget.id);}
+      const offer=id=>!gadgetOwner(run,id) && changed.has(id)?changed.get(id):id;
+      if(run.pending?.kind==='gadget')run.pending.picks=[...new Set(run.pending.picks.map(offer))];
+      if(run.shop){for(const it of run.shop.items)if(it.k==='gadget' && !it.sold)it.id=offer(it.id);appendShelf(run,run.shop.items);}
+      run.lost=(run.lost||[]).map(p=>S3.ops.fit(p));run.v=5;return run;
+    },
+
+  });
   const REWARD_WEIGHT = { fight: { exploit: 50, gadget: 12, data: 16, heal: 13, max: 9 }, elite: { exploit: 60, gadget: 40 } };
   const SQUAD = 3, ROSTER_MAX = 8, RECRUIT_COST = 2;
   // 名冊最多幾個人（「加床位」每級多兩個）。
@@ -21,16 +68,24 @@
   const rngOf = (run) => E.rng.restore(run.rng);
   const keep = (run, r) => { run.rng = r.state; };
   const exploitDef = (id) => D().exploits.find((x) => x.id === id);
-  const occOf = (p) => E.people.occupationOf(p);
+  const occOf = (p) => S3.ops.jobOf(p);
 
   // ===== 永久進度 =====
   // roster：名冊，每一筆是 { p 路人, status: 'ready' 待命｜'held' 被關, runs 出過幾趟 }。
   // story：看過哪些劇情。rescued：一共救出過幾個人。seed：這份存檔的路人種子。
-  function meta() {
-    const m = META.read() || {};
-    return Object.assign({ echoes: 0, perks: {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [], vol: 0, story: {}, rescued: 0, seed: '', endings: {} }, m);
+  function blankMeta(campaign, endings = {}) {
+    return { campaign, echoes: 0, perks: {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [], vol: 0, story: {}, rescued: 0, seed: '',
+      unlocks: { jobs: [], events: [] }, invitations: [], offers: {}, endings: Object.assign({}, endings) };
   }
-  function saveMeta(m) { META.write(m); }
+  function meta() {
+    const stored = META.read();
+    // 舊存檔沒有 campaign：一律視為進行中，不在讀檔時判斷全滅。
+    return stored ? Object.assign(blankMeta('active'), stored) : blankMeta('new');
+  }
+  function saveMeta(m) {
+    if (m.campaign === 'new') m.campaign = 'active';
+    META.write(m);
+  }
   const perkLv = (m, id) => (m.perks && m.perks[id]) || 0;
   function buyPerk(m, id) {
     const def = D().perks.find((p) => p.id === id), lv = perkLv(m, id);
@@ -42,51 +97,100 @@
   }
 
   // ===== 《宵禁》的隊伍 =====
-  // 打完《宵禁》的話（全滅和時間到不算），那一輪的隊伍會跟過來：還在的人直接進名冊；
-  // 當時被捕、被轉移走的人關在基石裡，要到拘留室才救得回來。
-  // 回傳 { ready: [路人], held: [路人] }，沒有可以接的就回傳 null。
+  // 選開局時只預覽；玩家選定繼承後，才把待命和被關的老兵分別加入新名冊。
   const CURFEW_KEY = 'watchdogs-echo.s2.proto';
   const CURFEW_DONE = ['dawn', 'cage', 'wild', 'deal'];
   const CURFEW_READY = ['active', 'injured', 'away', 'network'], CURFEW_HELD = ['arrested', 'lost'];
-  const same = (a, b) => a.id === b.id && a.district === b.district && a.occupation === b.occupation;
-  function inherit(m) {
+  const same = (a, b) => a.id === b.id && (a.signal && a.signal===b.signal || a.district === b.district && a.occupation === b.occupation);
+  function inheritance(m = blankMeta('new')) {
     const old = E.save.peek(CURFEW_KEY);
-    const members = old && CURFEW_DONE.includes(old.ended) && old.roster && Array.isArray(old.roster.members) ? old.roster.members : null;
-    if (!members) return null;
-    // 同一輪《宵禁》只接一次；之後再打完新的一輪，那一輪的人也會過來。
+    if (!old) return { reason: 'missing' };
+    if (!CURFEW_DONE.includes(old.ended)) return { reason: 'unfinished' };
+    if (!old.roster || !Array.isArray(old.roster.members)) return { reason: 'unreadable' };
     const key = String(old.seed || '') + ':' + old.ended;
-    if (m.imported === key) return null;
+    const taken = m.roster.map((x) => x.p);
     // 那份存檔不是這裡寫的：每個人都要是這一季認得的樣子才收。
     const usable = (p) => {
       if (!p || !p.id || !p.district || !p.skills || !Array.isArray(p.traits) || !Array.isArray(p.quirks)) return false;
-      try { return !!D().kits[occOf(p).category] && !m.roster.some((x) => same(x.p, p)); } catch (e) { return false; }
+      try { return !!D().kits[occOf(p).category] && !!E.people.name(p).en && E.people.traitsOf(p).every(Boolean)
+        && !!E.people.flawOf(p) && E.people.quirksOf(p).every(Boolean) && !taken.some((q) => same(q, p)); } catch (e) { return false; }
     };
-    const out = { ready: [], held: [] };
-    const take = (statuses, status, list, max) => {
-      for (const st of statuses) for (const x of members) {
-        if (x.status !== st || list.length >= max || m.roster.length >= rosterMax(m) || !usable(x.person)) continue;
-        m.roster.push({ p: x.person, status, runs: 0, veteran: true });
-        list.push(x.person);
+    const take = (statuses, max) => {
+      const list = [];
+      for (const st of statuses) for (const x of old.roster.members) {
+        if (list.length >= max || taken.length >= rosterMax(m)) return list;
+        if (!x || x.status !== st || !usable(x.person)) continue;
+        taken.push(x.person); list.push(S3.ops.fit(x.person,key));
       }
+      return list;
     };
-    // 名冊有上限：先收還在的人（最多五個），再收被關的人（最多三個）。
-    take(CURFEW_READY, 'ready', out.ready, 5);
-    take(CURFEW_HELD, 'held', out.held, 3);
-    m.imported = key;
+    return { key, ready: take(CURFEW_READY, 5), held: take(CURFEW_HELD, 3) };
+  }
+  function addVeterans(m, source) {
+    for (const status of ['ready', 'held']) for (const p of source[status]) m.roster.push({ p, status, runs: 0, veteran: true });
+    m.imported = source.key;
+  }
+  function inherit(m) {
+    if (m.campaign === 'wiped') return null;
+    const source = inheritance(m);
+    if (source.reason || m.imported === source.key) return null;
+    addVeterans(m, source);
     saveMeta(m);
-    return out.ready.length || out.held.length ? out : null;
+    return source.ready.length || source.held.length ? { ready: source.ready, held: source.held } : null;
   }
 
   // ===== 名冊 =====
+  // 跟《宵禁》night.create 的開場抽同一批康登志願者，包括沒入選的候選人所佔用的姓名。
+  // 手動繼承時避開老兵的編號，優先補還沒到場的職業分類。
+  function addOpening(m, count) {
+    const used = new Set(m.roster.map((x) => x.p.id)), names = new Set(m.roster.map((x) => E.people.name(x.p).en));
+    const cache = [], out = [];
+    const wants = ['hacker', 'physical', 'social'].filter((cat) => !m.roster.some((x) => x.status === 'ready' && occOf(x.p).category === cat));
+    for (const want of wants.concat(null)) {
+      if (out.length >= count) break;
+      for (let i = 0; i < 300; i++) {
+        if (used.has('camden-' + (1000 + i))) continue;
+        if (!cache[i]) {
+          const p = E.people.generate(m.seed, 'camden', 1000 + i), families = E.s2.people.heritages[p.heritage].family.length;
+          for (let k = 0; k < families && names.has(E.people.name(p).en); k++) p.family = (p.family + 1) % families;
+          names.add(E.people.name(p).en);
+          cache[i] = p;
+        }
+        const p = cache[i];
+        if (p.rare || (want && occOf(p).category !== want)) continue;
+        const candidate=S3.ops.street(m.seed,p);
+        if(m.roster.some(x=>same(x.p,candidate)))continue;
+        used.add(p.id); out.push(candidate); m.roster.push({ p:candidate, status: 'ready', runs: 0 });
+        break;
+      }
+    }
+    return out;
+  }
+  function newGame(source, seed, previous = meta()) {
+    const m = blankMeta('active', previous.endings);
+    if(previous.omniRecord)m.omniRecord={...previous.omniRecord};
+    m.seed = seed;
+    let vets = null;
+    if (source === 'inherit') {
+      vets = inheritance();
+      if (vets.reason) return null; // 選擇期間若《宵禁》存檔已經換掉，既有進度不動。
+      addVeterans(m, vets);
+      addOpening(m, Math.max(0, SQUAD - vets.ready.length));
+    } else if (source === 'random') addOpening(m, 4);
+    else return null;
+    saveMeta(m);
+    RUN.clear();
+    return { meta: m, vets };
+  }
   // 找 n 個路人，盡量是名冊裡還沒有的職業分類。tag 讓不同用途抽到不同的人。
   function findPeople(seed, tag, n, taken) {
     const districts = Object.keys(E.s2.people.districts);
     const r = E.rng.derive(seed, 's3', tag);
     const out = [], have = (taken || []).map((p) => occOf(p).category);
     for (let i = 0; out.length < n && i < 80; i++) {
-      const p = E.people.generate(seed + ':s3:' + tag, r.pick(districts), i);
+      const p = S3.ops.street(seed+':'+tag,E.people.generate(seed + ':s3:' + tag, r.pick(districts), i));
       const cat = occOf(p).category;
-      if ((taken || []).some((q) => same(q, p))) continue;
+      if (out.some(q=>same(q,p)) || (taken || []).some((q) => same(q, p))) continue;
       if ((have.includes(cat) || out.some((o) => occOf(o).category === cat)) && i < 40) continue;
       out.push(p);
     }
@@ -94,23 +198,31 @@
   }
   // 沒有連著名冊的單趟（機器人、測試）用的三人小隊。
   const crewFor = (seed) => findPeople(seed, 'crew', SQUAD);
-  // 名冊裡待命的人不到 need 個，就補上新來的志願者（開局是四個人）。
+  // 未結束的名冊至少要有三個人能出發；沒有名冊的舊存檔採用《宵禁》的四人開局。
   function ensureRoster(m) {
-    if (!m.seed) m.seed = 'meta-' + Math.floor(Math.random() * 1e9).toString(36);
-    const need = m.roster.length ? SQUAD : 4;
+    if (m.campaign === 'wiped') return [];
+    m.campaign = 'active';
+    if (!m.seed) m.seed = 'meta-' + E.rng.hash(JSON.stringify([m.roster.map(x=>x.p.id),m.runs,m.endings])).toString(36);
+    if (!m.roster.length) return addOpening(m, 4);
     const ready = m.roster.filter((x) => x.status === 'ready').length;
-    if (ready >= need) return [];
-    const fresh = findPeople(m.seed, 'join' + m.vol, need - ready, m.roster.map((x) => x.p));
+    if (ready >= SQUAD) return [];
+    const fresh = findPeople(m.seed, 'join' + m.vol, SQUAD - ready, m.roster.map((x) => x.p));
     m.vol++;
     for (const p of fresh) m.roster.push({ p, status: 'ready', runs: 0 });
     return fresh;
   }
-  // 這一晚願意加入的志願者（兩個）。
-  const volunteers = (m) => findPeople(m.seed || 'meta', 'vol' + m.vol, 2, m.roster.map((x) => x.p));
+  // 一般志願者每晚更換，尚未接受的邀約則保留（包括名冊已滿時）。
+  const volunteers = (m) => (m.invitations || []).filter((id) => S3.ops.profiles[id]).map(id=>invitePerson(m,id)).concat(findPeople(m.seed || 'meta', 'vol' + m.vol, 2, m.roster.map((x) => x.p)));
   function recruit(m, i) {
     const p = volunteers(m)[i];
-    if (!p || m.roster.length >= rosterMax(m) || m.echoes < RECRUIT_COST) return false;
-    m.echoes -= RECRUIT_COST;
+    if (!p || m.roster.length >= rosterMax(m)) return false;
+    if (isInvitation(p)) {
+      if (m.roster.some((x) => same(x.p,p))) return false;
+      m.invitations.splice(m.invitations.indexOf(p.elite), 1); if(m.offers)delete m.offers[p.elite];
+    } else {
+      if (m.echoes < RECRUIT_COST) return false;
+      m.echoes -= RECRUIT_COST;
+    }
     m.roster.push({ p, status: 'ready', runs: 0 });
     m.vol++;
     saveMeta(m);
@@ -127,12 +239,12 @@
   // ===== 小隊 =====
   // 一個隊員：路人本身，加上這一季用得到的東西（武器、自己的裝備、職業專長）。
   // 裝備只看這個人是誰，不看是哪一晚：同一個人每次出門帶的都是同一件。
-  function memberOf(p) {
-    const occ = occOf(p), kit = D().kits[occ.category];
+  function memberOf(p, saved) {
+    p=S3.ops.fit(p); const template=S3.ops.templateOf(p), occ = occOf(p), kit = D().kits[occ.category];
     const r = E.rng.derive('s3-kit', p.district, p.id, p.occupation, p.age);
     return {
-      p, cat: occ.category, job: occ.perk, weapon: D().weaponByJob[occ.id] || D().weaponByCategory[occ.category],
-      gadget: { id: r.pick(kit.gadget), lv: 1 }, hp: 0, down: false, escaped: false,
+      p, cat: occ.category, job: occ.perk, weapon: template?.weapon || D().weaponByJob[occ.id] || D().weaponByCategory[occ.category],
+      gadget: saved ? Object.assign({}, saved) : { id: template?.gadget || D().gadgetByJob[occ.id] || r.pick(kit.gadget), lv: 1 }, hp: 0, down: false, escaped: false,
     };
   }
   // 第 i 個隊員交給戰鬥模擬的配置：自己的特質和專長，加上全隊共用的漏洞和永久強化。
@@ -140,7 +252,7 @@
     const m = run.squad[i], p = m.p;
     return {
       person: p, cat: m.cat, job: m.job, weapon: m.weapon, skills: p.skills, traits: p.traits, flaw: p.flaw, quirks: p.quirks,
-      exploits: run.build.exploits, extra: run.build.extra, escaped: m.escaped,
+      ...(run.omni ? {overflow:run.omni.overflow} : {}), exploits: run.build.exploits, extra: run.build.extra, escaped: m.escaped, reprievesUsed:m.reprievesUsed||0,
       gadgets: [m.gadget].concat(run.gear ? [run.gear] : []),
     };
   }
@@ -156,10 +268,14 @@
   function start(seed, people, m) {
     m = m || meta();
     const run = {
-      v: 2, seed, sector: 0, depth: 0, roomNo: 0, data: 25 * perkLv(m, 'stash'), rerolls: perkLv(m, 'reroll'),
-      squad: people.slice(0, SQUAD).map((p) => memberOf(p)), active: 0, gear: null,
+      v: SAVE_VERSION, seed, sector: 0, depth: 0, roomNo: 0, data: 25 * perkLv(m, 'stash'), rerolls: perkLv(m, 'reroll'),
+      squad: people.slice(0, SQUAD).map((p) => {
+        const entry = (m.roster || []).find((x) => same(x.p, p));
+        return memberOf(p, entry && entry.gadget);
+      }), active: 0, gear: null,
       build: { exploits: {}, extra: { maxHp: 8 * perkLv(m, 'hp'), bwMax: perkLv(m, 'bw'), focusMul: perkLv(m, 'focus') ? 1.2 : 1 } },
       node: null, options: [], phase: 'route',
+      contacts: m.unlocks ? m.unlocks.events.slice() : [],
       seen: [], shops: {}, cells: {}, held: (m.roster || []).filter((x) => x.status === 'held').length,
       lost: [], revived: false, bailUsed: false, curse: null, kit: perkLv(m, 'kit'), insight: perkLv(m, 'insight'), pending: null, shop: null, event: null, notes: [],
       stats: { kills: 0, hacks: 0, takedowns: 0, silent: 0, rooms: 0, hurt: 0, bosses: 0, rescued: 0, captured: 0 },
@@ -175,11 +291,12 @@
   function route(run) {
     const r = E.rng.derive(run.seed, 'route', run.sector, run.depth, run.roomNo), sec = D().sectors[run.sector];
     const roomNo = run.roomNo + 1;
+    const length = run.omni ? S3.omni.SPAN-1 : sec.rooms;
     let opts;
-    if (run.depth >= sec.rooms) opts = [{ type: 'boss', reward: 'boss', mod: null }];
+    if (run.depth >= length) opts = [{ type: 'boss', reward: 'boss', mod: null }];
     else {
       const n = run.roomNo === 0 ? 2 : r.chance(0.55) ? 3 : 2;
-      const last = run.depth === sec.rooms - 1;
+      const last = run.depth === length - 1;
       const cellsOpen = run.depth >= 1 && !(run.cells || {})[run.sector];
       opts = [];
       for (let i = 0; i < n; i++) {
@@ -205,7 +322,7 @@
         if (o.type !== 'fight' && o.type !== 'elite') continue;
         o.reward = r.weighted(REWARD_WEIGHT[o.type]);
         const pool = Object.keys(D().mods).filter((id) => (D().mods[id].from || 0) <= roomNo);
-        o.mod = r.chance(o.type === 'elite' ? 0.3 : 0.42) ? r.weighted(pool, (id) => D().mods[id].w) : null;
+        o.mod = r.chance(run.omni ? .25 + .40 * roomNo/(roomNo+60) : o.type === 'elite' ? 0.3 : 0.42) ? r.weighted(pool, (id) => D().mods[id].w) : null;
       }
       if (run.curse) { const f = opts.find((o) => o.type === 'fight' || o.type === 'elite'); f.mod = run.curse; }
     }
@@ -234,6 +351,11 @@
   // 目前這個房間的 spec。門的數量要先知道，所以先算一次打完之後的那一批門。
   function spec(run) {
     const sec = D().sectors[run.sector], boss = run.node.type === 'boss';
+    if(run.omni){
+      const pos=S3.omni.position(run.roomNo);
+      const next={...run,...pos,shops:boss?{}:run.shops,cells:boss?{}:run.cells};
+      return S3.gen.room(run.seed,run.sector,run.depth,run.roomNo,run.node,route(next).length,S3.omni.curve(run.roomNo));
+    }
     let doors = 1;
     if (!(boss && run.sector >= D().sectors.length - 1)) {
       const cells = Object.assign({}, run.cells);
@@ -252,7 +374,7 @@
   }
   // 律師的專長：到安全屋或打完首領時，把一個倒下的隊友保出來（每趟一次）。
   function bail(run) {
-    if (run.bailUsed || !hasJob(run, 'bail')) return false;
+    if (run.omni || run.bailUsed || !hasJob(run, 'bail')) return false;
     const i = run.squad.findIndex((m) => m.down);
     if (i < 0) return false;
     run.bailUsed = true;
@@ -260,6 +382,17 @@
     run.squad[i].hp = Math.round(maxHp(run, i) * 0.5);
     run.notes.push({ k: 'bail', i });
     return true;
+  }
+  // A senior can file one release per sector. Field arrests take precedence over safe-house custody.
+  function sectorBail(run,m) {
+    if(run.omni || run.bailSector===run.sector || !hasJob(run,'seniorBail'))return;
+    const i=run.squad.findIndex(x=>x.down), rank=run.build.exploits.surety||0;
+    let person;
+    if(i>=0){const x=run.squad[i];x.down=false;x.hp=Math.round(maxHp(run,i)*(.5+.25*rank));person=x.p;}
+    else if(run.lost?.length){person=run.lost.shift();const entry=m?.roster.find(x=>same(x.p,person));if(entry)entry.status='ready';}
+    else {const held=m?.roster.find(x=>x.status==='held');if(!held)return;held.status='ready';person=held.p;
+      run.held=Math.max(0,run.held-1);m.rescued=(m.rescued||0)+1;saveMeta(m);}
+    run.bailSector=run.sector;run.notes.push({k:'bail',p:person});
   }
   // 全隊的體力上限變了（拿到防彈背心之類），每個人的體力跟著調整。
   function withMaxHp(run, change) {
@@ -273,17 +406,22 @@
 
   // ===== 房間打完 =====
   // 把房間的結果記回這一趟，回傳獎勵：{ kind, picks?, n?, bonus }。全隊都倒了回傳 null。
-  function finishRoom(run, s) {
+  function finishRoom(run, s, meta) {
     const st = run.stats;
     st.kills += s.stats.kills; st.hacks += s.stats.hacks; st.takedowns += s.stats.takedowns; st.hurt += s.stats.hurt;
-    if (s.usedRevive) { run.revived = true; delete run.build.exploits.secondwind; }
+    if (s.usedRevive) {
+      if(run.omni && run.build.exploits.secondwind>1)run.build.exploits.secondwind--;
+      else delete run.build.exploits.secondwind;
+      run.revived=!run.omni;
+    }
     S3.sim.teamState(s).forEach((t, i) => {
       const mem = run.squad[i];
-      if (t.down && !mem.down) st.captured++;
-      mem.down = t.down; mem.hp = t.hp; mem.escaped = t.escaped;
+      if (t.down && !mem.down) { if(run.omni)S3.omni.capture(run,meta,i);else st.captured++; }
+      mem.down = t.down; mem.hp = t.hp; mem.escaped = t.escaped; mem.reprievesUsed=t.reprievesUsed||0;
     });
     if (s.over === 'dead' || !alive(run).length) { run.phase = 'dead'; return null; }
     run.active = run.squad[s.active].down ? alive(run)[0] : s.active;
+    sectorBail(run,meta);
     st.rooms++;
     let bonus = 0;
     if (s.silent && !s.spec.boss) { st.silent++; bonus = 10 + Math.round(s.gain * 0.5); }
@@ -299,6 +437,7 @@
     let reward;
     const kind = run.node.reward;
     if (kind === 'boss') {
+      if(run.omni)run.omni.cleared=run.roomNo; // 第三個首領掉的卡，當下就能用新上限。
       st.bosses++;
       heal(run, 0.1);
       bail(run);
@@ -322,8 +461,8 @@
   function draft(run, r, n, source, minRar) {
     const w = D().rarityWeight[source] || D().rarityWeight.fight;
     const own = run.build.exploits, tags = {};
-    for (const x of D().exploits) if (own[x.id]) tags[x.tag] = 1;
-    const pool = D().exploits.filter((x) => (own[x.id] || 0) < x.max && !(x.id === 'secondwind' && run.revived) && (!minRar || (minRar === 'u' ? x.rar !== 'c' : x.rar === 'r')));
+    for (const x of D().exploits) if (!x.owner && own[x.id]) tags[x.tag] = 1;
+    const pool = D().exploits.filter((x) => !x.owner && (run.omni || (own[x.id] || 0) < x.max) && !(x.id === 'secondwind' && run.revived) && (!minRar || (minRar === 'u' ? x.rar !== 'c' : x.rar === 'r')));
     const out = [];
     while (out.length < n && pool.length) {
       const x = r.weighted(pool, (o) => (minRar ? 1 : w[o.rar]) * (tags[o.tag] ? 1.4 : 1) + 0.001);
@@ -335,14 +474,20 @@
   // 裝備：每個隊員有自己的一件（Q），全隊另外共用一件撿來的（E）。
   const gadgetOwner = (run, id) => run.squad.find((m) => m.gadget.id === id) || (run.gear && run.gear.id === id ? { gadget: run.gear } : null);
   function draftGadgets(run, r, n) {
-    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id); return !o || o.gadget.lv < 3; });
+    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id), g = D().gadgets[id]; return o ? o.gadget.lv < 3 : !g.cameo && !g.signature; });
     return r.shuffle(pool).slice(0, n);
   }
+  function applyCopy(run,def) {
+    const own=run.build.exploits, id=def.id;
+    if(run.omni && (own[id]||0)>=S3.omni.cap(run,def)){
+      run.omni.overflow[id]=(run.omni.overflow[id]||0)+1;run.omni.spill++;
+    }else own[id]=(own[id]||0)+1;
+  }
   function addExploit(run, id) {
-    const def = exploitDef(id), own = run.build.exploits;
-    if (!def || (own[id] || 0) >= def.max) { run.data += 30; return false; }
-    withMaxHp(run, () => { own[id] = (own[id] || 0) + 1; });
-    return true;
+    const def = exploitDef(id);
+    if(def?.owner && !run.squad.some(m=>m.p.elite===def.owner && (!run.omni || !m.down)))return false;
+    if(!def || (!run.omni && (run.build.exploits[id]||0)>=def.max)){run.data+=30;return false;}
+    withMaxHp(run,()=>applyCopy(run,def));return true;
   }
   // 拿一件裝備：隊上已經有同一件（誰的都算）就升級；不然放進共用的那一格（原本有東西就換掉）。
   function addGadget(run, id) {
@@ -381,6 +526,7 @@
   function rescue(run, m) {
     const rw = run.pending;
     if (!rw || rw.kind !== 'rescue') return null;
+    if(run.omni)return S3.omni.rescue(run,m,()=>findPeople(run.seed,'station'+run.roomNo,1,run.squad.map(x=>x.p).concat((m?.roster||[]).map(x=>x.p)))[0]);
     const held = m ? m.roster.find((x) => x.status === 'held') : null;
     let p, known = false, full = false;
     if (held) { held.status = 'ready'; p = held.p; known = true; run.held = Math.max(0, run.held - 1); }
@@ -394,7 +540,7 @@
     let joined = false;
     if (slot >= 0 && !full) {
       run.lost.push(run.squad[slot].p); // 被換下來的人還是被抓走了，結算時要記進名冊
-      run.squad[slot] = memberOf(p);
+      run.squad[slot] = memberOf(p, held && held.gadget);
       run.squad[slot].hp = Math.round(maxHp(run, slot) * 0.6);
       joined = true;
     } else if (full) run.data += 40;
@@ -405,13 +551,16 @@
 
   // 這個節點結束，往下走：下一批門、下一個區段，或是打贏了。
   function advance(run) {
+    if(run.omni && (!run.node || !['doors','done'].includes(run.phase)))return run.phase;
     const wasBoss = run.node && run.node.type === 'boss';
     run.node = null;
     run.shop = null;
     run.event = null;
+    if(run.omni)return S3.omni.advance(run);
     if (wasBoss) {
       if (run.sector >= D().sectors.length - 1) { run.phase = 'won'; return 'won'; }
       run.sector++;
+      run.squad.forEach(m=>{m.reprievesUsed=0;});
       run.depth = 0;
       if (run.kit) heal(run, 15);
     } else run.depth++;
@@ -420,22 +569,31 @@
   }
 
   // ===== 黑市 =====
+  function appendShelf(run,items,r=E.rng.derive('old-shelf',run.seed,run.roomNo), cost=n=>Math.round(n*(1+.35*run.sector))){
+    for(const job of new Set(run.squad.filter(x=>!run.omni || !x.down).map(x=>x.p.elite).filter(Boolean))){
+      const offers=S3.ops.xp.filter(x=>x.owner===job && (run.omni || (run.build.exploits[x.id]||0)<x.max));
+      if(!offers.length){const x=S3.ops.xp.find(x=>x.owner===job);items.push({k:'exploit',id:x.id,owner:job,rank:x.max,sold:true,mastered:true,price:0});continue;}
+      const x=r.pick(offers), rank=(run.build.exploits[x.id]||0)+1;
+      items.push({k:'exploit',id:x.id,owner:job,rank,price:cost(42+15*(rank-1))});
+    }
+  }
   function stock(run) {
     const r = rngOf(run), P = D().price;
     // 價格看隊上最會講價的人；越後面的區段，東西越貴（手上的資料也越多）。
     const mul = Math.min(...alive(run).map((i) => statsOf(run, i).st.priceMul));
-    const cost = (n) => Math.max(1, Math.round(n * mul * (1 + 0.35 * run.sector)));
+    const cost = (n) => Math.max(1, Math.round(n * mul * (run.omni ? S3.omni.price(run) : 1 + 0.35 * run.sector)));
     const items = draft(run, r, 3, 'shop').map((id) => ({ k: 'exploit', id, price: cost(P[exploitDef(id).rar]) }));
     const g = draftGadgets(run, r, 1)[0];
     if (g) items.push({ k: 'gadget', id: g, price: cost(P.gadget) });
     items.push({ k: 'heal', n: 20, price: cost(P.heal) });
+    appendShelf(run,items,r,cost);
     keep(run, r);
     return { items, reroll: cost(P.reroll) };
   }
   const hurtSomeone = (run) => alive(run).some((i) => run.squad[i].hp < maxHp(run, i));
   function buy(run, i) {
     const it = run.shop && run.shop.items[i];
-    if (!it || it.sold || run.data < it.price) return false;
+    if (!it || it.sold || (it.owner && (!run.squad.some(m=>m.p.elite===it.owner) || (run.build.exploits[it.id]||0)+1!==it.rank)) || run.data < it.price) return false;
     if (it.k === 'heal' && !hurtSomeone(run)) return false;
     run.data -= it.price;
     it.sold = true;
@@ -471,8 +629,11 @@
   // ===== 事件 =====
   function pickEvent(run) {
     const r = rngOf(run);
-    const pool = D().events.filter((e) => !(e.once && run.seen.includes(e.id)) && !(run.seen[run.seen.length - 1] === e.id));
-    const ev = r.pick(pool.length ? pool : D().events);
+    const met = run.seen.some((id) => (eventDef(id) || {}).premium);
+    const pool = D().events.filter((e) => (!e.premium || (!met && (run.contacts || []).includes(e.id))) &&
+      !(e.once && run.seen.includes(e.id)) && run.seen[run.seen.length - 1] !== e.id);
+    const ev = r.weighted(pool, (e) => e.premium ? 0.25 : 1);
+    if(run.omni)run.seen=run.seen.filter(id=>id!==ev.id); // 一個事件最多一筆；末項仍是上一次。
     run.seen.push(ev.id);
     keep(run, r);
     return { id: ev.id, result: null };
@@ -480,10 +641,10 @@
   const eventDef = (id) => D().events.find((e) => e.id === id);
   function canChoose(run, i) {
     const c = eventDef(run.event.id).choices[i];
-    return !!c && (!c.cost || run.data >= c.cost);
+    return !run.event.result && !!c && (!c.cost || run.data >= c.cost);
   }
   // 選事件的第 i 個選項。回傳 { key 結果文字的 key、fx 發生了什麼 }。
-  function choose(run, i) {
+  function choose(run, i, m) {
     const def = eventDef(run.event.id), c = def.choices[i];
     if (!canChoose(run, i)) return null;
     if (c.cost) run.data -= c.cost;
@@ -495,14 +656,22 @@
       tail = '.' + hit[2];
       keep(run, r);
     }
-    const got = applyFx(run, fx || {});
+    const got = applyFx(run, fx || {}, m);
     run.event.result = { key: 's3.ev.' + def.id + '.r' + i + tail, fx: got };
     if (run.phase !== 'reward') run.phase = 'done';
     return run.event.result;
   }
   // 事件的效果。治療是全隊的；受傷算在場上那個人身上（不會因此倒下）。
-  function applyFx(run, fx) {
+  function applyFx(run, fx, m) {
     const out = Object.assign({}, fx);
+    if (fx.imprint) {
+      const mem = run.squad[run.active], p = mem.p, entry = m && m.roster.find((x) => same(x.p, p));
+      if (!(p.imprints || []).includes(fx.imprint)) withMaxHp(run, () => { mem.p = Object.assign({}, p, { imprints: (p.imprints || []).concat(fx.imprint) }); });
+      else out.known = true;
+      out.person = mem.p;
+      // 不靠兩份存檔共用物件；試玩或機器人沒有名冊，不會動到傳入的小隊。
+      if (entry && !run.omni) { entry.p = Object.assign({}, entry.p, { imprints: mem.p.imprints.slice() }); saveMeta(m); }
+    }
     if (fx.data) run.data += fx.data;
     if (fx.heal) heal(run, fx.heal);
     if (fx.hurt) { const me = run.squad[run.active]; me.hp = Math.max(1, me.hp - fx.hurt); }
@@ -529,7 +698,7 @@
             if (--own[id] <= 0) delete own[id];
             out.lost.push(id);
             const pick = draft(run, r, 1, 'elite', 'u')[0];
-            if (pick) { own[pick] = (own[pick] || 0) + 1; out.got.push(pick); }
+            if (pick) { applyCopy(run,exploitDef(pick)); out.got.push(pick); }
           }
           if (!out.lost.length) { run.data += 30; out.data = 30; }
         } else if (ids.length) {
@@ -544,12 +713,31 @@
 
   // ===== 結束：算殘響，更新名冊 =====
   // 倒下的隊員被關進基石（打通的話，所有被關的人都放出來）。回傳 { earned, meta, captured: [路人], freed: 幾個人 }。
-  function finish(run, won, m) {
+  function winUnlocks(run, m, ending) {
+    const u = m.unlocks || (m.unlocks = { jobs: [], events: [] });
+    const r = E.rng.derive(m.seed, run.seed, 'victory', m.wins);
+    const jobs = Object.keys(S3.ops.profiles).filter((id) => !u.jobs.includes(id));
+    const job = jobs.length ? r.pick(jobs) : null, events = [];
+    if (job) { (m.offers || (m.offers={}))[job]=S3.ops.person(job,[m.seed,run.seed,m.wins].join(':')); u.jobs.push(job); (m.invitations || (m.invitations = [])).push(job); }
+    const contact = D().endingContacts[ending];
+    if (contact && !u.events.includes(contact)) { u.events.push(contact); events.push(contact); }
+    const extra = Object.values(D().endingContacts).filter((id) => !u.events.includes(id));
+    if (extra.length && r.chance(0.5)) { const id = r.pick(extra); u.events.push(id); events.push(id); }
+    return { job, events };
+  }
+  function afterLoss(m) {
+    if(!(m.wins>=1) || !m.roster.length || !m.roster.every(x=>x.status==='held' || x.status==='station'))return m;
+    const closed=blankMeta('wiped',m.endings);closed.endings.wipe=1;
+    if(m.omniRecord)closed.omniRecord={...m.omniRecord};
+    return closed;
+  }
+  function finish(run, won, m, ending) {
     m = m || meta();
     const earned = run.stats.rooms + 5 * run.stats.bosses + 2 * run.stats.rescued + (won ? 15 : 0);
     m.echoes += earned;
     m.runs++;
-    if (won) m.wins++;
+    if (won) { m.wins++; if (ending) { m.endings[ending] = 1; m.story.ended = ending; } }
+    const unlocked = won ? winUnlocks(run, m, ending) : null;
     m.best = Math.max(m.best, run.roomNo);
     const captured = [];
     const entryOf = (p) => (m.roster || []).find((x) => same(x.p, p));
@@ -563,14 +751,17 @@
     if (won) for (const x of m.roster || []) if (x.status === 'held') { x.status = 'ready'; freed++; }
     m.rescued = (m.rescued || 0) + freed;
     m.vol = (m.vol || 0) + 1;
+    // 小隊和中途被替換的人都已經入冊；安全屋還沒補志願者。wins 只算這局。
+    if(!won)m=afterLoss(m);
+    const wiped=m.campaign==='wiped';
     saveMeta(m);
     RUN.clear();
-    return { earned, meta: m, captured, freed };
+    return { earned: wiped ? 0 : earned, meta: m, captured, freed, wiped, unlocked };
   }
 
   S3.run = {
-    SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax,
-    meta, saveMeta, perkLv, buyPerk, inherit, ensureRoster, volunteers, recruit, dismiss, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
+    same, afterLoss, SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax, invitePerson,isInvitation,
+    meta, saveMeta, perkLv, buyPerk, inheritance, inherit, newGame, ensureRoster, volunteers, recruit, dismiss, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
     start, route, enter, spec, carry, finishRoom, take, reroll, rescue, advance, bail, heal,
     buy, restock, safe, choose, canChoose, finish, addExploit, addGadget, maxHp, exploitDef, eventDef, hurtSomeone, isRoom,
     save(run) { RUN.write(run); },

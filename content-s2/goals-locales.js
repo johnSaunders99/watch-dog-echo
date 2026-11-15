@@ -10,8 +10,8 @@
     // 主線任務一：熄燈
     'm1.goal.phone': '你的手機一直在響：看看是誰',
     'm1.goal.phone.how': '點「讀取 手機」。',
-    'm1.goal.agree': '答應 Bagley，去對街的地下室',
-    'm1.goal.agree.how': '跟 Bagley 交談：可以先問為什麼找你，再答應它。',
+    'm1.goal.agree': '答應貝格利，去對街的地下室',
+    'm1.goal.agree.how': '跟貝格利交談：可以先問為什麼找你，再答應它。',
     'm1.goal.hood': '拿烘衣機裡的連帽外套',
     'm1.goal.hood.how': '點「拿 烘衣機裡的外套」：等一下被無人機拍到時，步態辨識比較認不出你。',
     'm1.goal.out': '從後門出去',
@@ -27,8 +27,8 @@
     'm1.goal.core.how': '點「拿 亮綠燈的硬碟」。拿了之後，樓上的人三個動作內就會衝下來，動作要快。',
     'm1.goal.hatch': '從運煤口逃出去',
     'm1.goal.hatch.how': '點「前往 運煤口」（拿到硬碟之後才會出現）。',
-    'm1.goal.end': '聽 Bagley 說接下來要做什麼',
-    'm1.goal.end.how': '點「交談 Bagley」。',
+    'm1.goal.end': '聽貝格利說接下來要做什麼',
+    'm1.goal.end.how': '點「交談 貝格利」。',
     // 主線任務二：宵禁之夜
     'm2.goal.brief': '聽聽隊友能幫什麼忙',
     'm2.goal.brief.how': '點「交談 隊友」：每個隊友的類別（身體、社交、駭客、專長）在後面都會開出不花頻寬的辦法。',
@@ -47,8 +47,8 @@
     'm2.goal.escape': '在巡邏車開到之前離開',
     'm2.goal.escape.how': '巡邏車三個動作內就會到。點「駭入 巡邏車」、「交談 隊友」，或直接「前往 運河」走小路回去。',
     'm2.goal.escape.howDark': '巡邏車三個動作內就會到。街上有人開了門讓你們躲：「前往 開著的門」（這個人之後可以招募）；也可以「駭入 巡邏車」、「交談 隊友」，或「前往 運河」。',
-    'm2.goal.end': '跟 Bagley 聊聊今晚',
-    'm2.goal.end.how': '點「交談 Bagley」。',
+    'm2.goal.end': '跟貝格利聊聊今晚',
+    'm2.goal.end.how': '點「交談 貝格利」。',
   });
 
   E.i18n.register('zh-Hans', {
@@ -58,8 +58,8 @@
     's2.story.goalOpt': '（可选）',
     'm1.goal.phone': '你的手机一直在响：看看是谁',
     'm1.goal.phone.how': '点“读取 手机”。',
-    'm1.goal.agree': '答应 Bagley，去对街的地下室',
-    'm1.goal.agree.how': '跟 Bagley 交谈：可以先问为什么找你，再答应它。',
+    'm1.goal.agree': '答应贝格利，去对街的地下室',
+    'm1.goal.agree.how': '跟贝格利交谈：可以先问为什么找你，再答应它。',
     'm1.goal.hood': '拿烘衣机里的连帽外套',
     'm1.goal.hood.how': '点“拿 烘衣机里的外套”：等一下被无人机拍到时，步态识别比较认不出你。',
     'm1.goal.out': '从后门出去',
@@ -75,8 +75,8 @@
     'm1.goal.core.how': '点“拿 亮绿灯的硬盘”。拿了之后，楼上的人三个动作内就会冲下来，动作要快。',
     'm1.goal.hatch': '从运煤口逃出去',
     'm1.goal.hatch.how': '点“前往 运煤口”（拿到硬盘之后才会出现）。',
-    'm1.goal.end': '听 Bagley 说接下来要做什么',
-    'm1.goal.end.how': '点“交谈 Bagley”。',
+    'm1.goal.end': '听贝格利说接下来要做什么',
+    'm1.goal.end.how': '点“交谈 贝格利”。',
     'm2.goal.brief': '听听队友能帮什么忙',
     'm2.goal.brief.how': '点“交谈 队友”：每个队友的类别（身体、社交、黑客、专长）在后面都会开出不花带宽的办法。',
     'm2.goal.site': '走到大街尽头的工地',
@@ -94,8 +94,8 @@
     'm2.goal.escape': '在巡逻车开到之前离开',
     'm2.goal.escape.how': '巡逻车三个动作内就会到。点“入侵 巡逻车”、“交谈 队友”，或直接“前往 运河”走小路回去。',
     'm2.goal.escape.howDark': '巡逻车三个动作内就会到。街上有人开了门让你们躲：“前往 开着的门”（这个人之后可以招募）；也可以“入侵 巡逻车”、“交谈 队友”，或“前往 运河”。',
-    'm2.goal.end': '跟 Bagley 聊聊今晚',
-    'm2.goal.end.how': '点“交谈 Bagley”。',
+    'm2.goal.end': '跟贝格利聊聊今晚',
+    'm2.goal.end.how': '点“交谈 贝格利”。',
   });
 
   E.i18n.register('en', {

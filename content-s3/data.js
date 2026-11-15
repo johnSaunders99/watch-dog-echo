@@ -13,10 +13,14 @@
     shotgun: { dmg: 6.5, rate: 1.35, mag: 5, reload: 1.5, speed: 860, spread: 0.24, pellets: 6, range: 430, noise: 520, sneak: 2, knock: 130 },
     nailgun: { dmg: 5, rate: 8, mag: 30, reload: 1.6, speed: 880, spread: 0.07, pellets: 1, range: 760, noise: 300, sneak: 2, pierce: 1 },
     silenced: { dmg: 11, rate: 3.4, mag: 10, reload: 1.1, speed: 950, spread: 0.02, pellets: 1, range: 900, noise: 0, sneak: 3 },
+    match: { dmg: 16, rate: 5.2, mag: 14, reload: 1, speed: 1050, spread: 0.014, pellets: 1, range: 950, noise: 0, sneak: 3 },
+    rifle: { dmg: 18, rate: 8, mag: 30, reload: 1.8, speed: 1100, spread: 0.052, pellets: 1, range: 1050, noise: 2000, roomAlarm: true, sneak: 2 },
+    carbine: { dmg: 16, rate: 7.5, mag: 30, reload: 1.8, speed: 1100, spread: 0.027, pellets: 1, range: 1050, noise: 1850, roomAlarm: true, sneak: 2 },
   };
   // 職業分類決定武器；少數職業有自己的。
   const weaponByCategory = { hacker: 'taser', physical: 'shotgun', social: 'silenced', specialist: 'pistol' };
-  const weaponByJob = { builder: 'nailgun', locksmith: 'nailgun', drone_op: 'pistol', parkour: 'pistol' };
+  const weaponByJob = { builder: 'nailgun', locksmith: 'nailgun', drone_op: 'pistol', parkour: 'pistol',
+    hitman: 'rifle', spy: 'match', drone_expert: 'pistol', hooligan: 'shotgun', beekeeper: 'taser', statue: 'silenced' };
 
   // ===== 能力值 =====
   // addStats 裡的能力用加的，其他用乘的（每疊一層再乘一次）。
@@ -101,6 +105,9 @@
     master_keys: { flags: { keys: 1 } },
     rooftops: { mods: { dashCharges: 1 } },
   };
+  // 個人留下的經歷只生效一次；比對的是人，不是小隊的位置。
+  const imprints = { softstep: { mods: { detectMul: 0.85 } }, tidebreath: { mods: { focusRegen: 1.2 } },
+    arcscar: { mods: { meleeDmg: 10, maxHp: -6 } }, lining: { mods: { maxHp: 12 } } };
 
   // ===== 漏洞（升級）=====
   // rar：c 常見、u 少見、r 稀有。tag：net 網路、shock 電擊、blast 爆破、puppet 傀儡、gun 槍、body 身體。max 最多疊幾層。
@@ -165,22 +172,43 @@
   // ===== 裝備（Q、E 兩格）=====
   // cd 冷卻秒數。同一件再拿一次會升級（最多 3 級）：冷卻 −20%，效果變強。
   const gadgets = {
-    eagle: { cd: 14, range: 520, r: 170, stun: 2.4, dmg: 15 },            // Darcy 的老鷹無人機：飛到游標處，電磁脈衝
-    blackout: { cd: 28, dur: 5 },                                         // 艾登的大停電：全場敵人看不到你
-    sergei: { cd: 12, range: 560, r: 95, dmg: 60, fuse: 0.7, crate: 10 }, // Wrench 的謝爾蓋：把貨箱丟到游標處
-    hammer: { cd: 6, r: 105, arc: 1.25, dmg: 55, knock: 260, stun: 0.9 }, // Wrench 的鐵鎚
+    escort: { cd: 16, dur: 7, dmg: 6, rate: 4, sight: 400 },
+    kamikaze: { cd: 14, range: 520, r: 170, stun: 2.4, dmg: 15, flight: 0.5 },
+    cargo: { cd: 12, range: 560, r: 95, dmg: 60, fuse: 0.7, crate: 10 },
+    // cameo：只能從客串事件取得；戰利品和黑市只能升級已經持有的裝備。
+    eagle: { cameo: true, cd: 16, range: 520, flight: 0.5, dur: 7, scan: 250, noise: 340, beat: 1.6, r: 170, dmg: 35, emp: 4, stun: 1.5 },
+    blackout: { cameo: true, cd: 28, dur: 5 },
+    sergei: { cameo: true, cd: 12, range: 560, r: 95, dmg: 70, fuse: 0.7, crate: 10, jamRange: 260, targets: 5, dur: 6 },
+    hammer: { cameo: true, cd: 6, r: 115, arc: 1.35, dmg: 65, knock: 300, stun: 1.1 },
+    sledge: { cd: 6, r: 95, arc: 1.05, dmg: 45, knock: 210, stun: 0.7 },  // 工地的大鐵鎚（身體類的人自己帶的）
     mask: { cd: 18, dur: 4, mult: 3 },                                    // 第二張臉：隱形
     spider: { cd: 20, dur: 11, dmg: 7, rate: 5, sight: 420 },             // 蜘蛛機器人：自動砲塔
     lure: { cd: 10, range: 520, dur: 4.5, r: 330 },                       // 誘餌喇叭
     mine: { cd: 8, r: 120, stun: 2, dmg: 25, max: 3 },                    // 電擊地雷
+    strike: { signature: true, cd: 21, range: 620, r: 120, dmg: 60, flight: 0.55, gap: 0.65 },
+    expert: { signature: true, cd: 23, dur: 16, dmg: 12, rate: 5, sight: 520, pierce: 1 },
+    brawl: { signature: true, cd: 23, dur: 10, dmg: 22, gap: 0.8 },
+    swarm: { signature: true, cd: 16, range: 520, r: 148, dur: 6, dmg: 14 },
+    hypnosis: { signature: true, cd: 12, r: 350, arc: 1.15, dur: 8 },
+    execute: { signature:true, cd:4, r:117 }, quickstep:{signature:true, cd:4},
+    veil:{signature:true, cd:21, dur:8}, shockdrone:{signature:true, cd:21, dur:11, range:580, r:182, dmg:18, gap:.90},
+    rush:{signature:true, cd:8}, hiveguard:{signature:true, cd:18, dur:7, r:115, dmg:15},
+    performance:{signature:true, cd:10, dur:9, r:400, windup:.85, flash:150, trap:2.5, linger:2.5, stun:3.5, frontRow:220, closeFlash:2, refund:4}, metronome:{signature:true, cd:13, dur:6, r:380, arc:.88},
+    molotov:{signature:true, cd:8, range:530, r:145, dmg:68, burn:25, dur:5, flight:.32},
+    pipebomb:{signature:true, cd:10, range:560, r:178, dmg:115, burn:15, dur:3, flight:.45, breacher:2.5},
+    medbeacon:{signature:true, cd:21, dur:8, range:420, r:115, heal:6},
+    injunction:{signature:true, cd:14, dur:9, range:530, r:205, evidenceMul:1.8}, escortWrit:{signature:true, cd:15, dur:9, r:173},
+    eightball: { cameo: true, cd: 7, r: 145, dmg: 85, stun: 2 },
   };
   // 職業分類的起始裝備和起始漏洞（各從裡面隨機一個）。
   const kits = {
-    hacker: { gadget: ['eagle', 'mine'], exploit: ['chain', 'fiber', 'antenna', 'ransom'] },
-    physical: { gadget: ['hammer', 'mine'], exploit: ['kevlar', 'adrenal', 'scavenger', 'static'] },
+    hacker: { gadget: ['escort', 'kamikaze'], exploit: ['chain', 'fiber', 'antenna', 'ransom'] },
+    physical: { gadget: ['sledge', 'mine'], exploit: ['kevlar', 'adrenal', 'scavenger', 'static'] },
     social: { gadget: ['lure', 'mask'], exploit: ['silencer', 'afterimage', 'miner', 'profiler'] },
-    specialist: { gadget: ['spider', 'sergei'], exploit: ['puppet', 'extmag', 'medic', 'thermal'] },
+    specialist: { gadget: ['spider', 'mine'], exploit: ['puppet', 'extmag', 'medic', 'thermal'] },
   };
+  const gadgetByJob = { builder: 'cargo', docker: 'cargo', removals: 'cargo', hitman: 'mask', spy: 'strike',
+    drone_expert: 'expert', hooligan: 'brawl', beekeeper: 'swarm', statue: 'performance' };
 
   // ===== 敵人 =====
   // cost 佔用房間的威脅額度、data 掉多少資料、from 從第幾個房間開始出現（整趟算）、sight 看多遠、fov 視角的一半（弧度）。
@@ -244,7 +272,8 @@
   // 小隊有三個人可以輪流上，所以敵人的傷害整體乘上這個倍率：一趟下來通常會有一兩個人被抓。
   // 2026-11-12 陷阱打到沒發現你的敵人會直接放倒、急救包會補場下的人、車變強之後，機器人的勝率從約六成升到八成；調到 2.1 回到約六成。
   // 2026-11-13 被電暈、在蒸汽裡的敵人可以撲過去制伏之後，勝率又升到八成；調到 2.45 回到約六成（120 個種子 62%）。
-  const enemyDmg = 2.45;
+  // 無人機分工後，以同一批 120 個種子實測：2.45 通關 91 次，2.95 通關 68 次。
+  const enemyDmg = 2.95;
 
   // ===== 區段 =====
   // rooms 首領前有幾個房間；budget 第一間和最後一間的威脅額度；scale 敵人血量和傷害的倍率；layouts 房間骨架；props 各種設施最少和最多幾個。
@@ -264,19 +293,30 @@
   // once：一趟只會遇到一次。cameo：頭像（js/ui/art.js）。choices 的效果由 js/s3/run.js 處理。
   // roll：[累計機率, 效果, 文字後綴]，擲出來的數字小於哪一個的累計機率就是哪一個（最後一個一定是 1）。cost：要先付多少資料。
   const events = [
-    { id: 'wrench', cameo: 'wrench', once: true, choices: [{ fx: { gadget: 'sergei' } }, { fx: { gadget: 'hammer' } }] },
-    { id: 'darcy', cameo: 'darcy', once: true, choices: [{ fx: { gadget: 'eagle' } }, { fx: { data: 45 } }] },
-    { id: 'aiden', cameo: 'aiden', once: true, choices: [{ fx: { exploit: 'deepfocus' } }, { fx: { gadget: 'blackout' } }] },
-    { id: 'marcus', cameo: 'marcus', once: true, choices: [{ fx: { draft: 'u' } }, { fx: { data: 50 } }] },
+    { id: 'wrench', cameo: 'wrench', premium: true, choices: [{ fx: { gadget: 'sergei' } }, { fx: { gadget: 'hammer' } }] },
+    { id: 'darcy', cameo: 'darcy', premium: true, choices: [{ fx: { gadget: 'eagle' } }, { fx: { data: 45 } }] },
+    { id: 'aiden', cameo: 'aiden', premium: true, choices: [{ fx: { exploit: 'deepfocus' } }, { fx: { gadget: 'blackout' } }] },
+    { id: 'marcus', cameo: 'marcus', premium: true, choices: [{ fx: { gadget: 'eightball' } }, { fx: { data: 50 } }] },
     { id: 'bluedoor', cameo: 'bluedoor', once: true, choices: [{ fx: { gadget: 'mask' } }, { fx: { heal: 25 } }] },
     { id: 'cat', cameo: 'cat', once: true, choices: [{ fx: { heal: 30 } }, { fx: { maxBw: 1, hurt: 10 } }] },
-    { id: 'tarot', cameo: 'tarot', once: true, choices: [{ roll: [[0.34, { maxHp: 15 }, 'a'], [0.67, { rerolls: 2 }, 'b'], [1, { data: 40 }, 'c']] }, { fx: {} }] },
+    { id: 'tarot', cameo: 'device', once: true, choices: [{ roll: [[0.34, { maxHp: 15 }, 'a'], [0.67, { rerolls: 2 }, 'b'], [1, { data: 40 }, 'c']] }, { fx: {} }] },
     { id: 'vending', cameo: 'device', choices: [{ cost: 15, roll: [[0.5, { heal: 25 }, 'a'], [0.7, { data: 60 }, 'b'], [1, {}, 'c']] }, { fx: {} }] },
     { id: 'terminal', cameo: 'device', choices: [{ roll: [[0.6, { data: 55 }, 'a'], [1, { curse: 'sweep' }, 'b']] }, { fx: {} }] },
     { id: 'courier', cameo: 'crowd', choices: [{ fx: { hurt: 15, draft: 'u' } }, { fx: {} }] },
     { id: 'dealer', cameo: 'agent', choices: [{ fx: { maxHp: -15, draft: 'r' } }, { fx: {} }] },
     { id: 'bagley', cameo: 'bagley', choices: [{ roll: [[0.65, { recompile: 1 }, 'a'], [1, { recompile: -1 }, 'b']] }, { fx: {} }] },
+    { id: 'haylift', cameo: 'crowd', choices: [{ fx: { heal: 22, data: 12 } }, { fx: { data: 16 } }] },
+    { id: 'giltfruit', cameo: 'device', choices: [{ fx: { data: 32 } }, { fx: { hurt: 8, curse: 'sweep' } }] },
+    { id: 'sandglass', cameo: 'device', choices: [{ fx: { rerolls: 2 } }, { fx: { data: 18 } }] },
+    { id: 'hotwash', cameo: 'device', once: true, choices: [{ fx: { imprint: 'softstep' } }, { fx: { curse: 'sweep' } }] },
+    { id: 'yellowtag', cameo: 'device', choices: [{ fx: { maxBw: 1 } }, { fx: { heal: 20, curse: 'sweep' } }] },
+    { id: 'lastferry', cameo: 'crowd', once: true, choices: [{ fx: { imprint: 'tidebreath' } }, { fx: { data: 27 } }] },
+    { id: 'coldchain', cameo: 'device', choices: [{ fx: { heal: 32 } }, { fx: { draft: 'u' } }] },
+    { id: 'bellwire', cameo: 'device', once: true, choices: [{ fx: { imprint: 'arcscar', data: 40 } }, { fx: { data: 18 } }] },
+    { id: 'nightbus', cameo: 'crowd', choices: [{ fx: { rerolls: 1, data: 15 } }, { fx: { heal: 18 } }] },
+    { id: 'seamstress', cameo: 'crowd', once: true, choices: [{ fx: { imprint: 'lining' } }, { fx: { data: 28 } }] },
   ];
+  const endingContacts = { return: 'aiden', burn: 'wrench', open: 'marcus', teach: 'darcy' };
 
   // ===== 永久強化（用殘響買）=====
   const perks = [
@@ -291,7 +331,7 @@
   ];
 
   S3.data = {
-    weapons, weaponByCategory, weaponByJob, baseStats, addStats, traitFx, flawFx, quirkFx, jobFx,
-    exploits, rarityWeight, price, gadgets, kits, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
+    weapons, weaponByCategory, weaponByJob, baseStats, addStats, traitFx, flawFx, quirkFx, jobFx, imprints, endingContacts,
+    exploits, rarityWeight, price, gadgets, kits, gadgetByJob, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
   };
 })(window.ECHO = window.ECHO || {});

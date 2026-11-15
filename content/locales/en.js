@@ -77,7 +77,7 @@ ECHO.i18n.register('en', {
   'help.8': 'You can also tap the suggested commands below. Type "lang 繁中" or "lang 简中" to switch language.',
 
   'boot.1': 'Booting…',
-  'boot.2': 'Integrity 61%. Some modules missing.',
+  'boot.2': 'Integrity 61%. Some modules missing. Last stop request: no response.',
   'boot.3': '1 delayed-delivery message detected. Trigger: sender offline for 72 hours.',
   'boot.4': 'This system is ECHO.',
   'boot.5': 'This system does not know why it is here.',
@@ -264,7 +264,7 @@ ECHO.i18n.register('en', {
   'mem.echo7.look': 'ECHO-7. Its status light pulses slowly, like breathing.',
   'mem.echo7.scan.1': '[PROFILER] ECHO-7 | Memory reconstruction engine',
   'mem.echo7.scan.2': 'Status: Sandboxed. External connections: none.',
-  'mem.echo7.scan.3': '(This system is scanning this system.)',
+  'mem.echo7.scan.3': '(This system is scanning this system. …A slight pain in the right thumb. This system has no right thumb.)',
   'mem.transfer.1': 'Connecting to port… bypassing sandbox…',
   'mem.transfer.2': 'Transferring ECHO-7 to DedSec node CMD-7: 100%',
   'mem.transfer.3': '[ALARM] Unauthorised data exfiltration. Quiet Room lockdown in 60 seconds.',

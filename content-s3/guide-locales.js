@@ -7,6 +7,7 @@
     's3.sec.docks.n': '卸貨碼頭', 's3.sec.docks.d': '堡壘的入口。貨櫃、無人車和油桶到處都是，守衛還不算多。',
     's3.sec.offices.n': '管制樓層', 's3.sec.offices.d': '隔間、攝影機和廣播喇叭。這裡開始有盾兵、狙擊手和無人機。',
     's3.sec.vault.n': '基石機房', 's3.sec.vault.d': '最底層。伺服器、自動砲塔和重裝兵，再往下就是核心。',
+    's3.guide.route': '通往核心有三道封鎖線：卸貨碼頭 5 個行動點、管制樓層 6 個、基石機房 6 個。每段盡頭各有一名首領，合計 20 關。黑市、維修間、事件和拘留室都佔一個行動點，不另加關。',
     's3.boss.bulldog.n': '鎮暴隊長「鬥牛犬」',
     's3.boss.carrier.n': '守夜人母機',
     's3.boss.keystone.n': '基石核心',
@@ -28,10 +29,14 @@
 
     // ----- 武器 -----
     's3.wp.pistol.n': '手槍', 's3.wp.pistol.d': '均衡。',
+    's3.pause.weapons': '武器手冊',
+    's3.wp.match.n': '訂製消音手槍', 's3.wp.match.d': '間諜的 14 發短槍，比一般滅音手槍更準、單發更重。槍聲不會引來守衛。',
     's3.wp.taser.n': '電擊槍', 's3.wp.taser.d': '每第三發電暈目標。',
     's3.wp.shotgun.n': '霰彈槍', 's3.wp.shotgun.d': '近距離一次六顆，會把人打退。',
     's3.wp.nailgun.n': '釘槍', 's3.wp.nailgun.d': '射得很快，釘子會穿過一個敵人。',
     's3.wp.silenced.n': '滅音手槍', 's3.wp.silenced.d': '沒有槍聲，偷襲的傷害三倍。',
+    's3.wp.rifle.n': '突擊步槍', 's3.wp.rifle.d': '殺手的 30 發全自動步槍，持續火力最高。沒裝滅音器，第一槍就會驚動全房。',
+    's3.wp.carbine.n': '卡賓槍', 's3.wp.carbine.d': '30 發，散布比突擊步槍小，單發傷害略低。未滅音仍會驚動全房。',
 
     // ----- 駭入的動作 -----
     's3.hack.free': '免費',
@@ -102,12 +107,18 @@
     's3.ex.medic.n': '急救訓練', 's3.ex.medic.d': '每打完一間，回 6 體力。',
 
     // ----- 裝備 -----
-    's3.gad.eagle.n': '老鷹無人機', 's3.gad.eagle.d': '飛到游標的位置放出電磁脈衝：電暈一圈敵人，順便癱瘓盾牌。',
+    's3.gad.escort.n': '跟隨無人機', 's3.gad.escort.d': '跟在上場隊員身邊，自動射擊看得見的敵人。飛行 7 秒，比蜘蛛砲台短。',
+    's3.gad.kamikaze.n': '自爆無人機', 's3.gad.kamikaze.d': '直飛游標位置，到達就自爆。電擊會傷害並暈眩附近敵人，讓盾牌失效。',
+    's3.gad.cargo.n': '工程無人機', 's3.gad.cargo.d': '朝游標位置丟下貨箱，砸傷並震退敵人。箱子留在地上，能當掩體。',
+    's3.gad.eagle.n': '老鷹無人機', 's3.gad.eagle.d': '達西的偵查機不開火。派它到游標處盤旋，隔牆標記敵人，用噪音把守衛引過去。再按一次就自爆，時間到也會引爆：傷敵、電暈人員、癱瘓機械。',
+    's3.gad.flying': '老鷹飛行中', 's3.gad.detonate': '引爆老鷹',
     's3.gad.blackout.n': '大停電', 's3.gad.blackout.d': '全場停電 5 秒：敵人看不到你，正在叫人的也會被打斷。',
-    's3.gad.sergei.n': '謝爾蓋', 's3.gad.sergei.d': '工程無人機把貨箱砸在游標的位置，砸完留下來當掩體。',
-    's3.gad.hammer.n': '鐵鎚', 's3.gad.hammer.d': '往前面掃一大片：重傷、打飛、電暈，盾牌也會被敲掉。',
+    's3.gad.sergei.n': '謝爾蓋', 's3.gad.sergei.d': '扳手的改裝機投下重箱當掩體，同時向附近一群敵人發射干擾彈。頭頂亮起綠色問號的敵人只打同伴，不會叫援軍。',
+    's3.gad.hammer.n': '粉碎女士', 's3.gad.hammer.d': '扳手改裝的大鐵鎚：比工地的鐵鎚掃得更大、更重，打飛、敲暈，盾牌一下就碎。',
+    's3.gad.sledge.n': '大鐵鎚',
+    's3.gad.sledge.d': '工地用的大鐵鎚：往前掃一片，打傷、打退、敲暈，盾牌也會被敲開。',
     's3.gad.mask.n': '第二張臉', 's3.gad.mask.d': '隱形 4 秒。隱形時開的第一槍傷害三倍。',
-    's3.gad.spider.n': '蜘蛛機器人', 's3.gad.spider.d': '在腳邊放一台自動砲塔，撐 11 秒。',
+    's3.gad.spider.n': '蜘蛛機器人', 's3.gad.spider.d': '放出一台蜘蛛機器人，在腳邊自己找敵人開槍，撐 11 秒。',
     's3.gad.lure.n': '誘餌喇叭', 's3.gad.lure.d': '丟到游標的位置，附近的敵人會被引過去幾秒。',
     's3.gad.mine.n': '電擊地雷', 's3.gad.mine.d': '放在腳下，敵人踩到會電暈一圈；還沒發現你的敵人會直接倒下。最多放三顆。',
 
@@ -137,6 +148,7 @@
     's3.sec.docks.n': '卸货码头', 's3.sec.docks.d': '堡垒的入口。集装箱、无人车和油桶到处都是，守卫还不算多。',
     's3.sec.offices.n': '管制楼层', 's3.sec.offices.d': '隔间、摄像头和广播喇叭。这里开始有盾兵、狙击手和无人机。',
     's3.sec.vault.n': '基石机房', 's3.sec.vault.d': '最底层。服务器、自动炮塔和重装兵，再往下就是核心。',
+    's3.guide.route': '通往核心有三道封锁线：卸货码头 5 个行动点、管制楼层 6 个、基石机房 6 个。每段尽头各有一名首领，合计 20 关。黑市、维修间、事件和拘留室都占一个行动点，不另加关。',
     's3.boss.bulldog.n': '防暴队长“斗牛犬”',
     's3.boss.carrier.n': '守夜人母机',
     's3.boss.keystone.n': '基石核心',
@@ -156,10 +168,14 @@
     's3.mod.overtime.n': '加班', 's3.mod.overtime.d': '敌人多三成，资料 +50%',
 
     's3.wp.pistol.n': '手枪', 's3.wp.pistol.d': '均衡。',
+    's3.pause.weapons': '武器手册',
+    's3.wp.match.n': '定制消音手枪', 's3.wp.match.d': '间谍的 14 发手枪，比普通消音手枪更准，单发威力也更大。枪声不会引来守卫。',
     's3.wp.taser.n': '电击枪', 's3.wp.taser.d': '每第三发电晕目标。',
     's3.wp.shotgun.n': '霰弹枪', 's3.wp.shotgun.d': '近距离一次六颗，会把人打退。',
     's3.wp.nailgun.n': '钉枪', 's3.wp.nailgun.d': '射得很快，钉子会穿过一个敌人。',
     's3.wp.silenced.n': '消音手枪', 's3.wp.silenced.d': '没有枪声，偷袭的伤害三倍。',
+    's3.wp.rifle.n': '突击步枪', 's3.wp.rifle.d': '杀手的 30 发全自动步枪，持续火力最高。没装消音器，第一枪就会惊动全房。',
+    's3.wp.carbine.n': '卡宾枪', 's3.wp.carbine.d': '30 发，散布比突击步枪小，单发伤害略低。未消音仍会惊动全房。',
 
     's3.hack.free': '免费',
     's3.hack.overload': '过载',
@@ -222,12 +238,18 @@
     's3.ex.reflex.n': '反射神经', 's3.ex.reflex.d': '专注的时候，枪的伤害 +40%。',
     's3.ex.medic.n': '急救训练', 's3.ex.medic.d': '每打完一间，回 6 体力。',
 
-    's3.gad.eagle.n': '老鹰无人机', 's3.gad.eagle.d': '飞到光标的位置放出电磁脉冲：电晕一圈敌人，顺便瘫痪盾牌。',
+    's3.gad.escort.n': '跟随无人机', 's3.gad.escort.d': '跟在上场队员身边，自动射击看得见的敌人。飞行 7 秒，比蜘蛛炮台短。',
+    's3.gad.kamikaze.n': '自爆无人机', 's3.gad.kamikaze.d': '直飞光标位置，抵达就自爆。电击会伤害并击晕附近敌人，让盾牌失效。',
+    's3.gad.cargo.n': '工程无人机', 's3.gad.cargo.d': '朝光标位置投下货箱，砸伤并震退敌人。箱子留在地上，能当掩体。',
+    's3.gad.eagle.n': '老鹰无人机', 's3.gad.eagle.d': '达西的侦察机不开火。派它到光标处盘旋，隔墙标记敌人，用噪音把守卫引过去。再按一次就自爆，时间到也会引爆：伤敌、击晕人员、瘫痪机械。',
+    's3.gad.flying': '老鹰飞行中', 's3.gad.detonate': '引爆老鹰',
     's3.gad.blackout.n': '大停电', 's3.gad.blackout.d': '全场停电 5 秒：敌人看不到你，正在叫人的也会被打断。',
-    's3.gad.sergei.n': '谢尔盖', 's3.gad.sergei.d': '工程无人机把货箱砸在光标的位置，砸完留下来当掩体。',
-    's3.gad.hammer.n': '铁锤', 's3.gad.hammer.d': '往前面扫一大片：重伤、打飞、电晕，盾牌也会被敲掉。',
+    's3.gad.sergei.n': '谢尔盖', 's3.gad.sergei.d': '扳手的改装机投下重箱当掩体，同时向附近一群敌人发射干扰弹。头顶亮起绿色问号的敌人只打同伴，不会叫增援。',
+    's3.gad.hammer.n': '粉碎女士', 's3.gad.hammer.d': '扳手改装的大铁锤：比工地的铁锤扫得更大、更重，打飞、敲晕，盾牌一下就碎。',
+    's3.gad.sledge.n': '大铁锤',
+    's3.gad.sledge.d': '工地用的大铁锤：往前扫一片，打伤、打退、敲晕，盾牌也会被敲开。',
     's3.gad.mask.n': '第二张脸', 's3.gad.mask.d': '隐形 4 秒。隐形时开的第一枪伤害三倍。',
-    's3.gad.spider.n': '蜘蛛机器人', 's3.gad.spider.d': '在脚边放一台自动炮塔，撑 11 秒。',
+    's3.gad.spider.n': '蜘蛛机器人', 's3.gad.spider.d': '放出一台蜘蛛机器人，在脚边自己找敌人开枪，撑 11 秒。',
     's3.gad.lure.n': '诱饵喇叭', 's3.gad.lure.d': '丢到光标的位置，附近的敌人会被引过去几秒。',
     's3.gad.mine.n': '电击地雷', 's3.gad.mine.d': '放在脚下，敌人踩到会电晕一圈；还没发现你的敌人会直接倒下。最多放三颗。',
 
@@ -255,6 +277,7 @@
     's3.sec.docks.n': 'Loading docks', 's3.sec.docks.d': 'The way in. Containers, driverless cars and fuel drums everywhere, and not many guards yet.',
     's3.sec.offices.n': 'Control floors', 's3.sec.offices.d': 'Partitions, cameras and loudspeakers. Shield troopers, snipers and drones start here.',
     's3.sec.vault.n': 'Keystone vault', 's3.sec.vault.d': 'The bottom floor. Servers, auto-turrets and heavies, and the core beneath them.',
+    's3.guide.route': 'Three cordons stand between you and the core: five stops on the docks, six on the office floors and six in the vault. A boss at the end of each brings the total to 20. Black markets, workshops, encounters and holding cells replace regular stops.',
     's3.boss.bulldog.n': 'Riot captain "Bulldog"',
     's3.boss.carrier.n': 'Night Watch carrier',
     's3.boss.keystone.n': 'Keystone core',
@@ -274,10 +297,14 @@
     's3.mod.overtime.n': 'Overtime', 's3.mod.overtime.d': '30% more enemies, data +50%',
 
     's3.wp.pistol.n': 'Pistol', 's3.wp.pistol.d': 'Balanced.',
+    's3.pause.weapons': 'Weapons guide',
+    's3.wp.match.n': 'Custom suppressed pistol', 's3.wp.match.d': 'The spy’s 14-round sidearm is more accurate and hits harder than the standard silenced pistol. Guards cannot hear the shot.',
     's3.wp.taser.n': 'Shock pistol', 's3.wp.taser.d': 'Every third shot stuns.',
     's3.wp.shotgun.n': 'Shotgun', 's3.wp.shotgun.d': 'Six pellets at close range, with a shove.',
     's3.wp.nailgun.n': 'Nail gun', 's3.wp.nailgun.d': 'Very fast, and each nail goes through one enemy.',
     's3.wp.silenced.n': 'Silenced pistol', 's3.wp.silenced.d': 'No noise, and triple damage on the unaware.',
+    's3.wp.rifle.n': 'Assault rifle', 's3.wp.rifle.d': 'The hitman’s 30-round automatic has the highest sustained firepower. The first shot alerts the whole room unless you fit a silencer.',
+    's3.wp.carbine.n': 'Carbine', 's3.wp.carbine.d': '30 rounds. Tighter spread and less damage per shot than the assault rifle; unsuppressed fire still alerts the whole room.',
 
     's3.hack.free': 'free',
     's3.hack.overload': 'Overload',
@@ -340,12 +367,18 @@
     's3.ex.reflex.n': 'Reflexes', 's3.ex.reflex.d': 'Gun damage +40% while focusing.',
     's3.ex.medic.n': 'First aid training', 's3.ex.medic.d': 'Recover 6 health after each room.',
 
-    's3.gad.eagle.n': 'Eagle drone', 's3.gad.eagle.d': 'Flies to the cursor and lets off an EMP: stuns everyone in the ring and knocks out shields.',
+    's3.gad.escort.n': 'Escort drone', 's3.gad.escort.d': 'Follows the active operative and shoots enemies in sight. Flies for 7 seconds, less time than a spider turret stays up.',
+    's3.gad.kamikaze.n': 'Kamikaze drone', 's3.gad.kamikaze.d': 'Flies straight to the cursor and explodes on arrival. The shock damages and stuns nearby enemies and disables shields.',
+    's3.gad.cargo.n': 'Cargo drone', 's3.gad.cargo.d': 'Drops a crate at the cursor, damaging enemies and knocking them back. The crate stays as cover.',
+    's3.gad.eagle.n': 'Eagle drone', 's3.gad.eagle.d': "Darcy’s unarmed scout circles the cursor, tags enemies through walls and draws guards to its noise. Press again to detonate, or wait it out. The blast deals damage; the pulse stuns people and disables machines.",
+    's3.gad.flying': 'Eagle en route', 's3.gad.detonate': 'Detonate Eagle',
     's3.gad.blackout.n': 'Blackout', 's3.gad.blackout.d': 'Lights out for 5 seconds: enemies cannot see you, and anyone calling it in is cut off.',
-    's3.gad.sergei.n': 'Sergei', 's3.gad.sergei.d': 'A construction drone drops a crate on the cursor. The crate stays as cover.',
-    's3.gad.hammer.n': 'Hammer', 's3.gad.hammer.d': 'A wide swing in front of you: heavy damage, knockback and a stun, and it breaks shields.',
+    's3.gad.sergei.n': 'Sergei', 's3.gad.sergei.d': "Wrench’s drone drops a heavy crate for cover and fires scrambler rounds at nearby enemies. A green question mark means they turn on their own and won't call for backup.",
+    's3.gad.hammer.n': 'Lady Smash', 's3.gad.hammer.d': "Wrench's custom hammer: a wider, heavier swing than a builder's sledgehammer that sends people flying, dazes them and shatters shields.",
+    's3.gad.sledge.n': 'Sledgehammer',
+    's3.gad.sledge.d': "A builder's sledgehammer: a wide swing in front of you that hurts, knocks back and dazes, and breaks shields.",
     's3.gad.mask.n': 'Second face', 's3.gad.mask.d': 'Invisible for 4 seconds. The first shot from hiding deals triple damage.',
-    's3.gad.spider.n': 'Spiderbot', 's3.gad.spider.d': 'Drops an auto-turret at your feet for 11 seconds.',
+    's3.gad.spider.n': 'Spiderbot', 's3.gad.spider.d': 'Deploys a spiderbot at your feet that shoots at enemies on its own for 11 seconds.',
     's3.gad.lure.n': 'Lure speaker', 's3.gad.lure.d': 'Thrown to the cursor. Enemies nearby go to it for a few seconds.',
     's3.gad.mine.n': 'Shock mine', 's3.gad.mine.d': 'Placed at your feet. An enemy stepping on it stuns everyone in the ring, and anyone who has not spotted you goes down. Three at most.',
 
@@ -369,3 +402,73 @@
     's3.prop.speaker.n': 'Loudspeaker', 's3.prop.speaker.d': 'Plays noise: unaware guards walk over to look, and enemies in a fight shoot at it for a few seconds.',
   });
 })(window.ECHO = window.ECHO || {});
+
+// The handbook, invitations and private shelves share one set of descriptions.
+(function(I){
+  const langs=['zh-Hant','zh-Hans','en'], dict=[{},{},{}];
+  function entries(prefix,rows){for(const [id,...text] of rows)langs.forEach((_,i)=>{
+    dict[i]['s3.'+prefix+'.'+id+'.n']=text[i];dict[i]['s3.'+prefix+'.'+id+'.d']=text[3+i];});}
+  entries('tpl', [
+    ["contract","末班契約","末班契约","Last contract","彈頭多穿透一個目標。","弹头多穿透一个目标。","Rifle rounds pierce one extra target."],
+    ["runner","空匣快步","空匣快步","Empty-mag runner","每次衝刺都會換滿彈匣，原地留下誘餌。","每次冲刺都会换满弹匣，原地留下诱饵。","Every dash refills the magazine and leaves a decoy."],
+    ["spotter","使館觀測手","使馆观察手","Embassy spotter","消音偷襲傷害 4.5 倍；制伏距離更遠，旁人較難察覺。","消音偷袭伤害 4.5 倍；制服距离更远，旁人较难察觉。","Suppressed ambush shots deal 4.5× damage. Takedowns reach farther and attract fewer witnesses."],
+    ["undercover","借來的名字","借来的名字","Borrowed name","每房第一次駭入免費。","每个房间第一次入侵免费。","The first hack in each room is free."],
+    ["flightdeck","河霧領航","河雾领航","Fog pilot","劫持效能 ×1.35，同時延長電擊機續航、提高電弧傷害。","劫持效能 ×1.35，同时延长电击机续航、提高电弧伤害。","Hijack power ×1.35, including shock-drone flight time and arc damage."],
+    ["gunship","重裝護航","重装护航","Gunship escort","每房第一次駭入免費。","每个房间第一次入侵免费。","The first hack in each room is free."],
+    ["terrace","客隊看台","客队看台","Away stand","體力上限增加 24。","体力上限增加 24。","Gain 24 maximum HP."],
+    ["turnstile","硬闖閘門","硬闯闸门","Gatecrasher","每次制伏回復 5 點體力。","每次制服恢复 5 点体力。","Recover 5 HP per takedown."],
+    ["apiary","屋頂放蜂","屋顶放蜂","Roof hive","蜂群替全隊標記目標，標記持續至離群後 2 秒。","蜂群为全队标记目标，标记持续至离群后 2 秒。","Bees mark targets for the squad until two seconds after leaving the swarm."],
+    ["veilguard","隨身蜂巢","随身蜂巢","Veil guard","每房擋下第一次受擊。","每个房间挡下第一次受击。","Ignore the first hit in each room."],
+    ["plinth","街角基座","街角基座","Street plinth","靜止且不開火時，警戒累積速度只剩四分之一。散場後，觀眾還會愣在原地 2.5 秒。","静止且不开火时，警戒累积速度只剩四分之一。散场后，观众还会愣在原地 2.5 秒。","Suspicion builds at quarter speed while you stand still without firing. Spectators linger for 2.5 seconds after the show."],
+    ["encore","謝幕散場","谢幕散场","Curtain call","謝幕時，觀眾暈眩 3.5 秒。蓄滿的閃光擊中前排時傷害加倍，冷卻縮短 4 秒。","谢幕时，观众眩晕 3.5 秒。蓄满的闪光击中前排时伤害加倍，冷却缩短 4 秒。","The final bow stuns spectators for 3.5 seconds. Land a charged flash in the front row for double damage there and 4 seconds off cooldown."],
+    ["watch","銀鏈懷錶","银链怀表","Silver chain","專注回復快 50%；專注時槍傷三倍、受傷減半。制伏恍惚的人回復 12 體力，並擋下之後一擊。","专注恢复快 50%；专注时枪伤三倍、受伤减半。制服恍惚的人恢复 12 体力，并挡下之后一击。","Focus recharges 50% faster. While focused, deal triple gun damage and take half damage. A trance takedown restores 12 HP and banks a one-hit guard."],
+    ["beat","三拍子","三拍子","Three beats","每房擋下第一次受擊。專注時槍傷加倍；制伏恍惚的人回復 12 體力。","每个房间挡下第一次受击。专注时枪伤加倍；制服恍惚的人恢复 12 体力。","Block the first hit each room. Focus doubles gun damage; a trance takedown restores 12 HP."],
+    ["bottle","押金瓶","押金瓶","Bottle deposit","環境陷阱傷害加倍。","环境陷阱伤害加倍。","Environmental traps deal double damage."],
+    ["fuse","短引線","短引线","Short fuse","親手劫持的機器報廢時再炸一次，中心傷害 65。","亲手劫持的机器报废时再炸一次，中心伤害 65。","Machines you hijack detonate on retirement or destruction for 65 centre damage."],
+    ["station","路口救護站","路口救护站","Street clinic","每房過關時，所有還站著的隊員回復 3 點體力。","每个房间过关时，所有还站着的队员恢复 3 点体力。","On clearing a room, all standing squad members recover 3 HP."],
+    ["stretcher","隨行擔架","随行担架","Stretcher team","護盾貼身展開，跟著施放者移動；換人時停在原地。","护盾贴身展开，跟着施放者移动；换人时停在原地。","The ward deploys at your feet and follows you. Switch out to leave it in place."],
+    ["chambers","書面裁定","书面裁定","In chambers","保釋：每區清房後自動保回一人，優先本隊，再看名冊。","保释：每区清房后自动保回一人，优先本队，再看名册。","Bail releases one detainee per sector after a clear. The deployed squad has priority."],
+    ["circuit","巡迴法庭","巡回法庭","Circuit court","保釋：每區清房後自動保回一人，優先本隊，再看名冊。","保释：每区清房后自动保回一人，优先本队，再看名册。","Bail releases one detainee per sector after a clear. The deployed squad has priority."],
+  ]);
+  entries('ex', [
+    ["reprieve","免死","免死","Reprieve","致命一擊改留 1 點體力，無敵 1.6 秒；每區可用 1／2 次。","致命一击改留 1 点体力，无敌 1.6 秒；每区可用 1／2 次。","A lethal hit leaves 1 HP and 1.6 seconds of immunity. Once / twice per sector."],
+    ["sidesteps","連續閃避","连续闪避","Side steps","衝刺儲存格增加 1／2／3 格。","冲刺储存格增加 1／2／3 格。","Store 1 / 2 / 3 extra dashes."],
+    ["vanish","沒有目擊者","没有目击者","No eyewitness","制伏後隱形 2／4／6 秒。","制服后隐形 2／4／6 秒。","Cloak for 2 / 4 / 6 seconds after a takedown."],
+    ["deadletter","死信箱","死信箱","Dead letter","每次制伏取得 12／24 資料。","每次制服获得 12／24 数据。","Earn 12 / 24 data per takedown."],
+    ["coilTap","並聯線圈","并联线圈","Coil taps","電弧多打一／兩個目標；重裝護航彈多穿一／兩人。","电弧多打一／两个目标；重装护航弹多穿一／两人。","Arcs strike 1 / 2 extra targets; heavy escort shots pierce 1 / 2 more."],
+    ["overcell","備用電芯","备用电芯","Spare cells","兩種專屬無人機的基礎續航增加 4／8／12 秒。","两种专属无人机的基础续航增加 4／8／12 秒。","Add 4 / 8 / 12 seconds to either signature drone’s base flight time."],
+    ["terraceFists","客場鐵拳","客场铁拳","Away-end fists","本人和打手的近戰傷害增加 100%／200%／300%。","本人和打手的近战伤害增加 100%／200%／300%。","Your melee hits and the mates’ punches deal +100% / +200% / +300% damage."],
+    ["chant","再唱一遍","再唱一遍","One more chorus","本人或打手近戰擊倒敵人，替召集者回復 8／16 點體力。","本人或打手近战击倒敌人，为召集者恢复 8／16 点体力。","Your melee kills and the mates’ knockouts restore 8 / 16 HP to the caller."],
+    ["hiveDose","雙份蜂毒","双份蜂毒","Double venom","蜂群傷害提高 50%／100%／150%。","蜂群伤害提高 50%／100%／150%。","Increase swarm damage by 50% / 100% / 150%."],
+    ["afterbuzz","餘鳴","余鸣","Afterbuzz","離開蜂群後，視線和準頭再受干擾 1.5／3 秒。","离开蜂群后，视线和准头再受干扰 1.5／3 秒。","Swarm disruption lingers for another 1.5 / 3 seconds."],
+    ["wideStage","街道封場","街道封场","Street closure","圍觀半徑增加 70／140。","围观半径增加 70／140。","Increase the audience radius by 70 / 140 units."],
+    ["hatTips","帽中小費","帽中小费","Pass the hat","表演中每秒多回復 1／2／3 頻寬。","表演中每秒额外恢复 1／2／3 带宽。","Regenerate 1 / 2 / 3 extra bandwidth per second while performing."],
+    ["suggestion","事後暗示","事后暗示","Posthypnotic cue","恍惚延長 2／4 秒。再按技能鍵可指定一人走到游標處。","恍惚延长 2／4 秒。再按技能键可指定一人走到光标处。","Extend trance by 2 / 4 seconds. Press the skill key again to direct one subject to the cursor."],
+    ["velvet","天鵝絨聲線","天鹅绒声线","Velvet voice","催眠的扇形射程增加 50／100。","催眠的扇形射程增加 50／100。","Extend the hypnosis cone by 50 / 100 units."],
+    ["longWick","長燈芯","长灯芯","Long wick","投擲物留下的火再燒 2／4／6 秒。","投掷物留下的火再烧 2／4／6 秒。","Thrown payloads burn for an extra 2 / 4 / 6 seconds."],
+    ["fragments","破片套管","破片套管","Fragment sleeve","投擲物與報廢爆炸的半徑增加 45／90。","投掷物与报废爆炸的半径增加 45／90。","Widen thrown and scrap-charge blasts by 45 / 90 units."],
+    ["triage","快速檢傷","快速检伤","Triage","盾內每秒額外回復 3／6／9 點體力。","盾内每秒额外恢复 3／6／9 点体力。","Heal an extra 3 / 6 / 9 HP per second inside the ward."],
+    ["wideWard","增設床位","增设床位","Extra beds","醫療護盾半徑增加 35／70。","医疗护盾半径增加 35／70。","Increase the medical ward radius by 35 / 70 units."],
+    ["extension","延長效期","延长效期","Extension","禁制區多維持 2／4／6 秒。","禁制区多维持 2／4／6 秒。","Keep either injunction active for 2 / 4 / 6 extra seconds."],
+    ["surety","具保金","担保金","Surety","本隊獲釋的人帶著 75%／100% 體力歸隊，原為 50%。","本队获释的人带着 75%／100% 体力归队，原为 50%。","Squad members return on bail at 75% / 100% health instead of 50%."],
+  ]);
+  entries('gad', [
+    ["execute","戰鬥處決","战斗处决","Combat execution","處決近處一名非首領敵人。近身按 F 也能處決已警戒目標，共用冷卻。","处决近处一名非首领敌人。近身按 F 也能处决已警戒目标，共用冷却。","Execute a nearby non-boss. Against an alerted foe, F at close range shares the cooldown."],
+    ["quickstep","衝刺換彈","冲刺换弹","Dash reload","朝游標快步換彈，不耗衝刺格；原地的殘影會吸引敵人。","朝光标快步换弹，不耗冲刺格；原地的残影会吸引敌人。","Dash towards the cursor, reload and leave a decoy without spending a dash charge."],
+    ["veil","借面潛行","借面潜行","Borrowed face","隱形 8 秒。開槍現形，第一發傷害為三倍。","隐形 8 秒。开枪现形，第一发伤害为三倍。","Cloak for 8 seconds. Firing breaks cover; the opening shot deals triple damage."],
+    ["shockdrone","電擊無人機","电击无人机","Shock drone","點按飛往游標巡邏、放電；按住技能鍵，用移動鍵駕駛。放開恢復巡邏。本人留在原地，仍會受傷。","点按飞往光标巡逻、放电；按住技能键，用移动键驾驶。松开恢复巡逻。本人留在原地，仍会受伤。","Tap to patrol and zap near the cursor. Hold the skill key and steer with movement keys; release to patrol there. Your body is left exposed."],
+    ["rush","看台衝撞","看台冲撞","Terrace rush","直衝游標方向，撞暈沿途敵人並造成近戰傷害。","直冲光标方向，撞晕沿途敌人并造成近战伤害。","Charge towards the cursor. Each foe in your path takes a melee hit and a stun."],
+    ["hiveguard","護身蜂幕","护身蜂幕","Hive veil","放出貼身蜂幕 7 秒，持續螫傷並干擾靠近的敵人。","放出贴身蜂幕 7 秒，持续蜇伤并干扰靠近的敌人。","Surround yourself with bees for 7 seconds. Nearby foes take damage and lose accuracy."],
+    ["performance","定格表演","定格表演","Living tableau","站定按 Q，普通人類會圍觀，最長 9 秒。台上駭入的環境陷阱造成 2.5 倍傷害。金環亮起時獲得一次格擋；移動或開火謝幕，閃光能擊中視線內的首領、精英與機器。","站定按 Q，普通人类会围观，最长 9 秒。台上入侵的环境陷阱造成 2.5 倍伤害。金环亮起时获得一次格挡；移动或开火谢幕，闪光能击中视线内的首领、精英与机器。","Stand still and press Q to draw ordinary humans for up to 9 seconds. Traps hacked on stage deal 2.5× damage. When the gold ring lights, bank a one-hit guard. Move or fire to flash visible foes, including bosses, elites and machines."],
+    ["hypnosis","懷錶催眠","怀表催眠","Pendulum trance","前方扇形內的人類恍惚 8 秒，精英減半。從任何方向制伏都不驚動目擊者。首領與機器免疫；裝備 II 級起，再按可指引一人走向游標。","前方扇形内的人类恍惚 8 秒，精英减半。从任何方向制服都不会惊动目击者。首领和机器免疫；装备 II 级起，再按可指引一人走向光标。","Humans in the cone enter an 8-second trance; elites recover in half the time. Takedowns from any angle go unnoticed. Bosses and machines resist. At gear II, press again to direct one subject to the cursor."],
+    ["metronome","節拍暗示","节拍暗示","Metronome","同一扇形連響三拍；每拍讓人類恍惚 6 秒，精英減半，首領與機器免疫。制伏不驚動目擊者；裝備 II 級起可再按一次引路。","同一扇形连响三拍；每拍让人类恍惚 6 秒，精英减半，首领和机器免疫。制服不惊动目击者；装备 II 级起可再按一次引路。","Three beats cover the same cone. Each holds humans for 6 seconds, elites for half; bosses and machines resist. Trance takedowns go unnoticed. At gear II, press again to direct one subject."],
+    ["molotov","燃燒瓶","燃烧瓶","Fire bottle","瓶子落地炸開，留火 5 秒。自己的爆風和火焰傷不到你，換上場的隊友可就沒有這層保護。","瓶子落地炸开，留火 5 秒。自己的爆风和火焰伤不到你，换上场的队友可就没有这层保护。","The bottle bursts on impact and burns for 5 seconds. Your own blast and flames spare you, but not a squadmate who switches in."],
+    ["pipebomb","土製炸彈","土制炸弹","Pipe bomb","中心基礎傷害 115，留下 3 秒火場。破片對機器、裝甲精英、母機和基石核心造成 2.5 倍傷害。自己的炸彈與火焰不傷本人。","中心基础伤害 115，留下 3 秒火场。破片对机器、装甲精英、母机和基石核心造成 2.5 倍伤害。自己的炸弹和火焰不伤本人。","Deals 115 base damage at the centre and burns for 3 seconds. Shrapnel deals 2.5× damage to machines, armoured elites, the Carrier and Keystone. The thrower is safe from both blast and fire."],
+    ["medbeacon","AR 醫療護盾","AR 医疗护盾","AR medical ward","信標開盾 8 秒，擋住從外面射進來的子彈。盾內每秒回復 6 點體力；近戰、爆炸和盾內敵人仍危險。","信标开盾 8 秒，挡住从外面射进来的子弹。盾内每秒恢复 6 点体力；近战、爆炸和盾内敌人仍危险。","An 8-second beacon blocks incoming rounds and restores 6 HP/s inside. Melee, blasts and shooters already inside remain dangerous."],
+    ["injunction","禁制令","禁制令","Injunction","禁制區維持 9 秒，暫停監視器、砲塔、巡邏機和首領中繼器。人在區內少受 60% 傷害；區內敵人多受 80% 傷害。首領本身仍能行動。","禁制区维持 9 秒，暂停摄像头、炮塔、巡逻机和首领中继器。人在区内少受 60% 伤害；区内敌人多受 80% 伤害。首领本身仍能行动。","For 9 seconds, stay cameras, turrets, patrol drones and boss relays in the marked area. Inside, the squad takes 60% less damage and foes take 80% more. Bosses can still act."],
+    ["escortWrit","隨行禁制令","随行禁制令","Circuit injunction","較小的禁制區隨身移動 9 秒，換人後留在原處。區內少受 60% 傷害；監視器、砲塔、巡邏機與首領中繼器停擺，首領仍可行動。","较小的禁制区随身移动 9 秒，换人后留在原处。区内少受 60% 伤害；摄像头、炮塔、巡逻机与首领中继器停摆，首领仍可行动。","A smaller injunction follows you for 9 seconds; switch out to leave it in place. Inside, take 60% less damage and suspend cameras, turrets, patrol drones and boss relays. Bosses can still act."],
+  ]);
+  const labels=[["book","特工手冊：模板與專屬貨架","特工手册：模板与专属货架","Operative handbook: kits & private shelves"],["intro","每次邀請會固定一套槍、招牌技能與被動，也會抽出特質和習慣。隊上每有一種特殊職業，黑市就多一格該職業的分級漏洞；只對同職業生效。","每次邀请会固定一套枪、招牌技能与被动，也会抽出特质和习惯。队上每有一种特殊职业，黑市就多一格该职业的分级漏洞；只对同职业生效。","Each invitation fixes a weapon, signature skill, passive and personal traits. Every special profession in the squad adds a private market slot. Its ranked exploits apply only to that profession."],["kit","行動模板","行动模板","Field kit"],["private","專屬貨架","专属货架","Private shelf"],["signal","街頭代號","街头代号","Street alias"],["remote","手動駕駛 · 放開恢復巡邏","手动驾驶 · 松开恢复巡逻","Piloting · release to patrol"],["patrol","巡邏中 · 按住接管","巡逻中 · 按住接管","Patrolling · hold to pilot"],["stage","表演中 · 可駭入","表演中 · 可入侵","Performing · hacks open"],["stageReady","散場閃光就緒","散场闪光就绪","Curtain flash ready"],["order","再按一次引路","再按一次引路","Press again to direct"]];
+  for(const [id,...text] of labels)langs.forEach((_,i)=>dict[i]['s3.field.'+id]=text[i]);
+  langs.forEach((l,i)=>I.register(l,dict[i]));
+})(window.ECHO.i18n);
