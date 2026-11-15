@@ -75,10 +75,11 @@
   // ===== 聲音：同一種聲音太密集就略過幾次 =====
   const lastPlayed = {};
   function play(name, gap = 0) {
-    const now = performance.now();
-    if (gap && now - (lastPlayed[name] ?? -Infinity) < gap) return;
-    lastPlayed[name] = now;
-    sfx.play(S3.audio.byKey[name].id);
+    const id = S3.audio.byKey[name].id, now = performance.now();
+    // 同一支舊配方共用原本的播放間隔（例如釘槍和所有友軍射擊）。
+    if (gap && now - (lastPlayed[id] || 0) < gap) return;
+    lastPlayed[id] = now;
+    sfx.play(id);
   }
   const EVENT_SOUND = { bluedoor: 'dream', cat: 'dream', wrench: 'cameo', darcy: 'cameo', aiden: 'cameo', marcus: 'cameo' };
   function sound(ev) {

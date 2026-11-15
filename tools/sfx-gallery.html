@@ -2,53 +2,99 @@
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>零時差｜聲音試聽室</title>
 <style>
-*{box-sizing:border-box} :root{color-scheme:dark;--a:#91e5d5;--line:#35454a;--dim:#b1c0c3}body{margin:0;background:#101719;color:#f1eee5;font:16px/1.5 system-ui,"Microsoft JhengHei",sans-serif}main{max-width:1080px;margin:auto;padding:28px clamp(16px,4vw,48px) 60px}
-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:11px}.eyebrow,.index,.serial{font:12px/1.4 Consolas,monospace;letter-spacing:.13em;color:var(--a)}.eyebrow:before{content:"";display:inline-block;height:8px;width:18px;margin-right:9px;background:repeating-linear-gradient(90deg,var(--a) 0 2px,transparent 2px 4px)}
-h1{font-size:clamp(34px,5vw,55px);letter-spacing:-.035em;line-height:1.14;margin:25px 0 8px}p{color:var(--dim);margin:0}.transport{margin:22px 0 18px;border-left:3px solid var(--a);background:#1a2729;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}.transport strong{font-weight:620}button,select{font:inherit;color:#e5ebe5;background:#192326;border:1px solid #506469;border-radius:4px;padding:5px 12px;cursor:pointer}button:hover:not(:disabled),select:hover{border-color:var(--a)}button:focus-visible,select:focus-visible{outline:2px solid #ffaa9a;outline-offset:3px}button:disabled{opacity:.4;cursor:default}
-nav{display:flex;gap:7px;flex-wrap:wrap}nav button{padding:6px 12px}nav button[aria-pressed=true]{background:var(--a);color:#0e2422;border-color:transparent}section>div:first-child{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid #b8cfcb;margin-top:24px}h2{font-size:23px;margin:0 0 7px}
-#list{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}.cue{display:flex;min-height:62px;align-items:center;gap:8px;border-bottom:1px solid var(--line)}.cue b{font-size:15px;font-weight:600;line-height:1.35;flex:1}.serial{font-size:11px;color:#849c9d}.cue button{font-size:13px;white-space:nowrap;padding:5px 8px}.current{background:#263e3b;color:#b6f3e6;border-color:#467369}.old{color:var(--dim)}.is-playing{outline:2px solid #e4a393;outline-offset:1px}footer{margin-top:24px;color:var(--dim);font-size:13px} @media(max-width:760px){#list{grid-template-columns:1fr}.cue{min-height:57px}}@media(prefers-reduced-motion:no-preference){button{transition:background .12s,border-color .12s}}
+*{box-sizing:border-box}:root{color-scheme:dark;--mint:#9de6cd;--amber:#ebc68a;--dim:#b1c1be;--line:#354644}
+body{margin:0;background:#101818;color:#f0efe7;font:16px/1.5 system-ui,"Microsoft JhengHei",sans-serif}
+main{max-width:1160px;margin:auto;padding:22px clamp(16px,4vw,55px) 48px}
+header,.transport,.section-head,.cue,.buttons{display:flex;align-items:center}header,.transport{justify-content:space-between;gap:16px}
+header{border-bottom:1px solid var(--line);padding-bottom:12px}.eyebrow,.index,.serial{font:12px/1.4 Consolas,monospace;letter-spacing:.12em;color:var(--mint)}
+.eyebrow:before{content:"";display:inline-block;height:9px;width:24px;margin-right:10px;background:repeating-linear-gradient(90deg,var(--mint) 0 2px,transparent 2px 5px)}
+h1{font-size:clamp(36px,5vw,54px);letter-spacing:-.035em;line-height:1.12;margin:24px 0 9px}p{color:var(--dim);margin:0}button,select{font:inherit;color:#ecf1e9;background:#172322;border:1px solid #526560;border-radius:4px;padding:5px 12px;cursor:pointer}
+button:hover:not(:disabled),select:hover{border-color:var(--mint)}button:focus-visible,select:focus-visible{outline:2px solid #f2c27b;outline-offset:3px}button:disabled{opacity:.43;cursor:default}
+.transport{margin:20px 0 16px;padding:10px 14px;background:#1a2826;border-left:3px solid var(--mint);min-height:51px}.transport strong{font-size:15px;font-weight:580}#stop{white-space:nowrap}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{font-size:14px;padding:6px 12px}nav button[aria-pressed=true]{background:var(--mint);border-color:var(--mint);color:#10251e}
+.section-head{margin-top:24px;gap:12px;border-bottom:2px solid #8ea9a0;padding-bottom:8px;align-items:baseline}h2{font-size:23px;margin:0}.index{color:#b6c8c2}
+#list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 27px}.cue{min-height:79px;gap:12px;border-bottom:1px solid var(--line);padding:10px 0}.serial{color:#829a91;font-size:11px}.name{flex:1;min-width:0}.name b{display:block;font-size:16px;line-height:1.31;font-weight:620}
+small.alias{color:var(--dim);display:block;line-height:1.4;margin:3px 0 0;font-size:13px}.tag{display:block;margin-bottom:3px;color:var(--mint);font-size:12px;font-weight:600}.tag:before{content:"";display:inline-block;width:6px;height:6px;background:currentColor;margin:0 6px 2px 0;border-radius:50%}.returned .tag{color:var(--amber)}.returned .tag:before{background:transparent;border:1px solid currentColor}
+.buttons{gap:5px;flex-wrap:wrap;justify-content:flex-end}.cue button{font-size:14px;padding:5px 8px;white-space:nowrap}.current{background:#243e34;border-color:#547564;color:#c8f4dc}.old{color:#c5cfc8;background:transparent}.is-playing{outline:2px solid #efb776;outline-offset:1px}
+@media(max-width:850px){#list{grid-template-columns:1fr}.cue{min-height:67px}}@media(max-width:480px){main{padding-inline:14px}.cue{gap:8px}.cue .serial{display:none}.cue button{font-size:13px;padding:5px 7px}.buttons{flex-wrap:nowrap}.eyebrow{letter-spacing:.05em}}
 </style></head><body><main>
 <header><span class="eyebrow">ZERO DAY &nbsp;/&nbsp; AUDIO DESK</span><select id="lang" aria-label="Language"><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="en">English</option></select></header>
 <h1></h1><p id="intro"></p><div class="transport"><strong id="status" role="status"></strong><button type="button" id="stop" disabled></button></div>
-<nav></nav><section><div><h2></h2><span class="index"></span></div><div id="list"></div></section><footer></footer></main>
+<nav></nav><section><div class="section-head"><h2></h2><span class="index"></span></div><div id="list"></div></section></main>
 <script src="../js/engine/i18n.js"></script><script src="../content-s3/data.js"></script><script src="../content-s3/locales.js"></script><script src="../content-s3/guide-locales.js"></script><script src="../content-s3/squad-locales.js"></script><script src="../content-s3/contacts-locales.js"></script>
 <script src="../js/ui/sfx.js"></script><script src="../js/s3/sounds-v5.js"></script><script src="../js/s3/sounds.js"></script>
 <script>
 (() => {
-  const E=window.ECHO, A=E.s3.audio, $=s=>document.querySelector(s), groups=['guns','gear','field','combat','ui','omni'];
-  const languages=['zh-Hant','zh-Hans','en'], copy=[
-    ['聲音試聽室','在 OMNI 試聽接線、換批、溢出與艙門外鎖；切換分組可聽裝備和戰鬥音效。','待命，請選一個聲音','停止','槍械','裝備','駭入與陷阱','敵人與首領','介面','新版','舊版','播放中','加裝滅音器','沒有舊版按鈕的是新增聲音。','無法啟動 Web Audio，請用支援它的瀏覽器再試。','音效分組'],
-    ['声音试听室','在 OMNI 试听接线、换批、溢出和舱门外锁；切换分组可听装备和战斗音效。','待命，请选一个声音','停止','枪械','装备','入侵与陷阱','敌人与首领','界面','新版','旧版','播放中','加装消音器','没有旧版按钮的是新增声音。','无法启动 Web Audio，请用支持它的浏览器再试。','音效分组'],
-    ['Sound audition desk','Open OMNI to hear the calibration link, handover, overflow and pod interlock. Switch groups for gear and combat sounds.','Ready · choose a sound','Stop','Guns','Gear','Hacks & traps','Enemies & bosses','Interface','New','Old','Playing','Silencer fitted','Sounds without an Old button are new.','Web Audio could not start. Try a browser with Web Audio support.','Sound groups']];
-  let lang=languages.includes(new URLSearchParams(location.search).get('lang'))?new URLSearchParams(location.search).get('lang'):'zh-Hant', group=new URLSearchParams(location.search).get('group')==='omni'?'omni':'gear',ticket=0,ctx=null,sources=[],cache=new Map();
-  const i=()=>languages.indexOf(lang),w=()=>copy[i()], label=c=>typeof c.label==='string'?E.i18n.t(c.label):Array.isArray(c.label)?c.label[i()]:E.i18n.t('s3.wp.'+c.label.weapon+'.n')+' · '+w()[12];
-  function stop(){ticket++; for(const s of sources)try{s.stop();}catch(e){} sources=[]; $('.is-playing')?.classList.remove('is-playing');$('#stop').disabled=true;$('#status').textContent=w()[2];}
-  async function buffer(id){
-    if(cache.has(id))return cache.get(id);
-    const b=await E.sfx.render(id,2.8),l=b.getChannelData(0),r=b.getChannelData(1);
-    let n=l.length;while(n>1&&Math.abs(l[n-1])+Math.abs(r[n-1])<.001)n--;
-    const result=[b,Math.min(b.duration,n/b.sampleRate+.04)];
-    if(id!==A.byKey.sergei.id && id!==A.byKey.sergei.old){if(cache.size>=12)cache.delete(cache.keys().next().value);cache.set(id,result);}return result;
+  const E=window.ECHO, S=E.s3, A=S.audio, $=s=>document.querySelector(s);
+  const langs=['zh-Hant','zh-Hans','en'], groups=['new','guns','gear','field','combat','ui','omni'];
+  const copy={
+    'zh-Hant':{title:'聲音試聽室',intro:'共用同一支原聲的動作，列在同一項。',gearIntro:'從工程無人機的旋翼聽到貨箱落地。「上一版」可對照改版前的聲音。',gunIntro:'兩把長槍各試射三發。裝上滅音器後，留意槍機往返的聲音。',omniIntro:'同一台轉運站機組：接入、換批、溢出，或是艙門從外面落鎖。',newIntro:'比一比新舊配方：選「上一版」，再聽一次現在的動作。',ready:'待命，選一個聲音',preparing:'準備播放',stop:'停止',groups:['本次新聲','槍械','裝備','駭入與陷阱','敵人與首領','介面','OMNI'],now:'試聽',prev:'上一版',fresh:'新的',back:'舊版（回歸）',playing:'播放中',quiet:'加裝滅音器',also:'同聲：',count:'組聲音',error:'無法播放。請使用支援 Web Audio 的瀏覽器。',nav:'音效分組'},
+    'zh-Hans':{title:'声音试听室',intro:'共用同一段原声的动作，列在同一项。',gearIntro:'从工程无人机的旋翼听到货箱落地。“上一版”可对照改版前的声音。',gunIntro:'两把长枪各试射三发。装上消音器后，留意枪机往返的声音。',omniIntro:'同一台转运站机组：接入、换批、溢出，或是舱门从外面落锁。',newIntro:'比较新旧配方：选“上一版”，再听一次现在的动作。',ready:'待命，选一个声音',preparing:'准备播放',stop:'停止',groups:['本次新声','枪械','装备','入侵与陷阱','敌人与首领','界面','OMNI'],now:'试听',prev:'上一版',fresh:'新的',back:'旧版（回归）',playing:'播放中',quiet:'加装消音器',also:'同声：',count:'组声音',error:'无法播放。请使用支持 Web Audio 的浏览器。',nav:'音效分组'},
+    en:{title:'Sound audition desk',intro:'Actions that share an original sound are listed together.',gearIntro:'Follow the cargo drone from the first rotor turn to the crate hitting the ground. Use Previous to compare the last release.',gunIntro:'The rifle and carbine each fire three rounds. Listen for the bolt when the suppressor is fitted.',omniIntro:'One machine at the transfer station: the link, the handover, an overflow, and a pod locking from outside.',newIntro:'Try Previous, then Play, to hear what changed in the same action.',ready:'Ready · choose a sound',preparing:'Preparing',stop:'Stop',groups:['New sounds','Guns','Gear','Hacks & traps','Enemies & bosses','Interface','OMNI'],now:'Play',prev:'Previous',fresh:'New',back:'Original (restored)',playing:'Playing',quiet:'Silencer fitted',also:'Also used for: ',count:'sounds',error:'Cannot play audio. Try a browser with Web Audio support.',nav:'Sound groups'}
+  };
+  const params=new URLSearchParams(location.search);
+  let lang=langs.includes(params.get('lang'))?params.get('lang'):'zh-Hant', group=groups.includes(params.get('group'))?params.get('group'):'gear';
+  let ticket=0, ctx=null, sources=[];
+  const w=()=>copy[lang];
+  const label=c=>typeof c.label==='string'?E.i18n.t(c.label):Array.isArray(c.label)?c.label[langs.indexOf(lang)]:E.i18n.t('s3.wp.'+c.label.weapon+'.n')+' · '+w().quiet;
+  function stop(){
+    ticket++;for(const s of sources)try{s.stop();}catch(e){}sources=[];
+    $('.is-playing')?.classList.remove('is-playing');$('#stop').disabled=true;$('#status').textContent=w().ready;
   }
-  async function play(c,old,button){
-    stop();const t=ticket;
+  // Same cues as the game. A throw is not an impact, and a metronome pulse follows the simulation clock.
+  function sequence(c,prev){
+    const items=[],at=(cue,t)=>{const id=prev?cue.previous:cue.id;if(id)items.push([id,t]);};at(c,0);
+    const gun=c.key.replace(/Quiet$/,'');
+    if(gun==='rifle' || gun==='carbine'){const gap=1/S.data.weapons[gun].rate;at(c,gap);at(c,2*gap);}
+    const impact={cargo:['cargoDrop','fuse'],molotov:['molotovImpact','flight'],pipebomb:['pipeImpact','flight']}[c.key];
+    if(impact)at(A.byKey[impact[0]],S.data.gadgets[c.key][impact[1]]);
+    if(c.key==='metronome' && !prev){at(A.byKey.metroTick,.72);at(A.byKey.metroTick,1.44);}
+    return items;
+  }
+  async function buffer(id){
+    // Synthesize again even on repeat: Sergei changes lines, the new foley changes strikes.
+    const long=['ending','dream','bleed','blackout','title','cameo'].includes(id);
+    const b=await E.sfx.render(id,long?6:3), l=b.getChannelData(0),r=b.getChannelData(1);
+    let n=l.length;while(n>1 && Math.abs(l[n-1])+Math.abs(r[n-1])<.00025)n--;
+    return [b,Math.min(b.duration,n/b.sampleRate+.04)];
+  }
+  async function play(c,prev,button){
+    stop();const t=ticket;$('#stop').disabled=false;button.classList.add('is-playing');
+    $('#status').textContent=w().preparing+' · '+label(c);
     try{
       if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();
-      // Match the in-game fuse; A/B switches stop even the queued touchdown, not just the rotor.
-      const sequence=[[old?c.old:c.id,0]];
-      if(c.key==='cargo')sequence.push([old?A.byKey.cargoDrop.old:A.byKey.cargoDrop.id,E.s3.data.gadgets.cargo.fuse]);
-      const scores=await Promise.all(sequence.map(async ([id,at])=>[...await buffer(id),at]));if(t!==ticket)return;
-      $('#status').textContent=w()[11]+' · '+label(c)+' / '+w()[old?10:9];$('#stop').disabled=false;button.classList.add('is-playing');
-      let pending=scores.length;const start=ctx.currentTime+.018;
-      for(const [b,d,at] of scores){const s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);sources.push(s);s.onended=()=>{s.disconnect();if(t===ticket&&!--pending)stop();};s.start(start+at,0,d);}
-    }catch(e){if(t===ticket){stop();$('#status').textContent=w()[14];}}
+      if(t!==ticket)return;
+      const scores=await Promise.all(sequence(c,prev).map(async ([id,at])=>[...await buffer(id),at]));if(t!==ticket)return;
+      $('#status').textContent=w().playing+' · '+label(c)+' / '+(prev?w().prev:c.restored?w().back:w().fresh);
+      let pending=scores.length;const start=ctx.currentTime+.015;
+      for(const [b,d,at] of scores){
+        const s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);sources.push(s);
+        s.onended=()=>{s.disconnect();if(t===ticket && !--pending)stop();};s.start(start+at,0,d);
+      }
+    }catch(e){if(t===ticket){stop();$('#status').textContent=w().error;}}
   }
   function draw(){
-    stop();E.i18n.set(lang);$('#lang').value=lang;const t=w();document.title='ZERO DAY / '+t[0];$('h1').textContent=t[0];$('#intro').textContent=t[1];$('#stop').textContent=t[3];$('footer').textContent=t[13];$('nav').ariaLabel=t[15];$('nav').replaceChildren();
-    for(const [j,g] of groups.entries()){const b=document.createElement('button');b.type='button';b.textContent=g==='omni'?'OMNI':t[4+j];b.dataset.group=g;b.setAttribute('aria-pressed',g===group);b.onclick=()=>{group=g;draw();$('nav [aria-pressed=true]').focus()};$('nav').append(b);}
-    const rows=A.cues.filter(c=>c.group===group);$('h2').textContent=group==='omni'?'OMNI':t[4+groups.indexOf(group)];$('.index').textContent=String(rows.length).padStart(2,'0')+' / '+A.cues.length;$('#list').replaceChildren();
-    for(const [n,c] of rows.entries()){const el=document.createElement('div');el.className='cue';el.dataset.cue=c.key;el.innerHTML='<span class="serial"></span><b></b>';el.firstChild.textContent=String(n+1).padStart(2,'0');el.querySelector('b').textContent=label(c);
-      for(const old of c.old?[false,true]:[false]){const b=document.createElement('button');b.type='button';b.className=old?'old':'current';b.textContent='▶ '+t[old?10:9];b.setAttribute('aria-label',label(c)+' · '+t[old?10:9]);b.onclick=()=>play(c,old,b);el.append(b);}$('#list').append(el);}
+    stop();E.i18n.set(lang);$('#lang').value=lang;document.title='ZERO DAY / '+w().title;$('h1').textContent=w().title;
+    $('#intro').textContent=({gear:w().gearIntro,guns:w().gunIntro,omni:w().omniIntro,new:w().newIntro})[group] || w().intro;$('#stop').textContent=w().stop;$('nav').setAttribute('aria-label',w().nav);$('nav').replaceChildren();
+    for(const [i,g] of groups.entries()){
+      const b=document.createElement('button');b.type='button';b.textContent=w().groups[i];b.dataset.group=g;b.setAttribute('aria-pressed',g===group);
+      b.onclick=()=>{group=g;draw();$('nav [aria-pressed=true]').focus()};$('nav').append(b);
+    }
+    const bySound=new Map();
+    for(const c of A.cues.filter(c=>group==='new'?!c.restored:c.group===group).sort((a,b)=>Number(a.restored)-Number(b.restored))){
+      if(!bySound.has(c.id))bySound.set(c.id,[]);bySound.get(c.id).push(c);
+    }
+    $('h2').textContent=w().groups[groups.indexOf(group)];$('.index').textContent=String(bySound.size).padStart(2,'0')+' '+w().count;$('#list').replaceChildren();
+    let n=0;for(const same of bySound.values()){
+      const [c,...rest]=same, row=document.createElement('div');row.className='cue '+(c.restored?'returned':'new');row.dataset.cue=c.key;
+      row.innerHTML='<span class="serial"></span><div class="name"><span class="tag"></span><b></b></div><div class="buttons"></div>';
+      row.querySelector('.serial').textContent=String(++n).padStart(2,'0');row.querySelector('.tag').textContent=c.restored?w().back:w().fresh;row.querySelector('b').textContent=label(c);
+      if(rest.length){const a=document.createElement('small');a.className='alias';a.textContent=w().also+rest.map(label).join(' / ');row.querySelector('.name').append(a);}
+      for(const prev of c.previous?[false,true]:[false]){
+        const b=document.createElement('button');b.type='button';b.className=prev?'old':'current';b.textContent=(prev?'':'▶ ')+(prev?w().prev:w().now);
+        b.setAttribute('aria-label',label(c)+' · '+(prev?w().prev:w().now));b.onclick=()=>play(c,prev,b);row.querySelector('.buttons').append(b);
+      }$('#list').append(row);
+    }
   }
   $('#stop').onclick=stop;$('#lang').onchange=e=>{lang=e.target.value;draw()};document.addEventListener('keydown',e=>{if(e.key==='Escape')stop()});draw();
 })();

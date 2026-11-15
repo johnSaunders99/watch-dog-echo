@@ -1705,40 +1705,121 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       for (let i = 0; i < 8; i++) X.play(name);
       if (nodes === before) fail(`s3 sfx ${name}: built nothing (an error was swallowed?)`);
     }
-    // 主程式用到的聲音都要存在。
-    const text = fs.readFileSync(path.join(root, 'js/s3/main.js'), 'utf8');
-    const used = new Set();
-    // play('名稱') 和 play(條件 ? '甲' : '乙')：只收開頭、問號和冒號後面的字串，條件裡拿來比較的字串不算。
-    for (const m of text.matchAll(/play\(([^;]*?)\)/g)) for (const q of m[1].matchAll(/(?:^|[?:]\s*)'(\w+)'/g)) used.add(q[1]);
-    for (const block of text.matchAll(/const EVENT_SOUND = \{([^}]*)\}/g)) for (const q of block[1].matchAll(/: '(\w+)'/g)) used.add(q[1]);
-    const audio=S3.audio, route=ev=>audio.fromEvent(ev)?.[0], heard=new Set();
-    for(const [k,defs] of [['shot',D.weapons],['gadget',D.gadgets]]) for(const id of Object.keys(defs)){
-      const key=route({k,id,w:id}), cue=audio.byKey[key];
-      if(!cue || heard.has(cue.id)) fail('s3 sfx: missing or shared '+id); else heard.add(cue.id);
-      if(k==='shot' && defs[id].noise) used.add(route({k,w:id,suppressed:true}));
-      used.add(key);
+    const text=fs.readFileSync(path.join(root,'js/s3/main.js'),'utf8');
+    const audio=S3.audio, used=new Set(), recipe=ev=>{
+      const r=audio.fromEvent(ev);if(!r)return null;used.add(r[0]);return [audio.byKey[r[0]]?.id,r[1]||0];
+    };
+    const ck=(v,msg)=>{if(!v)fail('s3 sfx: '+msg);};
+    const oldCases=[], old=(ev,id,gap=0)=>{oldCases.push(ev);ck(String(recipe(ev))===String([id,gap]),JSON.stringify(ev)+' must play '+id+' / '+gap);};
+    // 24343e4: fixed reference also works in a source export without Git history.
+    for(const [key,id] of Object.entries({pistol:'s3gun',taser:'s3taser',shotgun:'s3shotgun',nailgun:'s3nail',silenced:'s3silenced',match:'s3silenced'}))
+      for(const suppressed of [false,true])old({k:'shot',w:key,suppressed},id,40);
+    for(const [key,id] of Object.entries({escort:'droneJam',kamikaze:'emp',eagle:'prof',blackout:'blackout',sergei:'sergei',
+      hammer:'smash',sledge:'smash',mask:'dream',spider:'droneJam',lure:'s3shriek',mine:'lock',strike:'lock',expert:'droneJam',brawl:'s3wave',swarm:'s3shriek',hypnosis:'dream',eightball:'s3swing'}))
+      old({k:'gadget',id:key},id);
+    for(const id of [undefined,'ally','spider','expert','escort'])old({k:'pshot',id},'s3nail',90);
+    const events={eshot:['s3eshot',70],hit:['s3hit',45],hurt:['s3hurt'],dead:['desync'],down:['desync'],swap:['s3dash'],getaway:['bleed'],dash:['s3dash'],
+      hack:['s3hack',60],denied:['s3deny',150],boom:['s3boom',60],shock:['s3shock',60],zap:['s3zap',60],arc:['s3zap',60],steam:['s3steam'],spotted:['spotted',300],
+      alarm:['alarm'],clang:['s3clang',60],takedown:['takedown'],melee:['s3swing',80],swing:['s3swing',80],leap:['s3swing',80],reload:['s3reload'],crash:['crash'],
+      rev:['s3rev'],wave:['s3wave'],clear:['s3clear'],phase:['s3phase'],revive:['bleed'],snipe:['s3snipe'],lob:['s3lob',100],hijack:['droneJam'],
+      raise:['lock'],breach:['camOff'],mark:['prof'],shriek:['s3shriek'],guard:['s3clang'],sneeze:['noise']};
+    for(const [k,args] of Object.entries(events))old({k},...args);
+    old({k:'kill'},'s3kill',50);old({k:'kill',boss:true},'s3bossdown',50);old({k:'kill',machine:true},'s3scrap',50);
+    old({k:'pickup',what:'data'},'s3pick',40);old({k:'pickup',what:'med'},'gain',40);
+    old({k:'shock',cue:'eaglePulse'},'s3shock',60);old({k:'shot',w:'unknown'},'s3gun',40);old({k:'gadget',id:'unknown'},'blip');
+    const compareableCues=oldCases.length;
+    for(const [k,defs] of [['shot',D.weapons],['gadget',D.gadgets]])for(const id of Object.keys(defs)){
+      const ev={k,id,w:id};ck(recipe(ev)?.[0] && audio.fromEvent(ev)[0]!=='fallback','unrouted '+id);
+      if(k==='shot' && defs[id].noise)recipe({...ev,suppressed:true});
     }
-    for(const pet of ['ally','spider','expert','escort']) used.add(route({k:'pshot',id:pet}));
-    for(const k of 'eshot hit hurt dead down swap getaway dash hack denied boom shock zap arc steam spotted alarm clang takedown melee swing leap reload crash rev wave clear phase revive snipe lob hijack raise breach mark shriek guard sneeze eagleLure'.split(' ')) used.add(route({k}));
-    for(const event of [{k:'kill'},{k:'kill',machine:true},{k:'kill',boss:true},{k:'pickup',what:'data'},{k:'pickup',what:'med'},
-        {k:'boom',cue:'cargoDrop'},{k:'shock',cue:'eaglePulse'},{k:'arc',cue:'droneArc'}]) used.add(route(event));
-    for (const name of used) if (!audio.byKey[name] || !X.names.includes(audio.byKey[name].id)) fail(`s3 sfx: ${name} is used but not defined`);
+    for(const key of ['eagleLure','stageFlash','stageReady','order'])recipe({k:key});
+    for(const [k,cue] of [['boom','cargoDrop'],['arc','droneArc'],['gadget','watch'],['hypnosis','metroTick'],['boom','molotovImpact'],['boom','pipeImpact']])recipe({k,cue});
+    ck(!recipe({k:'arc',cue:false}) && !recipe({k:'punch'}),'silent extra arc and original visual-only punch');
+    for(const w of ['rifle','carbine'])for(const suppressed of [false,true])
+      ck(String(recipe({k:'shot',w,suppressed}))===String(['s3x_'+w+(suppressed?'Quiet':''),105]),'automatic '+w+' / '+suppressed);
+
+    // Direct player controls and all authored encounter aliases belong to the same playback inventory.
+    for(const m of text.matchAll(/\bplay\(([^;]*?)\)/g))for(const n of m[1].matchAll(/(?:^|[?:]\s*)'(\w+)'/g))used.add(n[1]);
+    const vm=require('vm'), cameos=src=>vm.runInNewContext('('+src.match(/const EVENT_SOUND = (\{[^}]*\})/)[1]+')');
+    const cameoIds=cameos(text);ck(JSON.stringify(cameoIds)===JSON.stringify({bluedoor:'dream',cat:'dream',wrench:'cameo',darcy:'cameo',aiden:'cameo',marcus:'cameo'}),'encounter aliases');
+    Object.values(cameoIds).forEach(k=>used.add(k));
     const galleryHtml=fs.readFileSync(path.join(root,'tools/sfx-gallery.html'),'utf8');
-    const gallery=sandbox([...galleryHtml.matchAll(/<script src="\.\.\/([^"]+)"/g)].map(m=>m[1])).E;
-    // A distinct cue id alone would not catch the original bug: only Sergei may use the voice synth.
-    let scores, voice = 0;
-    require('vm').runInNewContext(fs.readFileSync(path.join(root,'js/s3/sounds.js'),'utf8'), {window:{ECHO:{sfx:{add(make) {
-      scores = make({osc(){},hiss(){},rotor(){},speak(){voice++;},rnd:(a,b)=>(a+b)/2,pick:a=>a[0]});
-    }}}}});
-    for(const cue of audio.cues){
-      if(!used.has(cue.key)) fail('s3 sound has no checked playback path: '+cue.key);
-      voice=0; scores[cue.id](); if(voice !== (cue.key==='sergei' ? 1 : 0)) fail('s3 voice synth: '+cue.key);
-      if(!gallery.sfx.names.includes(cue.id) || (cue.old && !gallery.sfx.names.includes(cue.old)))fail('s3 sound gallery A/B: '+cue.key);
-      for(const lang of LANGS){E.i18n.set(lang);const k=typeof cue.label==='string'?cue.label:cue.label.weapon?'s3.wp.'+cue.label.weapon+'.n':null;
-        if(k?!page.tables[lang][k]:!cue.label[LANGS.indexOf(lang)])fail('s3 sound gallery label: '+lang+' '+cue.key);}
+    const gallery=sandbox([...galleryHtml.matchAll(/<script src="\.\.\/([^"]+)"/g)].map(m=>m[1]));
+    const src=fs.readFileSync(path.join(root,'js/s3/sounds.js'),'utf8');
+    function scores(source){
+      const fns={};let log=[],state=1;
+      const rnd=(a,b)=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return a+(b-a)*state/4294967296;};
+      const kit={rnd,pick:a=>a[Math.floor(rnd(0,a.length))]};
+      for(const k of ['osc','hiss','rotor','speak','keypad','burst'])kit[k]=(...args)=>{log.push([k,...args]);return k==='keypad'?args[0]+args[1]*.045:undefined;};
+      vm.runInNewContext(source,{window:{ECHO:{sfx:{add(make){Object.assign(fns,make(kit));}}}}});
+      return {fns,trace(id,seed){state=seed;log=[];fns[id]();return log;}};
     }
-    if(new Set(audio.cues.map(c=>c.id)).size!==audio.cues.length || new Set(['eagle','eagleLure','eaglePulse'].map(k=>audio.byKey[k]?.id)).size!==3 ||
-       audio.fromEvent({k:'shriek',cue:false})!==null || audio.fromEvent({k:'shot',w:'rifle'})[1]<90)fail('s3 cue registry / duplicate / automatic fire');
+    const current=scores(src);
+    // Old aliases must resolve to the identical audio ID before throttling, not just before synthesis.
+    const playSource=text.slice(text.indexOf('  const lastPlayed ='),text.indexOf('  const EVENT_SOUND'));
+    const played=[];let now=1000;
+    const fire=vm.runInNewContext(playSource+'\nplay',{performance:{now:()=>now},S3,sfx:{play:id=>played.push(id)}});
+    fire('zap',60);now+=10;fire('arc',60);now+=60;fire('arc',60);
+    ck(String(played)==='s3zap,s3zap','shared legacy cooldown');
+
+    const fresh=audio.cues.filter(c=>!c.restored), returned=audio.cues.filter(c=>c.restored);
+    ck(new Set(fresh.map(c=>c.id)).size===fresh.length,'new material patches must not alias one another');
+    for(const name of used)ck(X.names.includes(audio.byKey[name]?.id),'playback without a score: '+name);
+    for(const c of audio.cues){
+      ck(used.has(c.key),'unreachable gallery entry: '+c.key);
+      ck(gallery.E.sfx.names.includes(c.id) && (!c.previous||gallery.E.sfx.names.includes(c.previous)),'gallery score: '+c.key);
+      if(c.restored)ck(!c.previous && !c.id.startsWith('s3x_'),'a returned sound was replaced: '+c.key);
+      else{
+        const a=current.trace(c.id,3),b=current.trace(c.id,97);
+        ck(a.length>1 && JSON.stringify(a)!==JSON.stringify(b),'empty/frozen patch: '+c.key);
+        ck(!a.some(x=>x[0]==='speak'),'voice used for '+c.key);
+        if(c.key==='cargo')ck(a.some(x=>x[0]==='rotor' && x[4].f<90),'cargo must use a load-bearing rotor');
+      }
+      for(const lang of LANGS){gallery.E.i18n.set(lang);const k=typeof c.label==='string'?c.label:c.label.weapon?'s3.wp.'+c.label.weapon+'.n':null;
+        ck(k?!!gallery.tables[lang][k]:!!c.label[LANGS.indexOf(lang)],'gallery label: '+lang+' '+c.key);}
+    }
+    ck(audio.byKey.sergei.id==='sergei' && audio.byKey.cargo.id!==audio.byKey.sergei.id && !X.names.some(n=>n.startsWith('s3v6_')),'Sergei and cargo separated; comparison bank is gallery-only');
+    // Optional historical audit: normal checks also work in a downloaded ZIP or shallow checkout.
+    if(process.env.S3_AUDIO_HISTORY){
+      const git=p=>require('child_process').execFileSync('git',['show','24343e4:'+p],{cwd:root,encoding:'utf8'}).replace(/\r\n/g,'\n');
+      const archived=git('js/s3/sounds.js'), oldBank=scores(archived), main=git('js/s3/main.js');
+      ck(git('js/ui/sfx.js')===fs.readFileSync(path.join(root,'js/ui/sfx.js'),'utf8').replace(/\r\n/g,'\n'),'shared prequel / Curfew engine differs from 24343e4');
+      for(const id of Object.keys(oldBank.fns)){
+        ck(returned.some(c=>c.id===id),'historical recipe not reachable: '+id);
+        for(const seed of [1,23,1112])ck(JSON.stringify(current.trace(id,seed))===JSON.stringify(oldBank.trace(id,seed)),'historical score or mix: '+id);
+      }
+      const original=main.slice(main.indexOf('  const SHOT ='),main.indexOf('  // ===== 文字小工具'));
+      let heard;const route=vm.runInNewContext(original+'\nsound',{play:(id,gap=0)=>{heard=[id,gap];}});
+      for(const ev of oldCases){heard=null;route(ev);ck(String(heard)===String(recipe(ev)),'historical dispatch: '+JSON.stringify(ev));}
+      ck(JSON.stringify(cameoIds)===JSON.stringify(cameos(main)),'historical encounters');
+      console.log('24343e4: '+Object.keys(oldBank.fns).length+' local scores match with three draws; shared bank, encounter map and '+compareableCues+' dispatch cases match');
+    }
+    // Capture the actual simulation events, not just hand-made dispatch examples.
+    const scene=(id,person)=>room({enemies:[{kind:'turret',x:120,y:110}]},{person,gadgets:[{id,lv:2}]});
+    function perform(s,n,input=()=>({})) {
+      const result=[];
+      for(let i=0;i<n;i++){sim.step(s,pad(input(i)));for(const ev of s.ev){const r=recipe(ev);if(r)result.push([i,r[0]]);}s.ev.length=0;}
+      return result;
+    }
+    const cast=i=>({g1:i===0,ax:880,ay:630});
+    for(const [id,on,hit,delay] of [['cargo','s3x_cargo','s3x_cargoDrop',D.gadgets.cargo.fuse],
+      ['sergei','sergei','s3boom',D.gadgets.sergei.fuse],['molotov','s3x_molotov','s3x_molotovImpact',D.gadgets.molotov.flight],
+      ['pipebomb','s3x_pipebomb','s3x_pipeImpact',D.gadgets.pipebomb.flight]]){
+      const calls=perform(scene(id),60,cast),land=calls.filter(([i,sound])=>sound===hit);
+      ck(calls.some(([i,k])=>i===0 && k===on) && land.length===1 && Math.abs(land[0][0]-delay/sim.DT)<=1.1,id+' touchdown is timed to the actual payload');
+      if(id!=='sergei')ck(!calls.some(([,k])=>k==='sergei'||k==='s3boom'),'unwanted voice / generic blast: '+id);
+    }
+    const show=perform(scene('performance'),60,i=>({...cast(i),mx:i===57?1:0})).map(x=>x[1]);
+    ck(['s3x_performance','s3x_stageReady','s3x_stageFlash'].every(k=>show.includes(k)),'charged curtain call');
+    const early=perform(scene('performance'),9,i=>({...cast(i),mx:i===7?1:0}));
+    ck(!early.some(([,k])=>k==='s3x_stageFlash'),'no flash without a charge');
+    const watch=S3.ops.person('hypnotist','ticking','watch');
+    ck(perform(scene('hypnosis',watch),1,cast).some(([,k])=>k==='s3x_watch') && perform(scene('hypnosis'),1,cast).some(([,k])=>k==='dream'),'watch template versus legacy hypnosis');
+    const borrowed=room({enemies:[{kind:'turret',x:120,y:110}]},{person:watch,gadgets:[{id:'mask',lv:1},{id:'hypnosis',lv:1}]});
+    ck(perform(borrowed,1,()=>({g2:true})).some(([,k])=>k==='dream'),'borrowed hypnosis is not the signature pocket watch');
+    ck(perform(scene('lure'),1,cast).filter(([,k])=>k==='s3shriek').length===2,'original speaker activation and emitted shriek');
+    const beats=perform(scene('metronome'),94,cast).filter(([,k])=>k==='s3x_metronome'||k==='s3x_metroTick').map(x=>x[0]);
+    ck(beats.length===3 && beats[0]===0 && Math.abs(beats[1]-43)<=1 && Math.abs(beats[2]-86)<=1,'three audible beats follow the trance pulses');
     // 音樂：三種情境的每一步都排得出來。
     if (X.now() !== 0) fail('s3 music: the clock should be readable once sound is on');
     for (const mode of ['calm', 'fight', 'boss']) {
@@ -1749,6 +1830,6 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     S3.music.set('fight');
     if (S3.music.mode !== 'fight') fail('s3 music: mode not set');
     S3.music.set(null);
-    console.log(`${mine.length} sounds built without errors, ${used.size} playback routes covered, music in three moods`);
+    console.log(`S3 audio: ${new Set(returned.map(c=>c.id)).size} restored recipes, ${fresh.length} new, ${audio.cues.length} named uses; physical cue timings and music in three moods checked`);
   }
 };

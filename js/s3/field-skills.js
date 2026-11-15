@@ -42,7 +42,8 @@
     return best===Infinity?null:{x:x+best*dx,y:y+best*dy};
   }
   function pulse(s,z) {
-    s.ev.push({k:'hypnosis',x:z.x,y:z.y,ang:z.ang,r:z.r,arc:z.arc});
+    s.ev.push({k:'hypnosis',x:z.x,y:z.y,ang:z.ang,r:z.r,arc:z.arc,
+      cue:z.id==='metronome' && z.beats<2 ? 'metroTick' : undefined});
     for(const e of s.en) if(live(e) && e.def.human && !e.boss && nearby(s,z,e,z.r) &&
       Math.abs(A.angDiff(Math.atan2(e.y-z.y,e.x-z.x),z.ang))<=z.arc){
       e.trance=Math.max(e.trance,z.dur*(e.elite ? .5 : 1)); e.tranceCast=z; e.atk=null;e.kx=e.ky=0;
@@ -153,7 +154,8 @@
     }
     s.installations=s.installations.filter(z=>z.t>0);
     for(const z of s.payloads)if((z.t-=dt)<=0){
-      A.blast(s,z.x,z.y,z.r,z.dmg,{by:'env',self:z.thrower===s.team[s.active]?0:10,breacher:z.breacher,knock:80});A.noise(s,z.x,z.y,500);
+      A.blast(s,z.x,z.y,z.r,z.dmg,{by:'env',self:z.thrower===s.team[s.active]?0:10,breacher:z.breacher,knock:80,
+        cue:z.id==='molotov'?'molotovImpact':'pipeImpact'});A.noise(s,z.x,z.y,500);
       s.zones.push({k:'fire',thrower:z.thrower,x:z.x,y:z.y,r:z.r*.8,t:z.dur,burn:z.burn,tick:0});
     }
     s.payloads=s.payloads.filter(z=>z.t>0);

@@ -885,7 +885,8 @@
       const k = d > range ? range / d : 1;
       return { x: clamp(p.x + (ax - p.x) * k, T + 20, W - T - 20), y: clamp(p.y + (ay - p.y) * k, T + 20, H - T - 20) };
     };
-    s.ev.push({ k: 'gadget', id: g.id, x: p.x, y: p.y });
+    const silverWatch = slot === 0 && g.id === 'hypnosis' && S3.ops.templateOf(s.build.person)?.id === 'watch';
+    s.ev.push({ k: 'gadget', id: g.id, x: p.x, y: p.y, cue: silverWatch ? 'watch' : undefined });
     if(S3.field.cast(s,g,slot,reach))return;
     if (g.id === 'kamikaze') {
       const at = reach(def.range);
@@ -940,7 +941,7 @@
       const at = reach(def.range);
       s.decoys.push({ x: at.x, y: at.y, t: def.dur + lv, r: def.r });
       noise(s, at.x, at.y, def.r);
-      s.ev.push({ k: 'shriek', x: at.x, y: at.y, r: def.r, cue: false }); // The activation already plays the decoy speaker.
+      s.ev.push({ k: 'shriek', x: at.x, y: at.y, r: def.r });
     } else if (g.id === 'mine') {
       if (s.mines.length >= def.max) s.mines.shift();
       s.mines.push({ x: p.x, y: p.y, arm: 0.6, r: def.r * (1 + 0.15 * lv), stun: def.stun + 0.5 * lv, dmg: def.dmg + 10 * lv });
@@ -1153,7 +1154,7 @@
       } else if (z.t <= 0) {
         if (z.k === 'tele') {
           if (z.side === 'p') {
-            blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', knock: 160, cue: z.crate ? 'cargoDrop' : undefined });
+            blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', knock: 160, cue: z.cargo === 'cargo' ? 'cargoDrop' : undefined });
             noise(s, z.x, z.y, 500);
             if (z.crate) {
               if (z.cargo === 'sergei') scramble(s, z);
