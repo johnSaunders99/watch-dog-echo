@@ -17,9 +17,9 @@ nav{display:flex;gap:7px;flex-wrap:wrap}nav button{padding:6px 12px}nav button[a
 (() => {
   const E=window.ECHO, A=E.s3.audio, $=s=>document.querySelector(s), groups=['guns','gear','field','combat','ui'];
   const languages=['zh-Hant','zh-Hans','en'], copy=[
-    ['聲音試聽室','從工程無人機開始：聽槳葉起轉、貨箱落地，再和舊版的喊聲比較。','待命，請選一個聲音','停止','槍械','裝備','駭入與陷阱','敵人與首領','介面','新版','舊版','播放中','加裝滅音器','沒有舊版按鈕的是新增聲音。','無法啟動 Web Audio，請用支援它的瀏覽器再試。','音效分組'],
-    ['声音试听室','从工程无人机开始：听桨叶起转、货箱落地，再和旧版的喊声比较。','待命，请选一个声音','停止','枪械','装备','入侵与陷阱','敌人与首领','界面','新版','旧版','播放中','加装消音器','没有旧版按钮的是新增声音。','无法启动 Web Audio，请用支持它的浏览器再试。','音效分组'],
-    ['Sound audition desk','Start with the cargo drone: compare its rotor and falling crate with the chatter in the old version.','Ready · choose a sound','Stop','Guns','Gear','Hacks & traps','Enemies & bosses','Interface','New','Old','Playing','Silencer fitted','Sounds without an Old button are new.','Web Audio could not start. Try a browser with Web Audio support.','Sound groups']];
+    ['聲音試聽室','在「裝備」聽電擊機起飛與放電，再比較定格表演的收音和禁制令的槌聲。','待命，請選一個聲音','停止','槍械','裝備','駭入與陷阱','敵人與首領','介面','新版','舊版','播放中','加裝滅音器','沒有舊版按鈕的是新增聲音。','無法啟動 Web Audio，請用支援它的瀏覽器再試。','音效分組'],
+    ['声音试听室','在“装备”里听电击机起飞与放电，再比较定格表演的收音和禁制令的槌声。','待命，请选一个声音','停止','枪械','装备','入侵与陷阱','敌人与首领','界面','新版','旧版','播放中','加装消音器','没有旧版按钮的是新增声音。','无法启动 Web Audio，请用支持它的浏览器再试。','音效分组'],
+    ['Sound audition desk','Open Gear to hear the shock drone lift off and discharge. Compare the suspended note of a tableau with the knock of an injunction.','Ready · choose a sound','Stop','Guns','Gear','Hacks & traps','Enemies & bosses','Interface','New','Old','Playing','Silencer fitted','Sounds without an Old button are new.','Web Audio could not start. Try a browser with Web Audio support.','Sound groups']];
   let lang=languages.includes(new URLSearchParams(location.search).get('lang'))?new URLSearchParams(location.search).get('lang'):'zh-Hant', group='gear',ticket=0,ctx=null,sources=[],cache=new Map();
   const i=()=>languages.indexOf(lang),w=()=>copy[i()], label=c=>typeof c.label==='string'?E.i18n.t(c.label):Array.isArray(c.label)?c.label[i()]:E.i18n.t('s3.wp.'+c.label.weapon+'.n')+' · '+w()[12];
   function stop(){ticket++; for(const s of sources)try{s.stop();}catch(e){} sources=[]; $('.is-playing')?.classList.remove('is-playing');$('#stop').disabled=true;$('#status').textContent=w()[2];}

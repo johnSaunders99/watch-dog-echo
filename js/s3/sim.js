@@ -37,12 +37,12 @@
     st.meleeDmg += 6 * sk.physical;
     st.detectMul *= 1 - 0.1 * sk.social;
     st.dataMul *= 1 + 0.08 * sk.social;
-    apply(D.jobFx[build.job], 1);
+    apply(S3.ops.templateOf(build.person) || D.jobFx[build.job], 1);
     for (const id of (build.person && build.person.imprints) || []) apply(D.imprints[id], 1);
     for (const t of build.traits || []) apply(D.traitFx[t], 1);
     apply(D.flawFx[build.flaw], 1);
     for (const q of build.quirks || []) apply(D.quirkFx[q], 1);
-    for (const x of D.exploits) if (build.exploits && build.exploits[x.id]) apply(x, build.exploits[x.id]);
+    for (const x of D.exploits) if ((!x.owner || x.owner===build.person?.elite) && build.exploits && build.exploits[x.id]) apply(x, build.exploits[x.id]);
     const ex = build.extra || {};
     st.maxHp += ex.maxHp || 0;
     st.bwMax += ex.bwMax || 0;
@@ -179,7 +179,7 @@
     const mag = Math.round(weapon.mag * made.st.magMul);
     return {
       build: b, st: made.st, fl: made.fl, weapon, hp, maxHp: made.st.maxHp, ammo: mag, mag, down: hp <= 0,
-      guard: made.fl.guard ? 1 : 0, escaped: !!b.escaped, fresh: true, execCd: 0,
+      guard: made.fl.guard ? 1 : 0, escaped: !!b.escaped, fresh: true, execCd: 0, reprievesUsed: b.reprievesUsed || 0,
       gad: (b.gadgets || []).map((g) => ({ id: g.id, lv: g.lv || 1, cd: 0 })),
     };
   }
@@ -204,7 +204,7 @@
     const s = {
       team, active, swapCd: 0, freeUsed: false,
       spec, build, st, fl, weapon: w, rng: E.rng.create(spec.seed),
-      t: 0, rt: 0, tick: 0, navV: 1, fields: new Map(),
+      t: 0, rt: 0, tick: 0, navV: 1, fields: new Map(), installations: [], payloads: [],
       solid: new Uint8Array(GW * GH), en: [], bul: [], props: [], zones: [], picks: [], decoys: [], pets: [], mines: [], ev: [],
       alert: !!spec.boss, alertT: 0, waves: spec.waves.map((x) => x.slice()), waveT: 0, cleared: false, silent: false, cache: null, doorsOpen: false, exit: -1, over: null,
       blackout: 0, recon: null, eagleCd: 0, hackN: 0, nextId: 1, gain: 0, gainAcc: 0, baseData: c.data || 0, revived: !!c.revived, usedRevive: false,
@@ -251,7 +251,7 @@
     const e = {
       id: s.nextId++, kind, def, x, y, r: def.r, ang: o.ang || 0, base: o.ang || 0, mvAng: o.ang || 0,
       hp: def.hp * s.spec.scale, speed: def.speed, state: s.alert || o.wave ? 'combat' : 'calm', aware: 0, call: 0,
-      stun: 0, burn: 0, burnT: 0, mark: 0, blind: 0, distract: 0, resist: 0, noShield: 0, ally: 0, confused: 0, jamOff: 0,
+      stun: 0, trance: 0, bees: 0, burn: 0, burnT: 0, mark: 0, blind: 0, distract: 0, resist: 0, noShield: 0, ally: 0, confused: 0, jamOff: 0,
       patrol: o.patrol || null, pi: 1, wait: 0, goal: null, look: 0, home: { x, y },
       atk: null, cd: 0.6 + s.rng.next() * 0.9, strafe: s.rng.chance(0.5) ? 1 : -1, strafeT: 1 + s.rng.next() * 1.5,
       seen: false, last: null, lostT: 0, elite: o.elite || null, grenade: kind === 'heavy', spawnT: o.wave ? 1.1 : 0,
@@ -272,7 +272,7 @@
     s.ev.push({ k: 'noise', x, y, r });
     if (s.alert) return;
     for (const e of s.en) {
-      if (e.dead || e.state === 'combat' || e.def.static || e.ally > 0 || e.confused > 0 || e.distract > 0) continue;
+      if (S3.field.audience(s,e) || e.dead || e.state === 'combat' || e.def.static || e.ally > 0 || e.confused > 0 || e.distract > 0) continue;
       if (hyp(e.x - x, e.y - y) > r) continue;
       if (loud) { engage(s, e); continue; }
       e.state = 'suspect';
@@ -281,7 +281,7 @@
     }
   }
   function engage(s, e) {
-    if (e.state === 'combat' || e.confused > 0) return;
+    if (S3.field.audience(s,e) || e.state === 'combat' || e.confused > 0) return;
     e.state = 'combat';
     e.distract = 0;
     e.atk = null;
@@ -300,7 +300,7 @@
   function hurt(s, e, dmg, src = {}) {
     if (e.dead || e.spawnT > 0) return 0;
     const fl = s.fl;
-    let d = dmg;
+    let d = src.by==='melee' ? dmg*(1+(fl.terraceFists||0)) : dmg;
     if (e.mark > 0) d *= fl.press ? 1.5 : 1.3;
     if (e.stun > 0 && fl.vuln) d *= 1 + 0.35 * fl.vuln;
     if (src.by === 'gun' && e.elite === 'armored') d *= 0.7;
@@ -321,6 +321,7 @@
   // 陷阱（配電箱、油桶、車、手榴彈、地雷）打到還沒發現你的敵人：一般的敵人當場倒下，精英和重裝兵受三倍傷害。
   // 這是潛行的回報：先佈置，再動手。警報響了之後，陷阱就只是普通的傷害。
   function trapHurt(s, e, dmg, src = {}) {
+    if(s.fl.trapDouble)dmg*=2;
     if (!s.alert && e.state !== 'combat' && e.ally <= 0 && !e.boss && e.spawnT <= 0 && !e.dead) {
       if (!e.elite && e.kind !== 'heavy') {
         const left = e.hp;
@@ -337,6 +338,9 @@
     if (e.dead) return;
     e.dead = true;
     s.stats.kills++;
+    const singer=src.by==='melee'?s.active:src.singer, member=s.team[singer];
+    if(member?.fl.chant && !member.down){if(singer===s.active)s.p.hp=Math.min(s.p.maxHp,s.p.hp+8*member.fl.chant);else member.hp=Math.min(member.maxHp,member.hp+8*member.fl.chant);}
+    if(e.scrapCharge)blast(s,e.x,e.y,e.scrapCharge,65,{by:'ally',knock:200});
     const env = src.by === 'hack' || src.by === 'env' || src.by === 'ally';
     if (env) { s.stats.envKills++; if (s.fl.refund) s.p.bw = Math.min(s.st.bwMax, s.p.bw + s.fl.refund); }
     s.ev.push({ k: 'kill', x: e.x, y: e.y, kind: e.kind, r: e.r, boss: e.boss, machine: !!e.def.machine, ambush: !!src.ambush });
@@ -385,7 +389,9 @@
     if (o.kx !== undefined) { p.kx += o.kx; p.ky += o.ky; }
     s.ev.push({ k: 'hurt', x: p.x, y: p.y, n: d });
     if (p.hp <= 0) {
-      if (s.fl.revive && !s.revived) {
+      if(s.team[s.active].reprievesUsed<(s.fl.reprieve||0)){
+        s.team[s.active].reprievesUsed++;p.hp=1;p.inv=1.6;s.ev.push({k:'revive',x:p.x,y:p.y});
+      } else if (s.fl.revive && !s.revived) {
         s.revived = s.usedRevive = true;
         p.hp = Math.round(p.maxHp * 0.4);
         p.inv = 2;
@@ -419,6 +425,8 @@
     const p = s.p, from = s.team[s.active], to = s.team[i];
     if (!to || to.down || i === s.active) return false;
     if (!forced && (s.swapCd > 0 || p.lock > 0 || p.dashT > 0 || s.over)) return false;
+    if(s.show)S3.field.curtain(s);
+    for(const z of s.installations)if(z.follow && z.owner===s.active)z.follow=false;
     from.hp = Math.max(0, p.hp);
     from.ammo = p.ammo;
     from.guard = p.guard;
@@ -442,7 +450,7 @@
   function teamState(s) {
     const me = s.team[s.active];
     if (!me.down) { me.hp = Math.max(0, s.p.hp); me.ammo = s.p.ammo; }
-    return s.team.map((m) => ({ hp: m.down ? 0 : Math.max(1, Math.round(m.hp)), down: m.down, escaped: m.escaped }));
+    return s.team.map((m) => ({ hp: m.down ? 0 : Math.max(1, Math.round(m.hp)), down: m.down, escaped: m.escaped, reprievesUsed:m.reprievesUsed }));
   }
 
   // ===== 範圍效果 =====
@@ -642,6 +650,7 @@
     else if (h.act === 'blind') { e.blind = H.dur; e.atk = null; s.ev.push({ k: 'zap', x: e.x, y: e.y }); }
     else if (h.act === 'hijack' || h.act === 'hijackTurret') {
       e.ally = H.dur * s.st.hijackMul;
+      if(s.fl.scrapBlast)e.scrapCharge=135+45*(s.fl.fragments||0);
       e.confused = 0;
       e.state = 'combat';
       e.atk = null;
@@ -671,7 +680,7 @@
       const d = hyp(e.x - p.x, e.y - p.y) - e.r;
       const reach = s.fl.assassin ? 105 : REACH;
       if (d >= (s.fl.assassin ? 200 : LUNGE) || d >= bd) continue;
-      const dazed = e.stun > 0 || (!e.boss && inSteam(s, e));
+      const dazed = e.stun > 0 || e.trance > 0 || (!e.boss && inSteam(s, e));
       if (d >= reach && !dazed) continue;
       if ((d >= REACH || combatExec(s, e)) && !clear(s, p.x, p.y, e.x, e.y, true)) continue;
       const behind = e.state !== 'combat' && Math.abs(angDiff(Math.atan2(p.y - e.y, p.x - e.x), e.ang)) > 1.7;
@@ -712,6 +721,8 @@
     if (p.dashT > 0) {
       p.dashT -= dt;
       moveCircle(s, p, p.dvx * dt, p.dvy * dt);
+      if(p.rushing)for(const e of s.en)if(!e.dead && e.ally<=0 && !p.dashHit.has(e) && hyp(e.x-p.x,e.y-p.y)<e.r+p.r+22){
+        p.dashHit.add(e);stun(s,e,.7);hurt(s,e,st.meleeDmg+24,{by:'melee'});}
       if (fl.shockdash) for (const e of s.en) if (!e.dead && e.ally <= 0 && !p.dashHit.has(e) && hyp(e.x - p.x, e.y - p.y) < e.r + p.r + 16) { p.dashHit.add(e); stun(s, e, 0.7); s.ev.push({ k: 'zap', x: e.x, y: e.y }); if (e.state !== 'combat') engage(s, e); }
     } else if (p.lock <= 0) moveCircle(s, p, (mx * st.speed + p.kx) * dt, (my * st.speed + p.ky) * dt);
     // 這一步實際的速度：敵人瞄準時會抓一點提前量。
@@ -725,7 +736,8 @@
       p.dvy = dy * 950 * st.dashLen;
       p.inv = Math.max(p.inv, 0.24);
       p.dashN--;
-      if (fl.combatExec) { p.reload = 0; p.ammo = p.mag; }
+      p.rushing=false;
+      if (fl.dashLoad) { p.reload = 0; p.ammo = p.mag; }
       p.dashHit = new Set();
       if (fl.decoy) s.decoys.push({ x: p.x, y: p.y, t: 2.5, r: 380, ghost: true });
       s.ev.push({ k: 'dash', x: p.x, y: p.y, ang: Math.atan2(dy, dx) });
@@ -783,11 +795,18 @@
         p.ang = Math.atan2(t.y - p.y, t.x - p.x);
         s.stats.takedowns++;
         s.ev.push({ k: 'takedown', x: t.x, y: t.y });
-        if (combatExec(s, t)) { s.team[s.active].execCd = 4; kill(s, t, { by: 'melee' }); }
+        if (combatExec(s, t)) {
+          const g=p.gad.find(g=>g.id==='execute');
+          s.team[s.active].execCd=g ? (g.cd=S3.data.gadgets.execute.cd*(1-.2*(g.lv-1))) : 4;
+          kill(s,t,{by:'melee'});
+        }
+        else if (t.trance>0 && t.def.human && !t.boss) kill(s,t,{by:'melee',assassin:!!fl.assassin});
         else if (t.boss || t.def.big || t.elite) hurt(s, t, 70 + st.meleeDmg, { by: 'melee', assassin: !!fl.assassin });
         else kill(s, t, { by: 'melee', assassin: !!fl.assassin });
         p.bw = Math.min(st.bwMax, p.bw + 1);
         p.focus = Math.min(st.focusMax, p.focus + 12);
+        if(fl.vanish)p.cloak=2*fl.vanish;
+        if(fl.deadletter)addData(s,12*fl.deadletter);
         if (fl.lifesteal) p.hp = Math.min(p.maxHp, p.hp + 5 * fl.lifesteal);
         if (fl.loud) noise(s, p.x, p.y, 160);
       } else {
@@ -829,7 +848,9 @@
   // ===== 裝備 =====
   function useGadget(s, slot, ax, ay) {
     const p = s.p, g = p.gad[slot];
-    if (!g || g.cd > 0 || p.lock > 0) { if (g) s.ev.push({ k: 'denied', x: p.x, y: p.y, why: 'cool' }); return; }
+    if(g?.id==='shockdrone' && s.shockDrone?.owner===s.active)return; // A second key-down starts piloting the existing aircraft.
+    if(g && S3.field.order(s,g,ax,ay))return;
+    if (!g || g.cd > 0 || p.lock > 0 || S3.field.block(s,g)) { if (g) s.ev.push({ k: 'denied', x: p.x, y: p.y, why: 'cool' }); return; }
     const def = S3.data.gadgets[g.id], lv = g.lv - 1;
     if (g.id === 'eagle' && s.recon) {
       if (s.recon.orbit) detonateEagle(s);
@@ -844,6 +865,7 @@
       return { x: clamp(p.x + (ax - p.x) * k, T + 20, W - T - 20), y: clamp(p.y + (ay - p.y) * k, T + 20, H - T - 20) };
     };
     s.ev.push({ k: 'gadget', id: g.id, x: p.x, y: p.y });
+    if(S3.field.cast(s,g,slot,reach))return;
     if (g.id === 'kamikaze') {
       const at = reach(def.range);
       s.zones.push({ k: 'kamikaze', x: at.x, y: at.y, fx: p.x, fy: p.y, r: def.r * (1 + 0.12 * lv), t: def.flight, t0: def.flight, stun: def.stun + 0.5 * lv, dmg: def.dmg + 8 * lv });
@@ -877,23 +899,21 @@
       p.cloak = def.dur + lv;
       for (const e of s.en) { e.aware = 0; if (e.call > 0) e.call = CALL; }
     } else if (g.id === 'spider' || g.id === 'escort' || g.id === 'expert') {
-      s.pets.push({ kind: g.id, x: p.x, y: p.y, t: def.dur + (g.id === 'escort' ? 1 : g.id === 'expert' ? 2 : 3) * lv, cd: 0, ang: p.ang, dmg: def.dmg + 2 * lv, rate: def.rate, sight: def.sight, pierce: def.pierce || 0 });
+      s.pets.push({ kind: g.id, x: p.x, y: p.y, t: def.dur + (g.id==='expert'?4*(s.fl.overcell||0):0) + (g.id === 'escort' ? 1 : g.id === 'expert' ? 2 : 3) * lv, cd: 0, ang: p.ang, dmg: def.dmg + 2 * lv, rate: def.rate, sight: def.sight, pierce: (def.pierce || 0)+(g.id==='expert'?(s.fl.coilTap||0):0) });
     } else if (g.id === 'strike') {
       const at = reach(def.range);
       s.zones.push({ k: 'strike', ...at, r: def.r, t: def.flight, left: 3, dmg: (def.dmg + 12 * lv) * s.st.aoeDmg });
     } else if (g.id === 'brawl') {
       const first = s.rng.int(0, 255);
       for (let i = 0; i < 3; i++) s.pets.push({ kind: 'brawler', slot: i, person: E.people.generate('terrace', 'camden', 4000 + (first + i) % 256),
-        x: p.x, y: p.y, r: 12, def: {}, ang: p.ang, t: def.dur + lv, cd: 0.15 * i, dmg: def.dmg + 4 * lv });
+        x: p.x, y: p.y, r: 12, def: {}, ang: p.ang, t: def.dur + lv, cd: 0.15 * i, singer:s.active, dmg:(def.dmg + 4 * lv)*(1+(s.fl.terraceFists||0)) });
     } else if (g.id === 'swarm') {
-      s.zones.push({ k: 'swarm', ...reach(def.range), r: def.r, t: def.dur + lv, tick: 0.5, dmg: def.dmg + 3 * lv });
-    } else if (g.id === 'hypnosis' || g.id === 'eightball') {
-      const ball = g.id === 'eightball';
+      s.zones.push({ k: 'swarm', ...reach(def.range), r: def.r, t: def.dur + lv, tick: 0.5, dmg:(def.dmg + 3 * lv)*(1+.5*(s.fl.hiveDose||0)), mark:s.fl.hiveMark,linger:1.5*(s.fl.afterbuzz||0) });
+    } else if (g.id === 'eightball') {
       s.ev.push({ k: g.id, x: p.x, y: p.y, ang: p.ang, r: def.r });
       for (const e of s.en) {
         if (e.dead || e.ally > 0 || e.spawnT > 0 || hyp(e.x - p.x, e.y - p.y) - e.r > def.r || !clear(s, p.x, p.y, e.x, e.y, true)) continue;
-        if (ball) { e.noShield = Math.max(e.noShield, 3); stun(s, e, def.stun); hurt(s, e, def.dmg + 15 * lv, { by: 'melee' }); }
-        else if (Math.abs(angDiff(Math.atan2(e.y - p.y, e.x - p.x), p.ang)) <= def.arc) { e.trance = (def.dur + lv) * (e.boss ? 0.25 : 1); e.atk = null; e.kx = e.ky = 0; }
+        { e.noShield = Math.max(e.noShield, 3); stun(s, e, def.stun); hurt(s, e, def.dmg + 15 * lv, { by: 'melee' }); }
       }
     } else if (g.id === 'lure') {
       const at = reach(def.range);
@@ -955,6 +975,8 @@
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.life -= dt;
+      const stop=b.side==='e' && s.installations.length && S3.field.intercept(s,ox,oy,b.x,b.y);
+      if(stop){b.life=0;s.ev.push({k:'spark',...stop});continue;}
       const v = solidAt(s, b.x, b.y);
       if (v) {
         if (v === 3 && b.side === 'p') {
@@ -1055,6 +1077,7 @@
         }
       }
       // 攝影機：還沒響警報的時候會掃視，看到你就直接報警。
+      if(pr.kind==='camera' && S3.field.stayed(s,pr)){pr.down=Math.max(.1,pr.down);pr.aware=0;}
       if (pr.kind === 'camera' && !pr.looped && pr.down <= 0 && !s.alert && !s.cleared) {
         pr.look = pr.ang + Math.sin(s.t * 0.8 + pr.id) * 0.75;
         const sight = def.sight * sightMul(s);
@@ -1077,7 +1100,7 @@
     moveToward(s, mate, target.x + Math.cos(angle) * offset, target.y + Math.sin(angle) * offset, 275, dt);
     if (foe && dist(foe) <= foe.r + 45 && mate.cd <= 0 && clear(s, mate.x, mate.y, foe.x, foe.y, true)) {
       mate.cd = S3.data.gadgets.brawl.gap;
-      hurt(s, foe, mate.dmg, { by: 'ally' });
+      hurt(s, foe, mate.dmg, { by: 'ally',singer:mate.singer });
       s.ev.push({ k: 'punch', x: mate.x, y: mate.y, ang: mate.ang });
     }
   }
@@ -1092,9 +1115,10 @@
         blast(s, z.x, z.y, z.r, z.dmg, { by: 'env' }); noise(s, z.x, z.y, 500);
         if (--z.left) z.t = S3.data.gadgets.strike.gap;
       } else if (z.k === 'swarm') {
+        if(z.owner===s.active){z.x=p.x;z.y=p.y;}
         z.tick -= dt;
         for (const e of s.en) if (!e.dead && e.ally <= 0 && e.spawnT <= 0 && hyp(e.x - z.x, e.y - z.y) < z.r + e.r) {
-          e.bees = 0.12; if (z.tick <= 0) hurt(s, e, z.dmg * 0.5, { by: 'env', quiet: true });
+          e.bees = Math.max(e.bees,.12+(z.linger||0));if(z.mark)e.mark=Math.max(2,e.mark); if (z.tick <= 0) hurt(s, e, z.dmg * 0.5, { by: 'env', quiet: true });
         }
         if (z.tick <= 0) z.tick += 0.5;
       } else if (z.k === 'steam' || z.k === 'fire') {
@@ -1291,7 +1315,9 @@
     s.tick++;
     if (s.swapCd > 0) s.swapCd -= DT;
     if (inp.swap !== undefined && inp.swap !== null && inp.swap >= 0) swapTo(s, inp.swap, false);
+    inp=S3.field.input(s,inp,DT);
     stepPlayer(s, inp, DT * (p.focusing ? 0.8 : 1));
+    S3.field.step(s,dt);
     if (s.blackout > 0) s.blackout -= dt;
     for (const e of s.en) if (!e.dead) S3.sim.think(s, e, dt);
     separate(s);

@@ -399,3 +399,73 @@
     's3.prop.speaker.n': 'Loudspeaker', 's3.prop.speaker.d': 'Plays noise: unaware guards walk over to look, and enemies in a fight shoot at it for a few seconds.',
   });
 })(window.ECHO = window.ECHO || {});
+
+// The handbook, invitations and private shelves share one set of descriptions.
+(function(I){
+  const langs=['zh-Hant','zh-Hans','en'], dict=[{},{},{}];
+  function entries(prefix,rows){for(const [id,...text] of rows)langs.forEach((_,i)=>{
+    dict[i]['s3.'+prefix+'.'+id+'.n']=text[i];dict[i]['s3.'+prefix+'.'+id+'.d']=text[3+i];});}
+  entries('tpl', [
+    ["contract","末班契約","末班契约","Last contract","彈頭多穿透一個目標。","弹头多穿透一个目标。","Rifle rounds pierce one extra target."],
+    ["runner","空匣快步","空匣快步","Empty-mag runner","每次衝刺都會換滿彈匣，原地留下誘餌。","每次冲刺都会换满弹匣，原地留下诱饵。","Every dash refills the magazine and leaves a decoy."],
+    ["spotter","使館觀測手","使馆观察手","Embassy spotter","消音偷襲傷害 4.5 倍；制伏距離更遠，旁人較難察覺。","消音偷袭伤害 4.5 倍；制服距离更远，旁人较难察觉。","Suppressed ambush shots deal 4.5× damage. Takedowns reach farther and attract fewer witnesses."],
+    ["undercover","借來的名字","借来的名字","Borrowed name","每房第一次駭入免費。","每个房间第一次入侵免费。","The first hack in each room is free."],
+    ["flightdeck","河霧領航","河雾领航","Fog pilot","劫持效能 ×1.35，同時延長電擊機續航、提高電弧傷害。","劫持效能 ×1.35，同时延长电击机续航、提高电弧伤害。","Hijack power ×1.35, including shock-drone flight time and arc damage."],
+    ["gunship","重裝護航","重装护航","Gunship escort","每房第一次駭入免費。","每个房间第一次入侵免费。","The first hack in each room is free."],
+    ["terrace","客隊看台","客队看台","Away stand","體力上限增加 24。","体力上限增加 24。","Gain 24 maximum HP."],
+    ["turnstile","硬闖閘門","硬闯闸门","Gatecrasher","每次制伏回復 5 點體力。","每次制服恢复 5 点体力。","Recover 5 HP per takedown."],
+    ["apiary","屋頂放蜂","屋顶放蜂","Roof hive","蜂群替全隊標記目標，標記持續至離群後 2 秒。","蜂群为全队标记目标，标记持续至离群后 2 秒。","Bees mark targets for the squad until two seconds after leaving the swarm."],
+    ["veilguard","隨身蜂巢","随身蜂巢","Veil guard","每房擋下第一次受擊。","每个房间挡下第一次受击。","Ignore the first hit in each room."],
+    ["plinth","街角基座","街角基座","Street plinth","不動也不開火時，警戒累積速度降至四分之一。","不动也不开火时，警戒累积速度降至四分之一。","While still and not firing, suspicion builds at quarter speed."],
+    ["encore","謝幕散場","谢幕散场","Curtain call","表演結束時，仍在圍觀的人暈眩 1.6 秒。","表演结束时，仍在围观的人眩晕 1.6 秒。","The final bow stuns remaining spectators for 1.6 seconds."],
+    ["watch","銀鏈懷錶","银链怀表","Silver chain","專注回復速度提高 50%。","专注恢复速度提高 50%。","Focus recovers 50% faster."],
+    ["beat","三拍子","三拍子","Three beats","每房擋下第一次受擊。","每个房间挡下第一次受击。","Ignore the first hit in each room."],
+    ["bottle","押金瓶","押金瓶","Bottle deposit","環境陷阱傷害加倍。","环境陷阱伤害加倍。","Environmental traps deal double damage."],
+    ["fuse","短引線","短引线","Short fuse","親手劫持的機器報廢時再炸一次，中心傷害 65。","亲手劫持的机器报废时再炸一次，中心伤害 65。","Machines you hijack detonate on retirement or destruction for 65 centre damage."],
+    ["station","路口救護站","路口救护站","Street clinic","每房過關時，所有還站著的隊員回復 3 點體力。","每个房间过关时，所有还站着的队员恢复 3 点体力。","On clearing a room, all standing squad members recover 3 HP."],
+    ["stretcher","隨行擔架","随行担架","Stretcher team","護盾貼身展開，跟著施放者移動；換人時停在原地。","护盾贴身展开，跟着施放者移动；换人时停在原地。","The ward deploys at your feet and follows you. Switch out to leave it in place."],
+    ["chambers","書面裁定","书面裁定","In chambers","保釋：每區清房後自動保回一人，優先本隊，再看名冊。","保释：每区清房后自动保回一人，优先本队，再看名册。","Bail releases one detainee per sector after a clear. The deployed squad has priority."],
+    ["circuit","巡迴法庭","巡回法庭","Circuit court","保釋：每區清房後自動保回一人，優先本隊，再看名冊。","保释：每区清房后自动保回一人，优先本队，再看名册。","Bail releases one detainee per sector after a clear. The deployed squad has priority."],
+  ]);
+  entries('ex', [
+    ["reprieve","免死","免死","Reprieve","致命一擊改留 1 點體力，無敵 1.6 秒；每區可用 1／2 次。","致命一击改留 1 点体力，无敌 1.6 秒；每区可用 1／2 次。","A lethal hit leaves 1 HP and 1.6 seconds of immunity. Once / twice per sector."],
+    ["sidesteps","連續閃避","连续闪避","Side steps","衝刺儲存格增加 1／2／3 格。","冲刺储存格增加 1／2／3 格。","Store 1 / 2 / 3 extra dashes."],
+    ["vanish","沒有目擊者","没有目击者","No eyewitness","制伏後隱形 2／4／6 秒。","制服后隐形 2／4／6 秒。","Cloak for 2 / 4 / 6 seconds after a takedown."],
+    ["deadletter","死信箱","死信箱","Dead letter","每次制伏取得 12／24 資料。","每次制服获得 12／24 数据。","Earn 12 / 24 data per takedown."],
+    ["coilTap","並聯線圈","并联线圈","Coil taps","電弧多打一／兩個目標；重裝護航彈多穿一／兩人。","电弧多打一／两个目标；重装护航弹多穿一／两人。","Arcs strike 1 / 2 extra targets; heavy escort shots pierce 1 / 2 more."],
+    ["overcell","備用電芯","备用电芯","Spare cells","兩種專屬無人機的基礎續航增加 4／8／12 秒。","两种专属无人机的基础续航增加 4／8／12 秒。","Add 4 / 8 / 12 seconds to either signature drone’s base flight time."],
+    ["terraceFists","客場鐵拳","客场铁拳","Away-end fists","本人和打手的近戰傷害增加 100%／200%／300%。","本人和打手的近战伤害增加 100%／200%／300%。","Your melee hits and the mates’ punches deal +100% / +200% / +300% damage."],
+    ["chant","再唱一遍","再唱一遍","One more chorus","本人或打手近戰擊倒敵人，替召集者回復 8／16 點體力。","本人或打手近战击倒敌人，为召集者恢复 8／16 点体力。","Your melee kills and the mates’ knockouts restore 8 / 16 HP to the caller."],
+    ["hiveDose","雙份蜂毒","双份蜂毒","Double venom","蜂群傷害提高 50%／100%／150%。","蜂群伤害提高 50%／100%／150%。","Increase swarm damage by 50% / 100% / 150%."],
+    ["afterbuzz","餘鳴","余鸣","Afterbuzz","離開蜂群後，視線和準頭再受干擾 1.5／3 秒。","离开蜂群后，视线和准头再受干扰 1.5／3 秒。","Swarm disruption lingers for another 1.5 / 3 seconds."],
+    ["wideStage","街道封場","街道封场","Street closure","圍觀半徑增加 70／140。","围观半径增加 70／140。","Increase the audience radius by 70 / 140 units."],
+    ["hatTips","帽中小費","帽中小费","Pass the hat","表演中每秒多回復 1／2／3 頻寬。","表演中每秒额外恢复 1／2／3 带宽。","Regenerate 1 / 2 / 3 extra bandwidth per second while performing."],
+    ["suggestion","事後暗示","事后暗示","Posthypnotic cue","恍惚延長 2／4 秒。再按技能鍵可指定一人走到游標處。","恍惚延长 2／4 秒。再按技能键可指定一人走到光标处。","Extend trance by 2 / 4 seconds. Press the skill key again to direct one subject to the cursor."],
+    ["velvet","天鵝絨聲線","天鹅绒声线","Velvet voice","催眠的扇形射程增加 50／100。","催眠的扇形射程增加 50／100。","Extend the hypnosis cone by 50 / 100 units."],
+    ["longWick","長燈芯","长灯芯","Long wick","投擲物留下的火再燒 2／4／6 秒。","投掷物留下的火再烧 2／4／6 秒。","Thrown payloads burn for an extra 2 / 4 / 6 seconds."],
+    ["fragments","破片套管","破片套管","Fragment sleeve","投擲物與報廢爆炸的半徑增加 45／90。","投掷物与报废爆炸的半径增加 45／90。","Widen thrown and scrap-charge blasts by 45 / 90 units."],
+    ["triage","快速檢傷","快速检伤","Triage","盾內每秒額外回復 3／6／9 點體力。","盾内每秒额外恢复 3／6／9 点体力。","Heal an extra 3 / 6 / 9 HP per second inside the ward."],
+    ["wideWard","增設床位","增设床位","Extra beds","醫療護盾半徑增加 35／70。","医疗护盾半径增加 35／70。","Increase the medical ward radius by 35 / 70 units."],
+    ["extension","延長效期","延长效期","Extension","禁制區多維持 2／4／6 秒。","禁制区多维持 2／4／6 秒。","Keep either injunction active for 2 / 4 / 6 extra seconds."],
+    ["surety","具保金","担保金","Surety","本隊獲釋的人帶著 75%／100% 體力歸隊，原為 50%。","本队获释的人带着 75%／100% 体力归队，原为 50%。","Squad members return on bail at 75% / 100% health instead of 50%."],
+  ]);
+  entries('gad', [
+    ["execute","戰鬥處決","战斗处决","Combat execution","處決近處一名非首領敵人。近身按 F 也能處決已警戒目標，共用冷卻。","处决近处一名非首领敌人。近身按 F 也能处决已警戒目标，共用冷却。","Execute a nearby non-boss. Against an alerted foe, F at close range shares the cooldown."],
+    ["quickstep","衝刺換彈","冲刺换弹","Dash reload","朝游標快步換彈，不耗衝刺格；原地的殘影會吸引敵人。","朝光标快步换弹，不耗冲刺格；原地的残影会吸引敌人。","Dash towards the cursor, reload and leave a decoy without spending a dash charge."],
+    ["veil","借面潛行","借面潜行","Borrowed face","隱形 8 秒。開槍現形，第一發傷害為三倍。","隐形 8 秒。开枪现形，第一发伤害为三倍。","Cloak for 8 seconds. Firing breaks cover; the opening shot deals triple damage."],
+    ["shockdrone","電擊無人機","电击无人机","Shock drone","點按飛往游標巡邏、放電；按住技能鍵，用移動鍵駕駛。放開恢復巡邏。本人留在原地，仍會受傷。","点按飞往光标巡逻、放电；按住技能键，用移动键驾驶。松开恢复巡逻。本人留在原地，仍会受伤。","Tap to patrol and zap near the cursor. Hold the skill key and steer with movement keys; release to patrol there. Your body is left exposed."],
+    ["rush","看台衝撞","看台冲撞","Terrace rush","直衝游標方向，撞暈沿途敵人並造成近戰傷害。","直冲光标方向，撞晕沿途敌人并造成近战伤害。","Charge towards the cursor. Each foe in your path takes a melee hit and a stun."],
+    ["hiveguard","護身蜂幕","护身蜂幕","Hive veil","放出貼身蜂幕 7 秒，持續螫傷並干擾靠近的敵人。","放出贴身蜂幕 7 秒，持续蜇伤并干扰靠近的敌人。","Surround yourself with bees for 7 seconds. Nearby foes take damage and lose accuracy."],
+    ["performance","定格表演","定格表演","Living tableau","站定後按 Q，普通人類會靠近圍觀，最長 8 秒。可駭入；移動或開槍即散場。精英、首領與機器不看表演。","站定后按 Q，普通人类会靠近围观，最长 8 秒。可入侵；移动或开枪即散场。精英、首领和机器不看表演。","Stop and press Q. Ordinary humans gather without spotting you for up to 8 seconds. Hack freely; move or fire to end the show. Elites, bosses and machines ignore it."],
+    ["hypnosis","懷錶催眠","怀表催眠","Pendulum trance","正前方人類恍惚 5 秒，可從任一方向制伏。精英時間減半，首領和機器免疫。裝備 II 級起，再按可命令一人走向游標。","正前方人类恍惚 5 秒，可从任一方向制服。精英时间减半，首领和机器免疫。装备 II 级起，再按可命令一人走向光标。","Humans in the forward cone enter a 5-second trance. Take them down from any angle. Elites recover twice as fast; bosses and machines resist. At gear II, press again to direct one subject to the cursor."],
+    ["metronome","節拍暗示","节拍暗示","Metronome","同一個窄扇形連響三拍，各使人恍惚 4 秒。裝備 II 級起可再按一次引路。","同一个窄扇形连响三拍，各使人恍惚 4 秒。装备 II 级起可再按一次引路。","Three pulses cover one narrow cone, inducing 4 seconds of trance per pulse. At gear II, press again to direct one subject."],
+    ["molotov","燃燒瓶","燃烧瓶","Fire bottle","把瓶子拋到游標處。落地濺火，地面燃燒 5 秒；別站進去。","把瓶子抛到光标处。落地溅火，地面燃烧 5 秒；别站进去。","Lob a bottle to the cursor. The splash burns for 5 seconds. Keep clear of the flames."],
+    ["pipebomb","土製炸彈","土制炸弹","Pipe bomb","短引線落地後爆炸，中心傷害 74，留下 3 秒火場。","短引线落地后爆炸，中心伤害 74，留下 3 秒火场。","A short-fuse bomb deals 74 centre damage on landing, then burns for 3 seconds."],
+    ["medbeacon","AR 醫療護盾","AR 医疗护盾","AR medical ward","信標開盾 8 秒，擋住從外面射進來的子彈。盾內每秒回復 6 點體力；近戰、爆炸和盾內敵人仍危險。","信标开盾 8 秒，挡住从外面射进来的子弹。盾内每秒恢复 6 点体力；近战、爆炸和盾内敌人仍危险。","An 8-second beacon blocks incoming rounds and restores 6 HP/s inside. Melee, blasts and shooters already inside remain dangerous."],
+    ["injunction","禁制令","禁制令","Injunction","在游標處劃出禁制區 7 秒，暫停區內監視器、砲塔與巡邏機；首領不受影響。","在光标处划出禁制区 7 秒，暂停区内摄像头、炮塔与巡逻机；首领不受影响。","Suspend cameras, turrets and patrol drones in a marked area for 7 seconds. Bosses are exempt."],
+    ["escortWrit","隨行禁制令","随行禁制令","Circuit injunction","較小的禁制區跟著施放者移動 8 秒，換人即停在原處。","较小的禁制区跟着施放者移动 8 秒，换人即停在原处。","A smaller injunction travels with the issuer for 8 seconds. Switch out to leave it in place."],
+  ]);
+  const labels=[["book","特工手冊：模板與專屬貨架","特工手册：模板与专属货架","Operative handbook: kits & private shelves"],["intro","每次邀請會固定一套槍、招牌技能與被動，也會抽出特質和習慣。隊上每有一種特殊職業，黑市就多一格該職業的分級漏洞；只對同職業生效。","每次邀请会固定一套枪、招牌技能与被动，也会抽出特质和习惯。队上每有一种特殊职业，黑市就多一格该职业的分级漏洞；只对同职业生效。","Each invitation fixes a weapon, signature skill, passive and personal traits. Every special profession in the squad adds a private market slot. Its ranked exploits apply only to that profession."],["kit","行動模板","行动模板","Field kit"],["private","專屬貨架","专属货架","Private shelf"],["signal","街頭代號","街头代号","Street alias"],["remote","手動駕駛 · 放開恢復巡邏","手动驾驶 · 松开恢复巡逻","Piloting · release to patrol"],["patrol","巡邏中 · 按住接管","巡逻中 · 按住接管","Patrolling · hold to pilot"],["stage","表演中 · 可駭入","表演中 · 可入侵","Performing · hacks open"],["order","再按一次引路","再按一次引路","Press again to direct"]];
+  for(const [id,...text] of labels)langs.forEach((_,i)=>dict[i]['s3.field.'+id]=text[i]);
+  langs.forEach((l,i)=>I.register(l,dict[i]));
+})(window.ECHO.i18n);

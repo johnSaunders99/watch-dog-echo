@@ -117,7 +117,7 @@
     's3.route.unknown': '狀況不明',
 
     's3.shop.title': '黑市',
-    's3.shop.hint': '貨櫃裡的人不問你是誰，只看你有多少資料。',
+    's3.shop.hint': '用資料換裝備。隊上每有一種特殊職業，就多開一格專屬貨架。',
     's3.shop.sold': '賣掉了',
     's3.shop.heal': '急救包',
     's3.shop.heal.d': '全隊每人回復 {n} 體力。',
@@ -407,7 +407,7 @@
     's3.route.unknown': '状况不明',
 
     's3.shop.title': '黑市',
-    's3.shop.hint': '集装箱里的人不问你是谁，只看你有多少资料。',
+    's3.shop.hint': '用数据换装备。队伍每有一种特殊职业，就多开一格专属货架。',
     's3.shop.sold': '卖掉了',
     's3.shop.heal': '急救包',
     's3.shop.heal.d': '全队每人回复 {n} 体力。',
@@ -697,7 +697,7 @@
     's3.route.unknown': 'Unknown conditions',
 
     's3.shop.title': 'Black market',
-    's3.shop.hint': 'The person in the container does not ask who you are, only how much data you have.',
+    's3.shop.hint': 'Spend data on supplies. Each special profession in the squad opens one private shelf.',
     's3.shop.sold': 'Sold',
     's3.shop.heal': 'Medkit',
     's3.shop.heal.d': 'Everyone recovers {n} health.',

@@ -104,8 +104,6 @@
     pirate_radio: { mods: { stunMul: 1.3 }, flags: { worm: 1 } },
     master_keys: { flags: { keys: 1 } },
     rooftops: { mods: { dashCharges: 1 } },
-    hitman: { flags: { combatExec: 1 } }, spy: { flags: { assassin: 1 } }, statue: { flags: { still: 1 } },
-    drone_expert: {}, hooligan: {}, beekeeper: {},
   };
   // 個人留下的經歷只生效一次；比對的是人，不是小隊的位置。
   const imprints = { softstep: { mods: { detectMul: 0.85 } }, tidebreath: { mods: { focusRegen: 1.2 } },
@@ -192,6 +190,14 @@
     brawl: { signature: true, cd: 23, dur: 10, dmg: 22, gap: 0.8 },
     swarm: { signature: true, cd: 17, range: 520, r: 132, dur: 6, dmg: 12 },
     hypnosis: { signature: true, cd: 18, r: 235, arc: 0.85, dur: 5 },
+    execute: { signature:true, cd:4, r:117 }, quickstep:{signature:true, cd:4},
+    veil:{signature:true, cd:21, dur:8}, shockdrone:{signature:true, cd:21, dur:11, range:580, r:155, dmg:16, gap:.95},
+    rush:{signature:true, cd:8}, hiveguard:{signature:true, cd:18, dur:7, r:115, dmg:15},
+    performance:{signature:true, cd:18, dur:8, r:270}, metronome:{signature:true, cd:19, dur:4, r:290, arc:.60},
+    molotov:{signature:true, cd:10, range:480, r:100, dmg:32, burn:16, dur:5},
+    pipebomb:{signature:true, cd:14, range:530, r:145, dmg:74, burn:10, dur:3},
+    medbeacon:{signature:true, cd:21, dur:8, range:420, r:115, heal:6},
+    injunction:{signature:true, cd:19, dur:7, range:530, r:190}, escortWrit:{signature:true, cd:18, dur:8, r:128},
     eightball: { cameo: true, cd: 7, r: 145, dmg: 85, stun: 2 },
   };
   // 職業分類的起始裝備和起始漏洞（各從裡面隨機一個）。
@@ -202,7 +208,7 @@
     specialist: { gadget: ['spider', 'mine'], exploit: ['puppet', 'extmag', 'medic', 'thermal'] },
   };
   const gadgetByJob = { builder: 'cargo', docker: 'cargo', removals: 'cargo', hitman: 'mask', spy: 'strike',
-    drone_expert: 'expert', hooligan: 'brawl', beekeeper: 'swarm', statue: 'hypnosis' };
+    drone_expert: 'expert', hooligan: 'brawl', beekeeper: 'swarm', statue: 'performance' };
 
   // ===== 敵人 =====
   // cost 佔用房間的威脅額度、data 掉多少資料、from 從第幾個房間開始出現（整趟算）、sight 看多遠、fov 視角的一半（弧度）。

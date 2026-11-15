@@ -227,7 +227,8 @@
           e.ang = a.ang;
           if (a.t > 0) return;
           if (e.bees > 0) a.ang += (s.rng.next() - 0.5) * 0.95;
-          const end = A.rayEnd(s, e.x, e.y, a.ang, 1500, true);
+          const wall=A.rayEnd(s,e.x,e.y,a.ang,1500,true);
+          const end=(!tg.foe && S3.field.intercept(s,e.x,e.y,wall.x,wall.y)) || wall;
           s.ev.push({ k: 'snipe', x: e.x, y: e.y, x2: end.x, y2: end.y });
           if (A.segDist(p.x, p.y, e.x, e.y, end.x, end.y) < p.r + 3) strike(dmg, { kx: Math.cos(a.ang) * 200, ky: Math.sin(a.ang) * 200 });
           e.atk = null;
@@ -505,7 +506,7 @@
     }
     if (e.mark > 0) e.mark -= dt;
     if (e.bees > 0) e.bees -= dt;
-    if (e.trance > 0) { e.trance -= dt; return; }
+    if (S3.field.occupies(s,e,dt)) return;
     if (e.jamOff > 0) e.jamOff -= dt;
     if (e.blind > 0) e.blind -= dt;
     if (e.resist > 0) e.resist -= dt;

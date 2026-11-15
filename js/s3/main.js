@@ -89,13 +89,12 @@
   // ===== 文字小工具 =====
   const nameOf = (p) => L(E.people.name(p));
   const jobOf = (p) => L(S3.ops.jobOf(p).name);
-  function face(p, options) {
-    const elite = S3.ops.profiles[p.elite];
-    if (!elite) return E.faces.of(p, options);
-    const src = pictures[elite.portrait];
-    return src ? `<img src="${asset(src)}" alt="">` : E.art.avatar('agent');
-  }
+  const face=S3.portraits.face;
   const pid = (p) => p.district + ':' + p.id + ':' + p.occupation;
+  const roman=n=>['','I','II','III'][n]||'';
+  const kitName=p=>p.template?t('s3.tpl.'+p.template+'.n'):'';
+  const passive=m=>t(m.p.template?'s3.tpl.'+m.p.template+'.d':'s3.job.'+m.job);
+  const kitLine=p=>{const k=S3.ops.templateOf(p);return k?[kitName(p),t('s3.wp.'+k.weapon+'.n'),gadName(k.gadget)].join(' · '):'';};
   const exName = (id) => t('s3.ex.' + id + '.n');
   const gadName = (id) => t('s3.gad.' + id + '.n');
   const listOf = (names) => names.join(E.i18n.lang === 'en' ? ', ' : '、');
@@ -126,10 +125,10 @@
   function exploitCard(id, o = {}) {
     const def = R.exploitDef(id), have = (run && run.build.exploits[id]) || 0;
     return `<button type="button" class="s3-card rar-${def.rar}${o.sold ? ' sold' : ''}" data-act="${o.act || 'pick'}" data-id="${o.i !== undefined ? o.i : id}" ${o.disabled ? 'disabled' : ''}>
-      <span class="card-top"><span class="tag tag-${def.tag}">${esc(t('s3.tag.' + def.tag))}</span><span class="rar">${esc(t('s3.rar.' + def.rar))}</span></span>
-      <b>${esc(exName(id))}</b>
+      <span class="card-top"><span class="tag tag-${def.tag}">${def.owner?esc(L(S3.ops.profiles[def.owner].name)):esc(t('s3.tag.' + def.tag))}</span><span class="rar">${esc(def.owner?t('s3.field.private'):t('s3.rar.' + def.rar))}</span></span>
+      <b>${esc(exName(id))}${def.owner?' · '+roman(o.rank||Math.min(def.max,have+1)):''}</b>
       <span class="card-d">${esc(t('s3.ex.' + id + '.d'))}</span>
-      <span class="card-foot">${def.max > 1 ? esc(t('s3.card.stack', { n: have, max: def.max })) : have ? esc(t('s3.card.owned')) : ''}${o.price !== undefined ? `<span class="price">${o.sold ? esc(t('s3.shop.sold')) : '◆ ' + o.price}</span>` : ''}</span>
+      <span class="card-foot">${def.max > 1 ? esc(t('s3.card.stack', { n: have, max: def.max })) : have ? esc(t('s3.card.owned')) : ''}${o.price !== undefined ? `<span class="price">${o.mastered ? esc(t('s3.perk.max')) : o.sold ? esc(t('s3.shop.sold')) : '◆ ' + o.price}</span>` : ''}</span>
     </button>`;
   }
   function gadgetCard(id, o = {}) {
@@ -152,13 +151,13 @@
       const max = tm ? (on ? s.p.maxHp : tm.maxHp) : R.maxHp(run, i);
       const hp = down ? 0 : Math.round(tm ? (on ? s.p.hp : tm.hp) : m.hp);
       return `<div class="sq-row${down ? ' down' : ''}${i === act ? ' on' : ''}"><kbd>${i + 1}</kbd><span class="sq-row-face">${face(m.p, { round: true })}</span>
-        <span class="sq-row-name"><b>${esc(nameOf(m.p))}</b><small>${esc(jobOf(m.p))}</small></span>
+        <span class="sq-row-name"><b>${esc(nameOf(m.p))}</b><small>${esc(kitName(m.p)||jobOf(m.p))}</small></span>
         <span class="sq-row-hp">${down ? esc(t('s3.squad.down')) : hp + ' / ' + max}</span>
         <span class="chip">${esc(t('s3.wp.' + m.weapon + '.n'))}</span>
         <span class="chip tag-gadget" title="${esc(t('s3.gad.' + m.gadget.id + '.d'))}"><kbd>Q</kbd> ${esc(gadName(m.gadget.id))} ${esc(t('s3.gad.lv', { n: m.gadget.lv }))}</span>
-        <span class="sq-row-job" title="${esc(t('s3.job.' + m.job))}">${esc(t('s3.job.' + m.job))}</span></div>`;
+        <span class="sq-row-job" title="${esc(passive(m))}">${esc(passive(m))}</span></div>`;
     }).join('');
-    const ex = Object.entries(b.exploits).map(([id, n]) => { const def = R.exploitDef(id); return `<span class="chip tag-${def.tag}" title="${esc(t('s3.ex.' + id + '.d'))}">${esc(exName(id))}${n > 1 ? ' ×' + n : ''}</span>`; }).join('');
+    const ex = Object.entries(b.exploits).map(([id, n]) => { const def = R.exploitDef(id); return `<span class="chip tag-${def.tag}" title="${esc(t('s3.ex.' + id + '.d'))}">${esc(exName(id))}${def.owner?' '+roman(n)+' · '+esc(L(S3.ops.profiles[def.owner].name)):n>1?' ×'+n:''}</span>`; }).join('');
     const gear = run.gear ? `<span class="chip tag-gadget" title="${esc(t('s3.gad.' + run.gear.id + '.d'))}"><kbd>E</kbd> ${esc(gadName(run.gear.id))} ${esc(t('s3.gad.lv', { n: run.gear.lv }))}</span>` : `<span class="dim">${esc(t('s3.squad.none'))}</span>`;
     const st = R.statsOf(run, act).st;
     return `<div class="build">
@@ -347,16 +346,17 @@
     const line = (cls, name, key) => `<li class="${cls}"><b>${esc(name)}</b> — ${esc(t(key))}</li>`;
     const traits = E.people.traitsOf(p).map((x) => line('good', L(x.name), 's3.trait.' + x.id)).join('');
     const flaw = p.flaw ? line('bad', L(E.people.flawOf(p).name), 's3.flaw.' + p.flaw) : '';
-    const quirks = E.people.quirksOf(p).filter((q) => D.quirkFx[q.id]).map((q) => line('quirk', L(q.name), 's3.quirk.' + q.id)).join('');
+    const quirks = E.people.quirksOf(p).filter(q=>p.elite || D.quirkFx[q.id]).map(q=>D.quirkFx[q.id]?line('quirk',L(q.name),'s3.quirk.'+q.id):`<li class="quirk">${esc(L(q.name))}</li>`).join('');
     const imprints = (p.imprints || []).map((id) => `<li class="imprint">${esc(t('s3.mark.' + id))}</li>`).join('');
     return `<article class="crew-card cat-${m.cat}${p.rare ? ' rare' : ''}${o.cls ? ' ' + o.cls : ''}" ${o.attr || ''}>
       <div class="crew-head"><div class="crew-face">${face(p)}</div>
-        <div class="crew-id"><h3>${esc(nameOf(p))}</h3><p>${esc(t('s3.card.job', { age: p.age, job: jobOf(p) }))}</p>
+        <div class="crew-id"><h3>${esc(nameOf(p))}${p.signal?` <small class="street-signal" title="${esc(t('s3.field.signal'))}">✦</small>`:''}</h3><p>${esc(t('s3.card.job', { age: p.age, job: jobOf(p) }))}</p>
         <p class="crew-stats"><span>${esc(t('s3.hud.hp'))} <b>${st.maxHp}</b></span><span>${esc(t('s3.hud.bw'))} <b>${st.bwMax}</b></span></p></div>
         ${o.badge ? `<span class="crew-badge">${esc(o.badge)}</span>` : ''}</div>
-      ${p.elite ? `<p class="operative-bio">${esc(L(S3.ops.profiles[p.elite].bio))}</p>` : ''}
+      ${R.isInvitation(p) ? `<p class="operative-bio">${esc(L(S3.ops.profiles[p.elite].bio))}</p>` : ''}
       <div class="crew-kit">
-        <p><span class="k">${esc(t('s3.card.perk'))}</span><b class="perk-line">${esc(t('s3.job.' + m.job))}</b></p>
+        ${p.template?`<p class="kit-title"><span class="k">${esc(t('s3.field.kit'))}</span><strong>${esc(kitName(p))}</strong></p>`:''}
+        <p><span class="k">${esc(t('s3.card.perk'))}</span><b class="perk-line">${esc(passive(m))}</b></p>
         <p><span class="k">${esc(t('s3.card.weapon'))}</span><b>${esc(t('s3.wp.' + m.weapon + '.n'))}</b> <span class="dim">${esc(t(p.elite === 'spy' ? 's3.ops.spyWeapon' : 's3.wp.' + m.weapon + '.d'))}</span></p>
         <p><span class="k">${esc(t('s3.card.gadget'))}</span><b>${esc(gadName(m.gadget.id))}</b><span class="dim"> ${esc(t('s3.gad.' + m.gadget.id + '.d'))}</span></p>
       </div>
@@ -411,8 +411,8 @@
       ${noteHtml()}<div class="crew">${cards}</div>`;
     const full = meta.roster.length >= max;
     const vols = R.volunteers(meta).map((p, i) => personCard(p, {
-      cls: p.elite ? 'vol invited' : 'vol', badge: p.elite ? t('s3.ops.invited') : '',
-      foot: `<div class="crew-foot"><span></span><button type="button" data-vol="${i}" ${full || (!p.elite && meta.echoes < R.RECRUIT_COST) ? 'disabled' : ''}>${esc(full ? t('s3.vol.full') : p.elite ? t('s3.ops.free') : t('s3.vol.join', { n: R.RECRUIT_COST }))}</button></div>`,
+      cls: R.isInvitation(p) ? 'vol invited' : 'vol', badge: R.isInvitation(p) ? t('s3.ops.invited') : '',
+      foot: `<div class="crew-foot"><span></span><button type="button" data-vol="${i}" ${full || (!R.isInvitation(p) && meta.echoes < R.RECRUIT_COST) ? 'disabled' : ''}>${esc(full ? t('s3.vol.full') : R.isInvitation(p) ? t('s3.ops.free') : t('s3.vol.join', { n: R.RECRUIT_COST }))}</button></div>`,
     })).join('');
     $('s3-vols').innerHTML = `<h3>${esc(t('s3.vol.title'))}<small>${esc(t('s3.ui.echoes', { n: meta.echoes }))}</small></h3><p class="dim">${esc(t('s3.vol.hint', { n: R.RECRUIT_COST }))}</p><div class="crew">${vols}</div>`;
     const book = $('s3-contacts'), u = meta.unlocks, names = (a) => a.map(esc).join(' · ');
@@ -428,7 +428,7 @@
     }).join('');
     const slots = Array.from({ length: R.SQUAD }, (_, n) => {
       const x = meta.roster[picks[n]];
-      return `<span class="slot${x ? ' on' : ''}"><kbd>${n + 1}</kbd>${x ? `<span class="slot-face">${face(x.p, { round: true })}</span><b>${esc(nameOf(x.p))}</b>` : '<i></i>'}</span>`;
+      return `<span class="slot${x ? ' on' : ''}"><kbd>${n + 1}</kbd>${x ? `<span class="slot-face">${face(x.p, { round: true })}</span><b>${esc(nameOf(x.p))}${x.p.template?`<small>${esc(kitName(x.p))}</small>`:''}</b>` : '<i></i>'}</span>`;
     }).join('');
     const need = R.SQUAD - picks.length;
     const exposed = !need && meta.wins >= 1 && readyN === R.SQUAD;
@@ -587,7 +587,7 @@
   }
   // 律師把人保出來之類的事：流程記在 run.notes 裡，這裡講出來。
   function flushNotes() {
-    for (const n of run.notes.splice(0)) if (n.k === 'bail') toast(t('s3.toast.bail', { name: nameOf(run.squad[n.i].p) }), 'good');
+    for (const n of run.notes.splice(0)) if (n.k === 'bail') toast(t('s3.toast.bail', { name: nameOf(n.p || run.squad[n.i].p) }), 'good');
   }
   function showNode() {
     S3.music.set('calm');
@@ -656,7 +656,7 @@
   function roomCleared() {
     rewarded = true;
     const boss = s.spec.boss;
-    const rw = R.finishRoom(run, s);
+    const rw = R.finishRoom(run, s, meta);
     R.save(run);
     S3.music.set('calm');
     flushNotes();
@@ -712,7 +712,7 @@
     if (res.joined) lines.push(t('s3.rescue.joined', { name, n: res.slot + 1 }));
     if (res.full) lines.push(t('s3.rescue.full', { name }));
     const show = () => modal(`<div class="ev"><div class="ev-face">${face(res.p)}</div><div><h2>${esc(t('s3.rescue.title'))}</h2>${lines.map((x) => `<p>${esc(x)}</p>`).join('')}
-      <p class="perk-line">${esc(t('s3.job.' + R.memberOf(res.p).job))}</p></div></div>
+      <p class="perk-line">${esc(passive(R.memberOf(res.p)))}</p></div></div>
       <div class="s3-actions"><button type="button" class="primary" data-act="ok">${esc(t('s3.ui.ok'))}</button></div>`, () => { closeModal(); next(); });
     beat('cells', {}, show);
   }
@@ -721,7 +721,7 @@
   function showShop() {
     const sh = run.shop;
     const cards = sh.items.map((it, i) => {
-      const o = { act: 'buy', i, price: it.price, sold: it.sold, disabled: it.sold || run.data < it.price };
+      const o = { act: 'buy', i, rank:it.rank, mastered:it.mastered, price: it.price, sold: it.sold, disabled: it.sold || run.data < it.price };
       if (it.k === 'exploit') return exploitCard(it.id, o);
       if (it.k === 'gadget') return gadgetCard(it.id, o);
       return `<button type="button" class="s3-card heal${it.sold ? ' sold' : ''}" data-act="buy" data-id="${i}" ${o.disabled || !R.hurtSomeone(run) ? 'disabled' : ''}><span class="card-top"><span class="tag tag-body">${esc(t('s3.tag.body'))}</span></span><b>${esc(t('s3.shop.heal'))}</b><span class="card-d">${esc(t('s3.shop.heal.d', { n: it.n }))}</span><span class="card-foot"><span class="price">${it.sold ? esc(t('s3.shop.sold')) : '◆ ' + it.price}</span></span></button>`;
@@ -817,7 +817,12 @@
   function guideHtml() {
     const foes = Object.keys(D.enemies).filter((k) => D.enemies[k].from <= (run ? run.roomNo + 1 : 99));
     const row = (k, pre) => `<div><b>${esc(t(pre + k + '.n'))}</b><span>${esc(t(pre + k + '.d'))}</span></div>`;
-    return `<details class="guide"><summary>${esc(t('s3.pause.weapons'))}</summary><div class="guide-grid">${Object.keys(D.weapons).map(k => row(k, 's3.wp.')).join('')}</div></details>
+    const jobs=Object.entries(S3.ops.templates).map(([id,kits])=>`<details class="guide field-job"><summary>${esc(L(S3.ops.profiles[id].name))}</summary><div class="guide-grid">
+      ${kits.map(k=>`<div><b>${esc(t('s3.tpl.'+k.id+'.n'))} · ${esc(t('s3.wp.'+k.weapon+'.n'))}</b><span><strong>${esc(gadName(k.gadget))}</strong> · ${esc(t('s3.gad.'+k.gadget+'.d'))}</span><span><strong>${esc(t('s3.card.perk'))}</strong> · ${esc(t('s3.tpl.'+k.id+'.d'))}</span></div>`).join('')}
+      </div><h4>${esc(t('s3.field.private'))}</h4><div class="guide-grid">
+      ${S3.ops.xp.filter(x=>x.owner===id).map(x=>`<div><b>${esc(exName(x.id))} · I–${roman(x.max)}</b><span>${esc(t('s3.ex.'+x.id+'.d'))}</span></div>`).join('')}</div></details>`).join('');
+    return `<details class="guide"><summary>${esc(t('s3.field.book'))}</summary><p>${esc(t('s3.field.intro'))}</p>${jobs}</details>
+      <details class="guide"><summary>${esc(t('s3.pause.weapons'))}</summary><div class="guide-grid">${Object.keys(D.weapons).map(k => row(k, 's3.wp.')).join('')}</div></details>
       <details class="guide"><summary>${esc(t('s3.pause.guide'))}</summary><div class="guide-grid">${foes.map((k) => row(k, 's3.en.')).join('')}</div>
       <div class="guide-grid">${['junction', 'vent', 'barrel', 'car', 'bollard', 'camera', 'speaker'].map((k) => row(k, 's3.prop.')).join('')}</div></details>`;
   }
@@ -878,9 +883,9 @@
     const title = won ? t('s3.end.' + ending + '.t') : t(quit ? 's3.quit.title' : 's3.dead.title');
     const text = won ? t('s3.win.text') : t(quit ? 's3.dead.quit' : 's3.dead.text', { sector: t('s3.sec.' + sec.id + '.n'), n: run.roomNo });
     const people = won ? (res.freed ? t('s3.end.freed', { n: res.freed }) : '') : res.captured.length ? t('s3.end.captured', { names: listOf(res.captured.map(nameOf)) }) : t('s3.end.safe');
-    const u = res.unlocked, hire = u && u.job && S3.ops.person(u.job);
+    const u = res.unlocked, hire = u && u.job && R.invitePerson(meta,u.job);
     const unlocks = u && (hire || u.events.length) ? `<div class="win-contacts">${hire ? face(hire) : ''}<div>
-      ${hire ? `<b>${esc(t('s3.ops.arrival', { name: nameOf(hire), job: jobOf(hire) }))}</b><span class="chip">${esc(t('s3.wp.' + R.memberOf(hire).weapon + '.n'))}</span>` : ''}
+      ${hire ? `<b>${esc(t('s3.ops.arrival', { name: nameOf(hire), job: jobOf(hire) }))}</b><span class="chip">${esc(kitLine(hire))}</span><span class="card-note">${esc(passive(R.memberOf(hire)))}</span>` : ''}
       ${u.events.map((id) => `<div>${esc(t('s3.ops.contact', { name: t('s3.ev.' + id + '.t') }))}</div>`).join('')}</div></div>` : '';
     const show = () => {
       mode = 'menu';
@@ -936,9 +941,11 @@
     set('h-dash', Array.from({ length: st.dashCharges }, (_, i) => `<i class="${i < p.dashN ? 'on' : ''}"></i>`).join(''), 'innerHTML');
     set('h-gad', p.gad.map((g, i) => {
       const cd = D.gadgets[g.id].cd * (1 - 0.2 * (g.lv - 1)), recon = g.id === 'eagle' && s.recon;
-      const name = recon ? t(recon.orbit ? 's3.gad.detonate' : 's3.gad.flying') : gadName(g.id);
-      const timer = recon && recon.orbit ? Math.ceil(recon.t) : Math.ceil(g.cd);
-      return `<div class="gad${recon && recon.orbit ? ' armed' : g.cd > 0 ? ' cd' : ''}"><kbd>${i ? 'E' : 'Q'}</kbd><span>${esc(name)}</span><i style="width:${g.cd > 0 ? ((g.cd / cd) * 100).toFixed(0) : 0}%"></i>${timer ? `<em>${timer}</em>` : ''}</div>`;
+      const fieldState=g.id==='shockdrone' && s.shockDrone?.owner===s.active ? (s.shockDrone.manual?'remote':'patrol')
+        :g.id==='performance' && s.show?'stage':s.suggestion?.ready && s.suggestion.id===g.id && s.suggestion.owner===s.active && s.en.some(e=>e.trance>0 && e.tranceCast===s.suggestion)?'order':null;
+      const name = fieldState?t('s3.field.'+fieldState):recon ? t(recon.orbit ? 's3.gad.detonate' : 's3.gad.flying') : gadName(g.id);
+      const timer = fieldState==='stage'?Math.ceil(s.show.t):fieldState==='patrol'||fieldState==='remote'?Math.ceil(s.shockDrone.t):recon && recon.orbit ? Math.ceil(recon.t) : Math.ceil(g.cd);
+      return `<div class="gad${fieldState || recon && recon.orbit ? ' armed' : g.cd > 0 ? ' cd' : ''}"><kbd>${i ? 'E' : 'Q'}</kbd><span>${esc(name)}</span><i style="width:${g.cd > 0 ? ((g.cd / cd) * 100).toFixed(0) : 0}%"></i>${timer ? `<em>${timer}</em>` : ''}</div>`;
     }).join(''), 'innerHTML');
     // 狀態：未被發現、被發現、警報、增援、清場
     let status = 'calm', text = t('s3.hud.calm');
@@ -963,13 +970,14 @@
   }
   const ui = { hack: null, takedown: null, doors: null, mouse, hackText: '', takedownText: '' };
   function refreshUi() {
-    ui.hack = s.over || s.cleared ? null : sim.pickHack(s, mouse.x, mouse.y);
+    const remote=!!s.shockDrone?.manual;
+    ui.hack = s.over || s.cleared || remote ? null : sim.pickHack(s, mouse.x, mouse.y);
     if (ui.hack) {
       const h = ui.hack;
       ui.hackText = h.why ? t('s3.why.' + h.why) : t('s3.hack.' + h.act) + (h.cost ? '　−' + h.cost : '　' + t('s3.hack.free'));
       tip('hack');
     }
-    ui.takedown = s.over ? null : sim.takedownTarget(s);
+    ui.takedown = s.over || s.show || remote ? null : sim.takedownTarget(s);
     ui.takedownText = ui.takedown ? t('s3.hint.takedown') : '';
     if (ui.takedown) tip('takedown');
     ui.doors = s.doorsOpen && run.options ? run.options.map(doorInfo) : null;
@@ -982,7 +990,7 @@
     else {
       inp = {
         mx: (keys.right ? 1 : 0) - (keys.left ? 1 : 0), my: (keys.down ? 1 : 0) - (keys.up ? 1 : 0), ax: mouse.x, ay: mouse.y,
-        fire: !!keys.fire, focus: !!keys.focus, dash: !!edge.dash, hack: !!edge.hack, melee: !!edge.melee, g1: !!edge.g1, g2: !!edge.g2, reload: !!edge.reload,
+        fire: !!keys.fire, focus: !!keys.focus, dash: !!edge.dash, hack: !!edge.hack, melee: !!edge.melee, g1: !!edge.g1, g2: !!edge.g2, g1Hold: !!keys.g1, g2Hold: !!keys.g2, reload: !!edge.reload,
         swap: typeof edge.swap === 'number' ? edge.swap : -1,
       };
     }
@@ -1034,7 +1042,7 @@
     if (mode === 'play' && !paused) {
       if (s.over === 'dead') {
         deadT += dt;
-        if (deadT > 1.5) { R.finishRoom(run, s); showEnd(false); return; }
+        if (deadT > 1.5) { R.finishRoom(run, s, meta); showEnd(false); return; }
       } else if (freeze > 0) freeze -= dt;
       else {
         acc += dt;
@@ -1066,14 +1074,15 @@
     else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.focus = true;
     else if (digit) { if (!e.repeat) edge.swap = Number(digit[2]) - 1; }
     else if (e.code === 'KeyF') { if (!e.repeat) edge.melee = true; }
-    else if (e.code === 'KeyQ') { if (!e.repeat) edge.g1 = true; }
-    else if (e.code === 'KeyE') { if (!e.repeat) edge.g2 = true; }
+    else if (e.code === 'KeyQ') { keys.g1=true; if (!e.repeat) edge.g1 = true; }
+    else if (e.code === 'KeyE') { keys.g2=true; if (!e.repeat) edge.g2 = true; }
     else if (e.code === 'KeyR') edge.reload = true;
     else if (e.code === 'KeyC') { if (!e.repeat) edge.hack = true; }
     else if (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'Tab') { e.preventDefault(); pause(); }
   });
   window.addEventListener('keyup', (e) => {
-    if (MOVE[e.code]) keys[MOVE[e.code]] = false;
+    if(e.code==='KeyQ')keys.g1=false;else if(e.code==='KeyE')keys.g2=false;
+    else if (MOVE[e.code]) keys[MOVE[e.code]] = false;
     else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.focus = false;
   });
   window.addEventListener('blur', () => { for (const k of Object.keys(keys)) keys[k] = false; if (mode === 'play' && s && !s.cleared && !bot) pause(); });

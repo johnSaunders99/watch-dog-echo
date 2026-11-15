@@ -2,7 +2,14 @@
 (function (E) {
   const S3 = E.s3, atlas = S3.portraitParts;
   const moods = { grin: 'smile', smile: 'smile', calm: 'neutral', neutral: 'neutral', smirk: 'smirk', cross: 'frown', worried: 'frown' };
+  const streetLooks=new Map();
+  function portraitLook(p,base){
+    if(!p.signal)return base;
+    if(!streetLooks.has(p.signal))streetLooks.set(p.signal,{...base,...S3.ops.lookOf(p),mood:p.signal==='leopard'?'neutral':'smirk',beardKind:null,specs:p.signal==='lynx',iris:'#77644c',earring:false,freckles:false});
+    return streetLooks.get(p.signal);
+  }
   function partsOf(p, L = E.faces.look(p)) {
+    L=portraitLook(p,L);
     const o = L.o;
     return {
       face: 'face-' + (p.age < 35 ? 'y' : p.age < 55 ? 'm' : 'o') + '-' + moods[L.mood],
@@ -101,6 +108,7 @@
       + `<g transform="translate(${(1-zoom)*50} ${cameraY}) scale(${zoom})"><g filter="url(#@p-rim)">${back}${body}${group(head,g)}</g></g>`;
   }
   function paint(p, L, ink, tier, opt) {
+    L=portraitLook(p,L);
     if (!scenes.has(L)) scenes.set(L, compose(p, L, ink));
     const scene = scenes.get(L);
     if (!scene) return '';
@@ -108,6 +116,11 @@
     const id = 'p5-' + (++serial);
     return ink.framed(scene.replace(/@p/g, id), tier, opt, id + '-clip');
   }
-  S3.portraits = { partsOf, prepare, neckFit };
+  function face(p,options){
+    if(!p.elite || p.id!=='elite-'+p.elite)return E.faces.of(p,options);
+    const path=S3.pictures[S3.ops.profiles[p.elite].portrait], im=path && S3.assets.img(path);
+    return im?.complete && im.naturalWidth ? `<img src="${S3.assets.url(path)}" alt="">` : E.art.avatar('agent');
+  }
+  S3.portraits = { partsOf, prepare, neckFit, face };
   E.faces.useIllustrator(paint);
 })(window.ECHO);

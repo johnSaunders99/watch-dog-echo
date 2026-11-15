@@ -80,7 +80,7 @@
   function dollOf(person) {
     const sh = sheets.doll;
     if (!sh || !person || !E.faces || !E.faces.look) return null;
-    const L = person.elite ? S3.ops.profiles[person.elite].look : E.faces.look(person), body = DOLL_OF[L.o.top] || 'jacket';
+    const L = S3.ops.lookOf(person) || E.faces.look(person), body = DOLL_OF[L.o.top] || 'jacket';
     if (dolls.has(L)) return dolls.get(L);
     const it = sh.items[body], ic = sh.items[body + '.c'], is = sh.items[body + '.s'];
     if (!it || !ic || !is) return null;
@@ -217,7 +217,11 @@
     const hat = o.hat;
     if (!hat) return;
     const col = o.hatCol || '#3a3a42', dk = tone(col, -0.25), lt = tone(col, 0.25);
-    if (hat === 'beekeeper') {
+    if(hat==='courtWig'){
+      shape(col,oval(-.2,0,1.15,1.06));
+      for(const y of [-.77,.77])for(const x of [-.95,-.56,-.16,.24]){shape(col,oval(x,y,.28,.36));line(dk,.08,[[x-.12,y],[x,y+.10],[x+.11,y-.06]]);}
+      for(const x of [-.63,-.26,.11])line(dk,.06,[[x,-.42],[x+.12,0],[x,.42]]);
+    } else if (hat === 'beekeeper') {
       shape('#344047', oval(0.34, 0, 1.26, 1.14));
       for (const y of [-0.65, -0.3, 0.05, 0.4, 0.72]) line('#8c9290', 0.06, [[0.67, y], [1.42 - Math.abs(y) * 0.2, y]]);
       for (const x of [1.04, 1.23, 1.4]) line('#9caaa8', 0.05, [[x, -0.45], [x, 0.45]]);
@@ -254,6 +258,26 @@
     ctx.rotate(p.ang);
     if (subject.weapon) heldItem(ctx, subject.weapon, (it.gx - it.ax) * k, (it.gy - it.ay) * k, R);
     ctx.drawImage(d.cv, -it.ax * k, -it.ay * k, it.w * k, it.h * k);
+    // Small costume cues on the exposed shoulders, below the head and above the dyed clothing.
+    ctx.save();ctx.scale(R,R);ctx.lineCap='round';
+    switch(subject.person.elite){
+      case 'hypnotist':
+        ctx.fillStyle='#ddd4ce';ctx.beginPath();ctx.moveTo(.45,-.68);ctx.quadraticCurveTo(1.3,-.6,1.18,.12);ctx.quadraticCurveTo(1.04,.64,.48,.72);ctx.fill();
+        ctx.strokeStyle='#d5a942';ctx.lineWidth=.075;ctx.beginPath();ctx.moveTo(-.72,.85);ctx.quadraticCurveTo(-.55,1.55,.18,1.28);ctx.stroke();
+        ctx.beginPath();ctx.arc(.18,1.29,.14,0,TAU);ctx.fillStyle='#eac76e';ctx.fill();break;
+      case 'anarchist':
+        // The shaven sides show skin through the mohawk; the scarf sits behind that scalp.
+        ctx.beginPath();ctx.rect(-2.5,-2.5,5,5);ctx.arc(0,0,.98,0,TAU);ctx.clip('evenodd');
+        ctx.fillStyle='#bc3538';ctx.beginPath();ctx.moveTo(.57,-.83);ctx.quadraticCurveTo(-.47,-1.37,-1.02,-.63);ctx.lineTo(-1.49,-.05);ctx.lineTo(-1.12,.08);ctx.lineTo(-1.28,.66);ctx.quadraticCurveTo(-.18,1.4,.56,.83);ctx.closePath();ctx.fill();
+        ctx.fillStyle='#e9ae98';for(const [x,y] of [[-.92,-.67],[-1.09,-.43],[-1.05,.53],[-.72,.85]])ctx.fillRect(x,y,.09,.08);break;
+      case 'paramedic':
+        ctx.strokeStyle='#e0e769';ctx.lineWidth=.19;
+        for(const y of [-1.05,1.17]){ctx.beginPath();ctx.moveTo(-.6,y);ctx.lineTo(.62,y+.06);ctx.stroke();}
+        ctx.fillStyle='#315543';ctx.fillRect(.72,.87,.49,.48);ctx.fillStyle='#ebf4de';ctx.fillRect(.82,1.06,.3,.09);ctx.fillRect(.93,.96,.09,.3);break;
+      case 'barrister':
+        ctx.fillStyle='#f2eee6';for(const y of [-.27,.05]){ctx.beginPath();ctx.moveTo(.62,y);ctx.lineTo(1.36,y+.08);ctx.lineTo(1.31,y+.28);ctx.lineTo(.65,y+.2);ctx.fill();}break;
+    }
+    ctx.restore();
     headTop(ctx, d.L, R);
     ctx.restore();
     return true;
@@ -495,7 +519,7 @@
 
   // ===== 敵人 =====
   function drawCone(s, e) {
-    if (e.state === 'combat' || e.ally > 0 || e.confused > 0 || e.stun > 0 || e.trance > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
+    if (S3.field.audience(s,e) || S3.field.isSubject(e) && S3.field.stayed(s,e) || e.state === 'combat' || e.ally > 0 || e.confused > 0 || e.stun > 0 || e.trance > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
     const sight = e.def.sight * A.sightMul(s, e);
     const col = e.state === 'suspect' ? '255,181,71' : e.aware > 0.02 ? '255,140,90' : '236,232,225';
     const g = ctx.createRadialGradient(e.x, e.y, e.r, e.x, e.y, sight);
@@ -721,6 +745,26 @@
       inAir(px, py, 'kamikaze', Math.atan2(z.y - z.fy, z.x - z.fx), 19);
     }
   }
+  function drawFields(s) {
+    ctx.save();
+    const rim=(z,c,fill,dash)=>{
+      circle(z.x,z.y,z.r);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=2.5;
+      ctx.setLineDash(dash);ctx.lineDashOffset=-clock*12;ctx.stroke();ctx.setLineDash([]);};
+    if(s.show){rim(s.show,'#e6bd69','rgba(240,194,110,.05)',[3,11]);circle(s.p.x,s.p.y,27);ctx.stroke();}
+    for(const z of s.installations){
+      const ward=z.kind==='ward';rim(z,ward?'#78e4cb':'#c9a5ed',ward?'rgba(74,222,190,.10)':'rgba(174,124,218,.09)',ward?[]:[16,7,3,7]);
+      if(ward){
+        ctx.strokeStyle='#b9f3e2';ctx.lineWidth=3;
+        for(let i=0;i<6;i++){const a=i*TAU/6,x=z.x+Math.cos(a)*z.r,y=z.y+Math.sin(a)*z.r;ctx.beginPath();ctx.moveTo(x-4,y);ctx.lineTo(x+4,y);ctx.moveTo(x,y-4);ctx.lineTo(x,y+4);ctx.stroke();}
+        if(!sprite('support','medbeacon',z.x,z.y,0,20)){
+          circle(z.x,z.y,13);outline('#295b57');ctx.fillStyle='#e6fff4';ctx.fillRect(z.x-8,z.y-2,16,4);ctx.fillRect(z.x-2,z.y-8,4,16);}
+      }else {circle(z.x,z.y,10);ctx.stroke();ctx.fillStyle='#d4b9f3';ctx.fillRect(z.x-5,z.y-1.5,10,3);}
+    }
+    for(const z of s.payloads){const k=1-z.t/z.flight,x=z.fx+(z.x-z.fx)*k,y=z.fy+(z.y-z.fy)*k-75*Math.sin(Math.PI*k);
+      ctx.strokeStyle='#e6a064';ctx.setLineDash([5,6]);circle(z.x,z.y,z.r);ctx.stroke();ctx.setLineDash([]);
+      ctx.save();ctx.translate(x,y);ctx.rotate(k*5);ctx.fillStyle=z.id==='molotov'?'#91a677':'#77757e';ctx.fillRect(-7,-4,13,9);ctx.fillStyle='#ffd282';ctx.fillRect(5,-2,6,4);ctx.restore();}
+    ctx.restore();
+  }
   function drawRecon(z) {
     const def = S3.data.gadgets.eagle, a = Math.atan2(z.y - z.fy, z.x - z.fx), age = z.dur - z.t;
     let px, py, ang;
@@ -749,7 +793,7 @@
       ctx.save(); ctx.fillStyle = '#93663e'; ctx.fillRect(x - 11, y - 18, 22, 20); ctx.restore();
     }
     const small = ['escort', 'kamikaze', 'expert', 'missile'].includes(name);
-    if (sprite(small ? 'drones' : 'gear', name, x, y - alt, ang, r, alpha, false)) return;
+    if (sprite(name.startsWith('shockdrone')?'support':small ? 'drones' : 'gear', name, x, y - alt, ang, r, alpha, false)) return;
     // 原圖還沒到或載入失敗，機身仍清楚朝著飛行或射擊方向。
     ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y - alt); ctx.rotate(ang);
     if (name === 'missile') {
@@ -870,7 +914,8 @@
       case 'clang': burst(ev.x, ev.y, 5, '#dfeaff', 200, 3, 0.2); break;
       case 'takedown': ring(ev.x, ev.y, 46, C.pink, 0.3, 6); shake = Math.max(shake, 6); break;
       case 'eightball': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: Math.PI, id: ev.k, life: 0.38, max: 0.38 }); break;
-      case 'hypnosis': rings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.ang, wide: 0.85, r: ev.r, col: '#eac86a', w: 4, life: 0.65, max: 0.65 }); break;
+      case 'order': beams.push({x:ev.x,y:ev.y,x2:ev.x2,y2:ev.y2,life:.5,max:.5,col:'#dbc0ec',w:2});break;
+      case 'hypnosis': rings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.ang, wide: ev.arc || 0.85, r: ev.r, col: '#eac86a', w: 4, life: 0.65, max: 0.65 }); break;
       case 'punch': rings.push({ x: ev.x, y: ev.y, arc: ev.ang, r: 35, col: C.green, w: 4, life: 0.18, max: 0.18 }); break;
       case 'melee': case 'swing': rings.push({ x: ev.x, y: ev.y, r: ev.k === 'melee' ? 62 : 84, col: ev.k === 'melee' ? C.white : C.warn, life: 0.16, max: 0.16, w: 6, arc: ev.ang }); break;
       case 'drop': flyers.push({ id: ev.id, x: ev.x, y: ev.y, ang: ev.ang, vx: Math.cos(ev.ang) * 170, vy: Math.sin(ev.ang) * 170, life: 0.7, max: 0.7 }); break;
@@ -913,6 +958,7 @@
 
     for (const pr of s.props) if (!pr.def.solid && pr.kind !== 'camera' && pr.kind !== 'speaker') drawProp(s, pr, ui);
     for (const z of s.zones) if (z.k === 'fire' || z.k === 'tele') drawZone(s, z);
+    drawFields(s);
     for (const m of s.mines) { if (!sprite('props', 'mine', m.x, m.y, 0, 12, m.arm > 0 ? 0.5 : 1, false)) { circle(m.x, m.y, 9); outline(m.arm > 0 ? '#3a4a5a' : C.cyan, 2); } if (m.arm <= 0) { ctx.strokeStyle = 'rgba(108,214,226,0.3)'; ctx.lineWidth = 1.5; circle(m.x, m.y, 42); ctx.stroke(); } }
     for (const e of s.en) drawCone(s, e);
     for (const k of s.picks) drawPick(k, s);
@@ -934,6 +980,9 @@
     for (const pet of s.pets) if (pet.kind === 'escort' || pet.kind === 'expert') inAir(pet.x, pet.y, pet.kind, pet.ang, pet.kind === 'expert' ? 26 : 18, 1, 16);
     for (const z of s.zones) if (['steam', 'kamikaze', 'strike', 'swarm'].includes(z.k)) drawZone(s, z);
     for (const e of s.en) if (e.trance > 0) { ctx.strokeStyle = '#fadc86'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(e.x, e.y - e.r - 7, 10 + 2 * Math.sin(clock * 4), 3, 0, 0, TAU); ctx.stroke(); }
+    if(s.shockDrone){const d=s.shockDrone;
+      if(d.manual){ctx.save();ctx.strokeStyle='#80dcd8';ctx.setLineDash([3,9]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(d.x,d.y-17);ctx.stroke();ctx.restore();}
+      inAir(d.x,d.y,d.flash>0?'shockdrone-zap':'shockdrone',d.ang,23,1,17);}
     if (s.recon) drawRecon(s.recon);
     drawGear(s);
 

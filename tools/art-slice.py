@@ -33,6 +33,8 @@ SHEETS = [
      'names': ['smash', 'sergei', 'cargo', 'eagle', 'eagle2', 'spider']},
     {'file': 'drones-1.png', 'atlas': 'drones', 'anchor': 'box', 'scale': 0.4, 'grid': (2, 2),
      'names': ['escort', 'kamikaze', 'expert', 'missile']},
+    {'file': 'drones-2.png', 'atlas': 'support', 'anchor': 'body', 'scale': 0.4, 'grid': (3, 1),
+     'names': ['shockdrone', 'shockdrone-zap', 'medbeacon']},
 ]
 
 # 用黑線隔開的格子圖：檔名、幾欄幾列、每一格的名字（由左到右、由上到下）。square：切成正方形（頭像）。
@@ -46,6 +48,8 @@ PANELS = [
      'names': ['pt-bagley', 'pt-echo', 'pt-maya', 'pt-harlow', 'pt-keystone', 'pt-hastings', 'pt-kahn', 'pt-hale', 'pt-cassie']},
     {'file': 'elite-1.png', 'grid': (3, 2), 'square': True,
      'names': [None, 'pt-elite-spy', 'pt-elite-drone', 'pt-elite-hooligan', 'pt-elite-beekeeper', 'pt-elite-statue']},
+    {'file': 'elite-2.png', 'grid': (2, 2), 'square': True,
+     'names': ['pt-elite-hypnotist', 'pt-elite-anarchist', 'pt-elite-paramedic', 'pt-elite-barrister']},
 ]
 
 # 主角的紙娃娃（切法見 dolls()）：身體 4×2，全部光頭、朝右、兩手在胸前，衣服畫成洋紅（#FF00FF）、皮膚畫成青色（#00FFFF），
@@ -61,7 +65,8 @@ DOLLS = {'file': 'doll-1.png', 'atlas': 'doll', 'scale': 0.4, 'grid': (4, 2),
 RETIRED = {'gear-1.png', 'gear-2.png'}
 
 # 少一張就保留現有圖集和事件圖，不能先寫出不完整的清單。
-REQUIRED = ('gear-3.png', 'ev-wrench.png', 'ev-darcy.png', 'ev-aiden.png', 'drones-1.png', 'elite-1.png', 'pt-elite-hitman.png')
+REQUIRED = ('gear-3.png', 'ev-wrench.png', 'ev-darcy.png', 'ev-aiden.png', 'drones-1.png', 'elite-1.png', 'pt-elite-hitman.png',
+            'drones-2.png', 'elite-2.png')
 
 
 def background(spill):

@@ -294,3 +294,14 @@ body.s3 { overflow: hidden; }
 .talk-box.narr #talk-text { color: #c9ced9; }
 .talk-next { position: absolute; right: 16px; bottom: 8px; font-size: 12px; letter-spacing: 0.1em; color: var(--dim); }
 @keyframes talk-zoom { from { transform: scale(1.08); } to { transform: scale(1); } }
+
+.crew-kit .kit-title { color: var(--cyan, #8edddc); }
+.slot b small { display:block; font-size:.78em; color:#a6cfcd; font-weight:500; }
+.street-signal { color:#ffce71; font-size:.75em; vertical-align:middle; }
+.guide.field-job { margin:.45rem 0 .45rem .7rem; border-left:2px solid #527477; padding-left:.8rem; }
+.field-job .guide-grid strong { color:#a5d9d5; font-size:.95em; }
+
+.field-job .guide-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem 1.5rem; margin:.55rem 0; }
+.field-job .guide-grid div>span { display:block; margin-top:.2rem; }
+.field-job h4 { margin:.7rem 0 .15rem; font-size:inherit; color:#d3bc91; }
+@media (max-width:680px) { .field-job .guide-grid { grid-template-columns:1fr; } }

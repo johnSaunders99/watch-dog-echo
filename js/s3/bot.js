@@ -129,7 +129,16 @@
         const nearMe = foes.filter((e) => hyp(e.x - p.x, e.y - p.y) < 110 + e.r).length;
         const far = foes.slice().sort((a, b) => hyp(a.x - p.x, a.y - p.y) - hyp(b.x - p.x, b.y - p.y))[0];
         const cluster = (r, reach) => { let best = null, n = 0; for (const e of foes) { if (hyp(e.x - p.x, e.y - p.y) > reach) continue; const c = foes.filter((o) => hyp(o.x - e.x, o.y - e.y) < r).length; if (c > n) { n = c; best = e; } } return { e: best, n }; };
-        if (g.id === 'hammer' || g.id === 'sledge') { if (nearMe) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; } }
+        if(g.id==='performance'){
+          if(foes.some(e=>e.def.human && !e.boss && !e.elite && hyp(e.x-p.x,e.y-p.y)<260)){inp[key]=true;inp.mx=inp.my=0;inp.dash=inp.fire=inp.melee=false;}
+        }else if(g.id==='shockdrone'||g.id==='molotov'||g.id==='pipebomb'||g.id==='injunction'){
+          const def=S3.data.gadgets[g.id],c=cluster(def.r,def.range),e=g.id==='injunction'?foes.find(e=>e.def.machine && !e.boss):c.e;
+          if(e && (!['molotov','pipebomb'].includes(g.id)||hyp(e.x-p.x,e.y-p.y)>def.r)){inp[key]=true;inp.ax=e.x;inp.ay=e.y;}
+        }else if(g.id==='medbeacon'){if(p.hp<p.maxHp*.85||foes.length>=2){inp[key]=true;inp.ax=p.x;inp.ay=p.y;}}
+        else if(g.id==='escortWrit'||g.id==='hiveguard'){inp[key]=foes.some(e=>(g.id==='hiveguard'||e.def.machine)&&hyp(e.x-p.x,e.y-p.y)<220);}
+        else if(g.id==='execute'||g.id==='rush'||g.id==='quickstep'){if(nearMe||g.id==='quickstep' && p.ammo<p.mag*.4){inp[key]=true;inp.melee=false;}}
+        else if(g.id==='veil'){if(!p.cloak || p.cloak<=0)inp[key]=true;}
+        else if (g.id === 'hammer' || g.id === 'sledge') { if (nearMe) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; } }
         else if (g.id === 'eagle' && s.recon) {
           const z = s.recon;
           if (z.orbit && z.dur - z.t >= 1.6 && foes.filter((e) => hyp(e.x - z.x, e.y - z.y) < z.r + e.r).length >= 2) inp[key] = true;
@@ -143,7 +152,7 @@
         else if (g.id === 'strike' || g.id === 'swarm') {
           const def = S3.data.gadgets[g.id], c = cluster(def.r, def.range);
           if (c.e) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
-        } else if (g.id === 'hypnosis' || g.id === 'eightball') {
+        } else if (g.id === 'hypnosis' || g.id==='metronome' || g.id === 'eightball') {
           if (hyp(far.x - p.x, far.y - p.y) < S3.data.gadgets[g.id].r) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; }
         }
         else if (g.id === 'spider') { if (s.alert) inp[key] = true; }
@@ -206,7 +215,7 @@
         const py = s.spec.boss && p.bw >= 2 ? s.props.filter((q) => q.kind === 'pylon' && q.down <= 0).sort((x, y) => hyp(x.x - p.x, x.y - p.y) - hyp(y.x - p.x, y.y - p.y))[0] : null;
         if (py && hyp(py.x - p.x, py.y - p.y) > s.st.hackRange * 0.9) [mx, my] = toward(s, py.x, py.y);
         // 被電暈的就衝過去制伏。
-        const down = foes.filter((e) => (e.stun > 0.35 || (e.distract > 0.5 && e.state !== 'combat')) && !e.boss && hyp(e.x - p.x, e.y - p.y) < 190).sort((x, y) => hyp(x.x - p.x, x.y - p.y) - hyp(y.x - p.x, y.y - p.y))[0];
+        const down = foes.filter((e) => (e.stun > 0.35 || e.trance>.5 || (e.distract > 0.5 && e.state !== 'combat')) && !e.boss && hyp(e.x - p.x, e.y - p.y) < 190).sort((x, y) => hyp(x.x - p.x, x.y - p.y) - hyp(y.x - p.x, y.y - p.y))[0];
         if (down && !dg.urgent) [mx, my] = toward(s, down.x, down.y);
         if (sim.takedownTarget(s)) inp.melee = true;
         else if (melee && d < 58 + tgt.r && p.meleeCd <= 0 && !tgt.atk) inp.melee = true;
@@ -221,6 +230,7 @@
         const hp = hackPlan(s, foes);
         if (hp) { inp.hack = true; inp.ax = hp.x; inp.ay = hp.y; inp.fire = false; }
         else gadgetPlan(s, foes, inp);
+        if(s.show && !dg.urgent && s.show.t>4 && foes.some(e=>S3.field.audience(s,e))){inp.mx=inp.my=0;inp.fire=inp.dash=inp.melee=false;}
       } else {
         // 場上暫時沒人（增援還沒到）：回場地中間等。
         const [mx, my] = toward(s, W / 2, H * 0.6);
@@ -286,7 +296,7 @@
       const items = run.shop.items;
       const healIdx = items.findIndex((it) => it.k === 'heal');
       if (frac < 0.65) S3.run.buy(run, healIdx);
-      items.map((it, i) => ({ it, i })).filter((o) => o.it.k === 'exploit').sort((a, b) => scoreExploit(run, b.it.id) - scoreExploit(run, a.it.id)).forEach((o) => S3.run.buy(run, o.i));
+      items.map((it, i) => ({ it, i })).filter((o) => o.it.k === 'exploit').sort((a, b) => (b.it.owner?3:0)-(a.it.owner?3:0)+scoreExploit(run, b.it.id) - scoreExploit(run, a.it.id)).forEach((o) => S3.run.buy(run, o.i));
       if (!run.gear) S3.run.buy(run, items.findIndex((it) => it.k === 'gadget'));
       run.phase = 'done';
     } else if (run.phase === 'safe') S3.run.safe(run, frac < 0.7 ? 'rest' : 'tune');
@@ -313,7 +323,7 @@
         while (!s.over && !(s.cleared && s.cache.taken) && n++ < limit) { sim.step(s, bot.act(s)); s.ev.length = 0; }
         if (n >= limit && !s.cleared) s.over = 'dead';
         rooms.push({ no: run.roomNo, type: run.node.type, mod: run.node.mod, boss: spec.boss, secs: Math.round(s.rt), hp: Math.round(s.p.hp), hurt: Math.round(s.stats.hurt), dead: s.over === 'dead', timeout: n >= limit, silent: s.silent, down: s.team.filter((t) => t.down).length });
-        const rw = S3.run.finishRoom(run, s);
+        const rw = S3.run.finishRoom(run, s, m);
         if (!rw) break;
         if (rw.kind === 'rescue') S3.run.rescue(run, null); else S3.run.take(run, chooseReward(run, rw));
       } else visit(run);

@@ -402,6 +402,38 @@
         }
       }
     },
+    "support": {
+      "src": "assets/s3/support.png",
+      "items": {
+        "shockdrone": {
+          "x": 1,
+          "y": 1,
+          "w": 150,
+          "h": 151,
+          "ax": 67.8,
+          "ay": 75.5,
+          "r": 74.5
+        },
+        "shockdrone-zap": {
+          "x": 217,
+          "y": 1,
+          "w": 214,
+          "h": 151,
+          "ax": 75.4,
+          "ay": 75.5,
+          "r": 74.5
+        },
+        "medbeacon": {
+          "x": 433,
+          "y": 1,
+          "w": 116,
+          "h": 116,
+          "ax": 57.5,
+          "ay": 58.0,
+          "r": 57.0
+        }
+      }
+    },
     "doll": {
       "src": "assets/s3/doll.png",
       "items": {
@@ -762,6 +794,10 @@
     "pt-elite-drone": "assets/s3/pt-elite-drone.jpg",
     "pt-elite-hooligan": "assets/s3/pt-elite-hooligan.jpg",
     "pt-elite-beekeeper": "assets/s3/pt-elite-beekeeper.jpg",
-    "pt-elite-statue": "assets/s3/pt-elite-statue.jpg"
+    "pt-elite-statue": "assets/s3/pt-elite-statue.jpg",
+    "pt-elite-hypnotist": "assets/s3/pt-elite-hypnotist.jpg",
+    "pt-elite-anarchist": "assets/s3/pt-elite-anarchist.jpg",
+    "pt-elite-paramedic": "assets/s3/pt-elite-paramedic.jpg",
+    "pt-elite-barrister": "assets/s3/pt-elite-barrister.jpg"
   };
 })(window.ECHO = window.ECHO || {});
