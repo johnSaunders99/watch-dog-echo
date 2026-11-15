@@ -128,7 +128,9 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     add('s3.sec.', D.sectors.map((s) => s.id), ['.n', '.d']);
     add('s3.boss.', Object.keys(D.bosses), ['.n']);
     add('s3.perk.', D.perks.map((p) => p.id), ['.n', '.d']);
-    add('s3.tag.', [...new Set(D.exploits.map((x) => x.tag)), 'gadget']);
+    const families=[...new Set(D.exploits.map(x=>x.tag))];
+    add('s3.tag.', [...families, 'gadget']);
+    add('s3.omni.effect.', families);
     add('s3.rar.', ['c', 'u', 'r']);
     add('s3.node.', ['fight', 'elite', 'shop', 'safe', 'event', 'boss', 'cells'], ['', '.d']);
     add('s3.rw.', ['exploit', 'gadget', 'data', 'heal', 'max', 'rescue']);
@@ -1531,6 +1533,100 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
   }
 
   // ===== 機器人打整趟 =====
+  section('零時差：OMNI 轉運站、五十房窗口與封存');
+  {
+    const O=S3.omni, ck=(v,s)=>{if(!v)fail('s3 OMNI: '+s);}, crew=m=>m.roster.filter(x=>x.status==='ready').slice(0,3).map(x=>x.p);
+    const active=()=>{storage.clear();const m=R.newGame('random','station-fixture').meta;m.endings={open:1};m.wins=1;return m;};
+    let m=active(), people=crew(m);
+    for(const id of ['return','burn','open','teach'])ck(O.unlocked({endings:{[id]:1}}),'normal ending '+id);
+    ck(!O.unlocked({endings:{wipe:1}}) && !O.unlocked({endings:{}}),'a wipe alone cannot open the station');
+    m.roster[0].status='station';ck(!O.connect('x',people,m),'station crew cannot deploy');m.roster[0].status='held';
+    ck(!O.connect('x',people,m),'ordinary prisoners cannot deploy');m.roster[0].status='ready';
+    ck(!O.connect('x',[people[0],people[0],people[1]],m),'three separate people required');
+    R.save(R.start('ordinary',people,m));ck(!O.connect('x',people,m),'ordinary run is not overwritten');R.clear();
+    let r=O.connect('station-signal',people,m);ck(r && !O.connect('again',people,m),'only one active journey');
+    // An ordinary capture can be resolved only on the ordinary side. A new station loss is durable at once.
+    m.roster[3].status='held';r.roomNo=8;O.capture(r,m,0);O.snapshot(r,m);R.saveMeta(m);m=R.meta();r=m.omniRun;
+    ck(r.squad[0].down && m.roster[0].status==='station' && m.roster[0].omniBest===8 && !R.load(),'resume with a downed operative');
+    r.pending={kind:'rescue'};let res=R.rescue(r,m);
+    ck(!res.known && m.roster[0].status==='station' && m.roster[3].status==='held','same crew cannot release its own lost call sign');
+    const normal=R.start('normal-cell',crew(m),m);normal.pending={kind:'rescue'};res=R.rescue(normal,m);
+    ck(res.known && R.same(res.p,m.roster[3].p) && m.roster[0].status==='station','ordinary cell crossed custody ledgers');
+    const lawyer=S3.ops.person('barrister','station-law','chambers');
+    const other=O.create('second-crew',[lawyer,...crew(m).slice(0,2)],m);
+    other.pending={kind:'rescue'};res=R.rescue(other,m);
+    ck(res.known && !res.joined && R.same(res.p,people[0]) && m.roster[0].status==='ready','outside team releases directly to roster');
+    ck(!R.bail(Object.assign(other,{bailUsed:false})), 'station doors do not accept bail');
+
+    // Walk the production route/advance path. Tally only completed nodes, not opened doors or reward panels.
+    m=active();r=O.connect('fifty',crew(m),m);m.roster[3].status='held';let saved,paid;
+    for(let n=1;n<=150;n++){
+      ck(r.phase==='route','route before '+n);
+      const opt=r.options.findIndex(o=>o.type==='boss'), pos=O.position(n-1);
+      ck(r.sector===pos.sector && r.depth===pos.depth && (opt>=0)===(n%10===0),'sector/boss '+n);
+      const sp=R.enter(r,opt<0?0:opt);if(opt>=0)ck(sp.boss===D.sectors[pos.sector].boss && sp.omni && sp.scale===O.curve(n).scale,'boss spec '+n);
+      if(n===30){const room=S3.sim.createRoom(sp,R.simBuild(r),R.carry(r));room.cleared=true;
+        const prize=R.finishRoom(r,room,m);ck(prize.boss && O.cap(r,R.exploitDef('hollow'))===4,'third boss pick can already use the new cap');}
+      if(n===50){r.data=319;O.capture(r,m,0);r.squad[1].p={...r.squad[1].p,imprints:['softstep']};}
+      r.phase='doors';const ph=R.advance(r);O.snapshot(r,m);
+      ck(O.cap(r,R.exploitDef('hollow'))===3+Math.floor(n/30),'cap at '+n);
+      if(n%50){ck(ph==='route' && !O.decide(r,m,true),'no premature exit at '+n);continue;}
+      ck(ph==='window' && !r.node && R.advance(r)==='window','window held after '+n);
+      R.saveMeta(m);m=R.meta();r=m.omniRun;ck(r.phase==='window','saved window');
+      if(n===50){saved=JSON.stringify(m);paid=O.payout(r);ck(paid===53,'data conversion');}
+      const outcome=O.decide(r,m,n===150);ck(outcome && !O.decide(r,m,true),'single settlement '+n);
+      if(n===50)ck(r.data===19 && m.echoes===53 && m.roster[1].p.imprints.includes('softstep') && !m.roster[0].omniExits,'banked when continuing');
+    }
+    ck(!m.omniRun && m.omniRecord.exits===1 && m.roster[0].status==='station' && m.roster[3].status==='held' &&
+       !m.roster[0].omniExits && m.roster[1].omniExits===1 && m.wins===1 && m.unlocks.jobs.length===0,'exit does not free captives or mint a campaign win');
+    m=JSON.parse(saved);r=m.omniRun;O.decide(r,m,false);r.roomNo=59;r.data=999;r.squad[1].p={...r.squad[1].p,imprints:['softstep','lining']};
+    m.roster[3].status='ready';for(const i of R.alive(r))O.capture(r,m,i);O.snapshot(r,m);
+    const loss=O.finish(r,m);ck(!loss.wiped && loss.meta.echoes===paid && !m.roster[1].p.imprints.includes('lining') &&
+      m.omniRecord.best===59 && m.roster.filter(x=>x.status==='station').length===3 && !m.omniRun,'unbanked gains lost, records survive');
+    m.roster[3].status='held';m=R.afterLoss(m);ck(m.campaign==='wiped' && O.unlocked(m) && m.endings.wipe && m.omniRecord.best===59,'mixed-custody wipe');
+    m=R.newGame('random','after-wipe',m).meta;ck(O.unlocked(m) && !m.omniRun && m.omniRecord.best===59,'restart keeps career record and unlock');
+
+    r=O.create('stacks',[lawyer,...R.crewFor('stacks').slice(0,2)],m);
+    const x=R.exploitDef('hollow');for(let i=0;i<x.max;i++)R.addExploit(r,x.id);
+    const base=R.statsOf(r,0).st.dmgMul;
+    R.addExploit(r,x.id);ck(r.build.exploits.hollow===x.max && Math.abs(R.statsOf(r,0).st.dmgMul/base-1.05)<1e-6,'overflow has a real effect');
+    r.omni.cleared=30;R.addExploit(r,x.id);ck(r.build.exploits.hollow===x.max+1 && Math.abs(R.statsOf(r,0).st.dmgMul/base-1.15)<1e-6,'extended rank and overflow coexist');
+    const baseLaw=R.maxHp(r,0),baseOther=R.maxHp(r,1);
+    R.addExploit(r,'surety');ck(R.maxHp(r,0)===Math.round(baseLaw*1.1) && R.maxHp(r,1)===baseOther,'surety is useful without unlocking a pod');
+    for(const id of ['surety','extension'])while((r.build.exploits[id]||0)<O.cap(r,R.exploitDef(id)))R.addExploit(r,id);
+    const hp0=R.maxHp(r,0), hp1=R.maxHp(r,1);
+    r.options=[{type:'shop'}];R.enter(r,0);r.data=10000;
+    const slot=r.shop.items.findIndex(x=>x.owner==='barrister');ck(slot>=0 && !r.shop.items[slot].sold && R.buy(r,slot) &&
+      R.maxHp(r,0)>hp0 && R.maxHp(r,1)===hp1,'private shelf still sells a useful owner-only overflow');
+    const p0=r.shop.items.find(x=>x.k==='heal').price;r.roomNo=130;r.options=[{type:'shop'}];R.enter(r,0);
+    ck(r.shop.items.find(x=>x.k==='heal').price>p0 && !R.addExploit(r,'coilTap'),'shops scale; foreign private cards barred');
+    O.capture(r,m,0);r.options=[{type:'shop'}];R.enter(r,0);
+    ck(!r.shop.items.some(x=>x.owner==='barrister') && !R.addExploit(r,'surety'),'no unusable private sale to a captured owner');
+    const sums=[];
+    for(let i=0;i<900;i++){r.options=[{type:'event'}];R.enter(r,0);if(i===199||i===899)sums.push(JSON.stringify(r).length);}
+    ck(r.seen.length<=D.events.length && new Set(r.seen).size===r.seen.length && Math.abs(sums[1]-sums[0])<1000,'bounded save with repeated events');
+    const corner=S3.bot.playRun('omni-38',{omni:true,stopAt:6});
+    ck(corner.run.omni.cleared===6 && !corner.rooms.some(x=>x.timeout),'projection wreck sealed its last guard behind a wall');
+    ck(S3.pictures['ev-omni']==='assets/s3/ev-omni.jpg','station illustration');
+    storage.clear();
+    console.log('old ending, two custody ledgers, real returns, mixed wipe, rotating arenas, 50/100/150, atomic banking, overflow, owner-locked sales and bounded history');
+  }
+
+
+  if(process.env.S3_OMNI_40){
+    section('OMNI：40 支普通小隊，窗口分岔');
+    const rows=Array.from({length:40},(_,i)=>{
+      const out=S3.bot.playRun('omni-'+i,{omni:true});
+      if(out.rooms.some(x=>x.timeout))fail('OMNI bot timed out: '+i);
+      return {seed:i,room:out.run.roomNo,completed:out.run.omni.cleared,phase:out.run.phase,windows:out.windows};
+    });
+    const order=rows.map(x=>x.room).sort((a,b)=>a-b);
+    const q=[9,19,29].map(i=>(order[i]+order[i+1])/2);
+    console.log('OMNI quartiles: '+q.join(' / '));
+    for(const n of [50,100,150,200])console.log('OMNI '+n+': entered '+rows.filter(x=>x.room>=n).length+'/40; window '+rows.filter(x=>x.completed>=n).length+'/40');
+    console.log('OMNI seeds: '+JSON.stringify(rows));
+  }
+
   section('第三季：機器人');
   {
     const RUNS = 20;

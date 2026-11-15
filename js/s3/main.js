@@ -3,7 +3,7 @@
 // 規則都在別的檔案：戰鬥是 js/s3/sim.js，一整趟的流程和名冊是 js/s3/run.js，畫面是 js/s3/render.js，劇本是 content-s3/story.js。
 // 這裡只負責把玩家的操作轉成 sim 的輸入、把 sim 發生的事變成聲音和演出、在對的時候開對的對話框、講對的台詞。
 (function (E) {
-  const S3 = E.s3, sim = S3.sim, R = S3.run, V = S3.render, D = S3.data, ST = S3.story;
+  const S3 = E.s3, O = S3.omni, sim = S3.sim, R = S3.run, V = S3.render, D = S3.data, ST = S3.story;
   const $ = (id) => document.getElementById(id);
   const t = (k, v) => E.i18n.t(k, v);
   const L = (map) => E.i18n.pick(map);
@@ -91,7 +91,7 @@
   const jobOf = (p) => L(S3.ops.jobOf(p).name);
   const face=S3.portraits.face;
   const pid = (p) => p.district + ':' + p.id + ':' + p.occupation;
-  const roman=n=>['','I','II','III'][n]||'';
+  const roman=n=>['','I','II','III'][n]||String(n);
   const kitName=p=>p.template?t('s3.tpl.'+p.template+'.n'):'';
   const passive=m=>t(m.p.template?'s3.tpl.'+m.p.template+'.d':'s3.job.'+m.job);
   const kitLine=p=>{const k=S3.ops.templateOf(p);return k?[kitName(p),t('s3.wp.'+k.weapon+'.n'),gadName(k.gadget)].join(' · '):'';};
@@ -118,13 +118,15 @@
   // 拿這件新裝備會不會擠掉共用格裡原本的東西。
   const replacesGear = (id) => !!run.gear && !gadgetOwner(id);
 
+  const exploitDesc=id=>t(run?.omni && id==='surety'?'s3.omni.surety':'s3.ex.'+id+'.d');
   function exploitCard(id, o = {}) {
-    const def = R.exploitDef(id), have = (run && run.build.exploits[id]) || 0;
+    const def = R.exploitDef(id), have = (run && run.build.exploits[id]) || 0, max=O.cap(run,def);
+    const bonus=run?.omni && have>=def.max ? t('s3.omni.effect.'+def.tag)+' · '+t(have>=max?'s3.omni.spill':'s3.omni.extended') : '';
     return `<button type="button" class="s3-card rar-${def.rar}${o.sold ? ' sold' : ''}" data-act="${o.act || 'pick'}" data-id="${o.i !== undefined ? o.i : id}" ${o.disabled ? 'disabled' : ''}>
       <span class="card-top"><span class="tag tag-${def.tag}">${def.owner?esc(L(S3.ops.profiles[def.owner].name)):esc(t('s3.tag.' + def.tag))}</span><span class="rar">${esc(def.owner?t('s3.field.private'):t('s3.rar.' + def.rar))}</span></span>
-      <b>${esc(exName(id))}${def.owner?' · '+roman(o.rank||Math.min(def.max,have+1)):''}</b>
-      <span class="card-d">${esc(t('s3.ex.' + id + '.d'))}</span>
-      <span class="card-foot">${def.max > 1 ? esc(t('s3.card.stack', { n: have, max: def.max })) : have ? esc(t('s3.card.owned')) : ''}${o.price !== undefined ? `<span class="price">${o.mastered ? esc(t('s3.perk.max')) : o.sold ? esc(t('s3.shop.sold')) : '◆ ' + o.price}</span>` : ''}</span>
+      <b>${esc(exName(id))}${def.owner?' · '+roman(Math.min(max,o.rank||have+1)):''}</b>
+      <span class="card-d">${esc(exploitDesc(id))}</span>
+      <span class="card-foot">${bonus?'<strong class="banked">'+esc(bonus)+'</strong> · ':''}${max > 1 ? esc(t('s3.card.stack', { n: have, max })) : have ? esc(t('s3.card.owned')) : ''}${o.price !== undefined ? `<span class="price">${o.mastered ? esc(t('s3.perk.max')) : o.sold ? esc(t('s3.shop.sold')) : '◆ ' + o.price}</span>` : ''}</span>
     </button>`;
   }
   function gadgetCard(id, o = {}) {
@@ -153,7 +155,10 @@
         <span class="chip tag-gadget" title="${esc(t('s3.gad.' + m.gadget.id + '.d'))}"><kbd>Q</kbd> ${esc(gadName(m.gadget.id))} ${esc(t('s3.gad.lv', { n: m.gadget.lv }))}</span>
         <span class="sq-row-job" title="${esc(passive(m))}">${esc(passive(m))}</span></div>`;
     }).join('');
-    const ex = Object.entries(b.exploits).map(([id, n]) => { const def = R.exploitDef(id); return `<span class="chip tag-${def.tag}" title="${esc(t('s3.ex.' + id + '.d'))}">${esc(exName(id))}${def.owner?' '+roman(n)+' · '+esc(L(S3.ops.profiles[def.owner].name)):n>1?' ×'+n:''}</span>`; }).join('');
+    const ex = Object.entries(b.exploits).map(([id,n])=>{
+      const def=R.exploitDef(id), spill=5*(run.omni?.overflow[id]||0);
+      return `<span class="chip tag-${def.tag}" title="${esc(exploitDesc(id))}">${esc(exName(id))}${def.owner?' '+roman(n)+' · '+esc(L(S3.ops.profiles[def.owner].name)):n>1?' ×'+n:''}${spill?' · '+esc(t('s3.omni.effect.'+def.tag))+' +'+spill+'%':''}</span>`;
+    }).join('');
     const gear = run.gear ? `<span class="chip tag-gadget" title="${esc(t('s3.gad.' + run.gear.id + '.d'))}"><kbd>E</kbd> ${esc(gadName(run.gear.id))} ${esc(t('s3.gad.lv', { n: run.gear.lv }))}</span>` : `<span class="dim">${esc(t('s3.squad.none'))}</span>`;
     const st = R.statsOf(run, act).st;
     return `<div class="build">
@@ -300,6 +305,7 @@
     start.classList.toggle('primary', !active);
     start.dataset.i18n = active || meta.campaign === 'wiped' ? 's3.ui.newGame' : 's3.ui.start';
     start.textContent = t(start.dataset.i18n);
+    const record=O.record(meta);$('omni-record').hidden=!O.unlocked(meta);$('omni-record').textContent='OMNI · '+t('s3.omni.record',{n:record.best,x:record.exits});
     $('s3-echoes').textContent = meta.echoes || meta.runs ? t('s3.ui.record', { echoes: meta.echoes, runs: meta.runs, wins: meta.wins }) : '';
   }
   function applyLang() {
@@ -405,12 +411,13 @@
   function renderLobby() {
     const max = R.rosterMax(meta), readyN = meta.roster.filter((x) => x.status === 'ready').length;
     $('s3-hub').innerHTML = `<span class="hub-face">${portrait(hubLine.l.who)}</span><span class="hub-body"><b>${esc(t('s3.who.' + hubLine.l.who))}</b><span>${esc(t(lineKey(hubLine.l), hubLine.vars))}</span></span>`;
+    stationStrip();
     const cards = meta.roster.map((x, i) => {
-      const n = picks.indexOf(i), held = x.status === 'held';
-      const foot = `<div class="crew-foot"><span class="dim">${x.veteran ? `<b class="vet">${esc(t('s3.roster.vet'))}</b>　` : ''}${x.runs ? esc(t('s3.roster.runs', { n: x.runs })) : ''}</span>${!held && readyN > R.SQUAD ? `<button type="button" class="ghost small" data-dismiss="${i}">${esc(t('s3.roster.dismiss'))}</button>` : ''}</div>`;
+      const n = picks.indexOf(i), station=x.status==='station', held=x.status!=='ready';
+      const foot = `<div class="crew-foot"><span class="dim">${x.veteran ? `<b class="vet">${esc(t('s3.roster.vet'))}</b>　` : ''}${x.runs ? esc(t('s3.roster.runs', { n: x.runs })) : ''}${x.omniBest?' · '+esc(t('s3.omni.personal',{n:x.omniBest})):''}${x.omniExits?' · <b class="banked">'+esc(t('s3.omni.survivor',{n:x.omniExits}))+'</b>':''}</span>${!held && readyN > R.SQUAD ? `<button type="button" class="ghost small" data-dismiss="${i}">${esc(t('s3.roster.dismiss'))}</button>` : ''}</div>`;
       return personCard(x.p, {
-        gadget: x.gadget, cls: held ? 'held' : n >= 0 ? 'picked' : 'pickable', attr: held ? '' : `data-roster="${i}" role="button" tabindex="0"`,
-        badge: held ? t('s3.roster.held') : n >= 0 ? t('s3.roster.picked', { n: n + 1 }) : t('s3.roster.pick'), foot,
+        gadget: x.gadget, cls: station ? 'station-held' : held ? 'held' : n >= 0 ? 'picked' : 'pickable', attr: held ? '' : `data-roster="${i}" role="button" tabindex="0"`,
+        badge: station?t('s3.omni.custody'):held ? t('s3.roster.held') : n >= 0 ? t('s3.roster.picked', { n: n + 1 }) : t('s3.roster.pick'), foot,
       });
     }).join('');
     $('s3-roster').innerHTML = `<h3>${esc(t('s3.roster.title'))}<small>${esc(t('s3.roster.count', { n: meta.roster.length, max }))}</small></h3>
@@ -442,6 +449,7 @@
       <button type="button" id="s3-go" class="primary" ${need ? 'disabled' : ''}>${esc(t('s3.ui.lobby.go'))}</button>`;
   }
   function togglePick(i) {
+    if(meta.roster[i]?.status!=='ready')return;
     const at = picks.indexOf(i);
     if (at >= 0) picks.splice(at, 1);
     else if (picks.length < R.SQUAD) picks.push(i);
@@ -456,6 +464,7 @@
       if (R.dismiss(meta, i)) { play('click'); picks = picks.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)); renderLobby(); }
     } else if (vol && !vol.disabled) { if (R.recruit(meta, Number(vol.dataset.vol))) { play('gain'); renderLobby(); } }
     else if (perk && !perk.disabled) { if (R.buyPerk(meta, perk.dataset.perk)) { play('gain'); renderLobby(); } }
+    else if (e.target.closest('#omni-brief')) { play('click');stationBrief(); }
     else if (e.target.id === 's3-go') { if (picks.length === R.SQUAD) { play('title'); beginRun(); } }
     else if (e.target.id === 's3-lobby-back') { play('click'); showTitle(); }
     else if (card) { play('click'); togglePick(Number(card.dataset.roster)); }
@@ -465,12 +474,84 @@
     if (card && e.target === card && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); togglePick(Number(card.dataset.roster)); }
   });
 
+  // ===== 轉運站：入口、換批與接應。窗口選項和永久狀態都由 omni.js 決定。 =====
+  let heardSpill=0;
+  function stationArtStyle(){
+    const path=pictures['ev-omni'];
+    // CSS variables are consumed in css/s3.css. Use the image's resolved URL, not a path relative to that stylesheet.
+    return path ? ` style="--station-art:url(&quot;${esc(S3.assets.img(path).src)}&quot;)"` : '';
+  }
+  function saveRun() {
+    if(!run.omni){R.save(run);return;}
+    if(run.omni.spill>heardSpill){play('omniOverflow');toast(t('s3.omni.spill'),'good');}
+    heardSpill=run.omni.spill;
+    O.snapshot(run,meta);R.saveMeta(meta);
+  }
+  function stationStrip() {
+    const el=$('omni-station');el.hidden=!O.unlocked(meta);
+    if(el.hidden)return;
+    const r=O.record(meta),need=R.SQUAD-picks.length;
+    el.innerHTML=`<div class="station-strip"${stationArtStyle()}>
+      <div class="station-copy"><span class="omni-kicker">OMNI / ${esc(t('s3.omni.channel'))}</span><h3>${esc(t('s3.omni.name'))}</h3>
+      <p>${esc(t('s3.omni.record',{n:r.best,x:r.exits}))}</p></div>
+      <button type="button" id="omni-brief" ${need?'disabled':''}>${esc(need?t('s3.roster.need',{n:need}):t('s3.omni.connect'))}　→</button></div>`;
+  }
+  function stationBrief() {
+    const crew=picks.map(i=>meta.roster[i].p);
+    if(crew.length!==R.SQUAD || !O.unlocked(meta))return;
+    modal(`<div class="omni-photo"${stationArtStyle()}><span class="omni-kicker">OMNI / ${esc(t('s3.omni.station'))} · ${esc(t('s3.omni.briefing'))}</span></div>
+      <div class="station-text"><h2>${esc(t('s3.omni.call'))}</h2><p>${esc(t('s3.omni.lead'))}</p>
+      <div class="call-signs">${crew.map(p=>`<span>${face(p,{round:true})}<b>${esc(nameOf(p))}</b></span>`).join('')}</div>
+      <div class="s3-actions"><button type="button" class="ghost" data-act="back">${esc(t('s3.ui.back'))}</button><button type="button" class="omni-primary" data-act="link">${esc(t('s3.omni.cross'))} →</button></div></div>`,act=>{
+      closeModal();if(act==='back')return;
+      const ready=O.connect(seed,crew,meta);if(!ready){resume();return;}
+      run=ready;run.phase='link';meta.squad=crew.map(pid);heardSpill=0;saveRun();showGame();stationLink();
+    },'station-modal');
+    $('s3-modal').querySelector('[data-act=link]').focus();
+  }
+  function stationLink(){
+    S3.playMinaReveal(()=>talk([{once:'omni_brief',lines:[{who:'mina',k:'s3.omni.brief'},{who:'echo',k:'s3.omni.echo'}]},
+      {who:'echo',k:'s3.omni.entry'}],{bg:'ev-omni'},()=>{
+      play('omniEntry');R.route(run);saveRun();showRoute(true);
+    }),{bg:'boss-keystone'});
+  }
+  function stationWindow(){
+    inRoom=false;mode='menu';S3.music.set(null);sfx.ambient(null);play('omniWindow');
+    const n=run.roomNo, alive=R.alive(run).length;
+    modal(`<div class="window-top"><span class="omni-kicker">OPTIK / ${esc(t('s3.omni.windowTitle'))}</span>
+      <div class="window-number">${String(n).padStart(3,'0')}</div>
+      <div class="batch-rule"></div></div><div class="station-text"><p class="window-voice"><b>${esc(t('s3.who.echo'))}</b>${esc(t('s3.omni.window',{n}))}</p>
+      <p>${esc(t('s3.omni.windowSub',{alive}))}</p><p class="banked">${esc(t('s3.omni.bank',{n:O.payout(run)}))}</p>
+      <p class="dim">${esc(t('s3.omni.bankRule'))}</p><div class="s3-actions">
+      <button type="button" class="omni-primary" data-act="extract">${esc(t('s3.omni.exit'))}</button>
+      <button type="button" data-act="deeper">${esc(t('s3.omni.continue'))} → ${n+O.BATCH}</button></div></div>`,act=>{
+      const exit=act==='extract',out=O.decide(run,meta,exit);if(!out)return;
+      closeModal();R.saveMeta(meta);if(exit)stationEnd(out);else showRoute();
+    },'station-modal');
+    $('s3-modal').querySelector('[data-act=extract]').focus();
+  }
+  function stationEnd(out){
+    if(!out)return;
+    inRoom=false;paused=false;meta=out.meta;S3.music.set(null);sfx.ambient(null);
+    if(out.wiped){showWipe();return;}
+    mode='menu';
+    const dropped=run.squad.filter(m=>m.down).map(m=>t('s3.omni.held',{name:nameOf(m.p)}));
+    modal(`<div class="station-text"><span class="omni-kicker">OMNI / ${esc(t('s3.omni.captured'))}</span>
+      <h2>${esc(t(out.escaped?'s3.omni.home':'s3.omni.lost'))}</h2><p>${esc(t(out.escaped?'s3.omni.exitD':'s3.omni.lossD'))}</p>
+      ${dropped.map(x=>`<p class="dim">${esc(x)}</p>`).join('')}<p class="banked">${esc(t('s3.omni.result',{n:run.roomNo,paid:run.omni.paid}))}</p>
+      <div class="s3-actions"><button type="button" class="primary" data-act="lobby">${esc(t('s3.ui.lobby.title'))}</button></div></div>`,()=>{
+      closeModal();run=null;s=null;enterLobby();
+    },'station-modal');
+  }
+
+
   // ===== 開始、接續 =====
   function showGame() {
     $('s3-title').hidden = true;
     $('s3-lobby').hidden = true;
     $('s3-game').hidden = false;
     mode = 'menu';
+    $('s3-frame').classList.toggle('mindspace',!!run?.omni);$('omni-signal').hidden=!run?.omni;
     V.resize();
     for (const k of Object.keys(hudCache)) delete hudCache[k];
   }
@@ -479,7 +560,7 @@
     meta.squad = people.map(pid);
     R.saveMeta(meta);
     run = R.start(seed, people, meta);
-    R.save(run);
+    saveRun();
     showGame();
     const go = () => showRoute(true);
     if (!meta.seen.controls && !AUTO) { meta.seen.controls = 1; R.saveMeta(meta); showControls(go); } else go();
@@ -539,11 +620,15 @@
   }
   function resume() {
     if (meta.campaign === 'wiped') { chooseGame(); return; }
-    run = R.load();
+    run = meta.omniRun || R.load();
     if (!run) { enterLobby(); return; }
     seed = run.seed;
     showGame();
-    if (run.phase === 'room') startRoom(R.spec(run));
+    heardSpill=run.omni?.spill || 0;
+    if(run.omni && run.phase==='link')stationLink();
+    else if(run.omni && run.phase==='window')stationWindow();
+    else if(run.omni && run.phase==='dead')showEnd(false);
+    else if (run.phase === 'room') startRoom(R.spec(run));
     else if (run.phase === 'won') showFinale();
     else if (run.phase === 'reward' && run.pending) showReward(run.pending, afterNode);
     else if (run.phase === 'shop' || run.phase === 'safe' || run.phase === 'event') showNode();
@@ -563,7 +648,7 @@
     const lost = R.statsOf(run, run.active).fl.lost;
     const fight = o.type === 'fight' || o.type === 'elite';
     return {
-      title: t('s3.node.' + o.type),
+      title: t(run.omni && o.type==='cells'?'s3.omni.pod':'s3.node.' + o.type),
       sub: fight || o.type === 'cells' ? t('s3.rw.' + o.reward) : o.type === 'boss' ? t('s3.boss.' + D.sectors[run.sector].boss + '.n') : '',
       mod: fight ? (lost ? t('s3.route.unknown') : o.mod ? t('s3.mod.' + o.mod + '.n') : '') : '',
       modD: fight && o.mod && !lost ? t('s3.mod.' + o.mod + '.d') : '',
@@ -577,17 +662,17 @@
       const d = doorInfo(o);
       return `<button type="button" class="s3-card door type-${o.type}" data-act="door" data-id="${i}">
         <span class="card-top"><span class="tag">${esc(t('s3.route.door', { n: i + 1 }))}</span></span>
-        <b>${esc(d.title)}</b><span class="card-d">${esc(d.sub)}${d.sub ? '<br>' : ''}${esc(t('s3.node.' + o.type + '.d'))}</span>
+        <b>${esc(d.title)}</b><span class="card-d">${esc(d.sub)}${d.sub ? '<br>' : ''}${esc(t(run.omni && o.type==='cells'?'s3.omni.podD':'s3.node.' + o.type + '.d'))}</span>
         <span class="card-foot mod">${d.mod ? esc(d.mod) + (d.modD ? '：' + esc(d.modD) : '') : ''}</span></button>`;
     }).join('');
     S3.music.set('calm');
-    modal(`<h2>${esc(t('s3.sec.' + sec.id + '.n'))}<small>${esc(t('s3.hud.room', { n: run.roomNo + 1 }))}</small></h2>
+    modal(`<h2>${run.omni?'OMNI / ':''}${esc(t('s3.sec.' + sec.id + '.n'))}<small>${esc(t('s3.hud.room', { n: run.roomNo + 1 }))}</small></h2>
       <p class="dim">${esc(first && run.roomNo === 0 ? t('s3.sec.' + sec.id + '.d') : t('s3.route.hint'))}</p>
       <div class="s3-cards">${cards}</div>${squadSummary()}`, (act, id) => { if (act === 'door') { closeModal(); enterDoor(Number(id)); } }, 'wide');
   }
   function enterDoor(i) {
     const spec = R.enter(run, i);
-    R.save(run);
+    saveRun();
     play('door');
     if (spec) startRoom(spec); else showNode();
   }
@@ -607,7 +692,8 @@
   function afterNode() {
     if (run.phase === 'reward' && run.pending) { showReward(run.pending, afterNode); return; }
     const ph = R.advance(run);
-    R.save(run);
+    saveRun();
+    if(ph==='window'){stationWindow();return;}
     if (ph === 'won') { showFinale(); return; }
     if (s && mode !== 'title' && s.cleared && !s.over && s.exit < 0 && inRoom) { syncTeam(); closeModal(); s.doorsOpen = true; mode = 'play'; play('door'); tip('doors'); }
     else showRoute();
@@ -648,7 +734,8 @@
       // 新區段的第一間：多講一句這一區有什麼。
       else if (run.depth === 0 && !spec.boss) setTimeout(() => { if (s && s.spec === spec && !AUTO) toast(t('s3.sec.' + sec.id + '.d'), 'tip'); }, 2800);
     };
-    if (spec.boss) bossIntro(spec.boss, begin);
+    if(run.omni)begin();
+    else if (spec.boss) bossIntro(spec.boss, begin);
     else if (run.depth === 0 && ST.sectorBeats[sec.id]) beat(ST.sectorBeats[sec.id], {}, begin);
     else begin();
   }
@@ -663,23 +750,23 @@
     rewarded = true;
     const boss = s.spec.boss;
     const rw = R.finishRoom(run, s, meta);
-    R.save(run);
+    saveRun();
     S3.music.set('calm');
     flushNotes();
     if (rw.silent) { toast(t('s3.hud.silent', { n: rw.bonus }), 'good'); comm('silent'); }
     const next = () => showReward(rw, afterNode);
     const bb = boss && ST.bossBeats[boss];
-    if (bb && bb.down) beat(bb.down, { bg: 'boss-' + boss }, next); else next();
+    if (!run.omni && bb && bb.down) beat(bb.down, { bg: 'boss-' + boss }, next); else next();
   }
   function showReward(rw, next) {
-    const done = (choice) => { R.take(run, choice); R.save(run); closeModal(); next(); };
+    const done = (choice) => { R.take(run, choice); saveRun(); closeModal(); next(); };
     if (rw.kind === 'rescue') { showRescue(next); return; }
     // 最後一個首領：後面沒有房間了，不用挑漏洞。
-    if (rw.boss && run.sector >= D.sectors.length - 1) { done(null); return; }
+    if (!run.omni && rw.boss && run.sector >= D.sectors.length - 1) { done(null); return; }
     if (!rw.picks) {
       // 資料、治療、體力上限：直接給。
       R.take(run, null);
-      R.save(run);
+      saveRun();
       play('gain');
       toast(t('s3.rw.got.' + rw.kind, { n: rw.kind === 'heal' ? Math.round(rw.n * 100) : rw.n }), 'good');
       next();
@@ -689,11 +776,12 @@
     const gad = rw.kind === 'gadget';
     const cards = rw.picks.map((id) => (gad ? gadgetCard(id) : exploitCard(id))).join('');
     modal(`<h2>${esc(t(gad ? 's3.rw.title.gadget' : rw.boss ? 's3.rw.title.boss' : 's3.rw.title'))}</h2>
+      ${run.omni && rw.boss && run.roomNo%O.CYCLE===0?'<p class="banked">'+esc(t('s3.omni.capUp'))+'</p>':''}
       <p class="dim">${esc(t('s3.rw.pick'))}${rw.bonus ? '　' + esc(t(rw.silent ? 's3.rw.bonus.silent' : 's3.rw.bonus', { n: rw.bonus })) : ''}</p>
       <div class="s3-cards">${cards}</div>
       <div class="s3-actions"><button type="button" data-act="reroll" ${run.rerolls > 0 ? '' : 'disabled'}>${esc(t('s3.rw.reroll', { n: run.rerolls }))}</button>
       <button type="button" class="ghost" data-act="skip">${esc(t('s3.rw.skip'))}</button></div>${squadSummary()}`, (act, id) => {
-      if (act === 'reroll') { if (R.reroll(run)) { R.save(run); showReward(run.pending, next); } }
+      if (act === 'reroll') { if (R.reroll(run)) { saveRun(); showReward(run.pending, next); } }
       else if (act === 'skip') done(null);
       else if (act === 'pick') {
         if (gad && replacesGear(id)) askGear(id, () => { play('gain'); done(id); }, () => showReward(rw, next));
@@ -709,18 +797,18 @@
   // 拘留室：救出一個人。名冊裡有人被關就先救自己人，不然是名單上的陌生人。
   function showRescue(next) {
     const res = R.rescue(run, AUTO ? null : meta);
-    R.save(run);
+    saveRun();
     if (!res || AUTO) { next(); return; }
     play('gain');
     comm('rescue', {}, true);
     const name = nameOf(res.p);
-    const lines = [t(res.known ? 's3.rescue.known' : 's3.rescue.new', { name, job: jobOf(res.p) })];
+    const lines = run.omni ? [t(res.known?'s3.omni.rescued':res.full?'s3.omni.full':'s3.omni.volunteer',{name})] : [t(res.known ? 's3.rescue.known' : 's3.rescue.new', { name, job: jobOf(res.p) })];
     if (res.joined) lines.push(t('s3.rescue.joined', { name, n: res.slot + 1 }));
-    if (res.full) lines.push(t('s3.rescue.full', { name }));
-    const show = () => modal(`<div class="ev"><div class="ev-face">${face(res.p)}</div><div><h2>${esc(t('s3.rescue.title'))}</h2>${lines.map((x) => `<p>${esc(x)}</p>`).join('')}
+    if (res.full && !run.omni) lines.push(t('s3.rescue.full', { name }));
+    const show = () => modal(`<div class="ev"><div class="ev-face">${face(res.p)}</div><div><h2>${esc(t(run.omni?'s3.omni.pod':'s3.rescue.title'))}</h2>${lines.map((x) => `<p>${esc(x)}</p>`).join('')}
       <p class="perk-line">${esc(passive(R.memberOf(res.p)))}</p></div></div>
       <div class="s3-actions"><button type="button" class="primary" data-act="ok">${esc(t('s3.ui.ok'))}</button></div>`, () => { closeModal(); next(); });
-    beat('cells', {}, show);
+    if(run.omni)show();else beat('cells', {}, show);
   }
 
   // ===== 黑市、維修間、事件 =====
@@ -736,10 +824,10 @@
       <div class="s3-actions"><button type="button" data-act="restock" ${run.data >= sh.reroll ? '' : 'disabled'}>${esc(t('s3.shop.reroll', { n: sh.reroll }))}</button>
       <button type="button" class="primary" data-act="leave">${esc(t('s3.shop.leave'))}</button></div>${squadSummary()}`, (act, i) => {
       if (act === 'leave') { run.phase = 'done'; closeModal(); afterNode(); }
-      else if (act === 'restock') { if (R.restock(run)) { R.save(run); showShop(); } }
+      else if (act === 'restock') { if (R.restock(run)) { saveRun(); showShop(); } }
       else if (act === 'buy') {
         const it = sh.items[Number(i)];
-        const finish = () => { if (R.buy(run, Number(i))) { play('gain'); R.save(run); } showShop(); };
+        const finish = () => { if (R.buy(run, Number(i))) { play('gain'); saveRun(); } showShop(); };
         if (it.k === 'gadget' && replacesGear(it.id)) askGear(it.id, finish, showShop); else finish();
       }
     }, 'wide');
@@ -748,7 +836,7 @@
     const opt = (id) => `<button type="button" class="s3-card safe" data-act="${id}" ${id === 'rest' && !R.hurtSomeone(run) ? 'disabled' : ''}><b>${esc(t('s3.safe.' + id))}</b><span class="card-d">${esc(t('s3.safe.' + id + '.d'))}</span></button>`;
     modal(`<h2>${esc(t('s3.safe.title'))}</h2><p>${esc(t('s3.safe.text'))}</p><div class="s3-cards">${opt('rest')}${opt('tune')}${opt('train')}</div>${squadSummary()}`, (act) => {
       R.safe(run, act);
-      R.save(run);
+      saveRun();
       play('gain');
       closeModal();
       afterNode();
@@ -774,7 +862,7 @@
     modal(`${pic}<div class="ev">${face}<div>${heading}<p>${esc(t('s3.ev.' + ev.id + '.x'))}</p></div></div>
       <div class="s3-actions">${btn(0)}${btn(1)}</div>${squadSummary()}`, (act, i) => {
       const c = def.choices[Number(i)], g = c.fx && c.fx.gadget;
-      const go = () => { R.choose(run, Number(i), AUTO ? null : meta); R.save(run); showEvent(); };
+      const go = () => { R.choose(run, Number(i), AUTO ? null : meta); saveRun(); showEvent(); };
       if (g && replacesGear(g)) askGear(g, go, showEvent); else go();
     }, pic ? 'pic' : '');
   }
@@ -805,10 +893,11 @@
     modal(`<h2>${esc(t('s3.pause.title'))}<small>${esc(t('s3.sec.' + sec.id + '.n'))}　${esc(t('s3.hud.room', { n: run.roomNo }))}</small></h2>
       ${squadSummary()}${controlsHtml()}${guideHtml()}
       <div class="s3-actions"><div class="lang-switch"><button type="button" data-act="lang" data-id="zh-Hant">繁</button><button type="button" data-act="lang" data-id="zh-Hans">简</button><button type="button" data-act="lang" data-id="en">EN</button></div>
-      <button type="button" class="ghost" data-act="quit">${esc(t('s3.pause.quit'))}</button><button type="button" class="primary" data-act="resume">${esc(t('s3.pause.resume'))}</button></div>`, (act, id) => {
+      <button type="button" class="ghost" data-act="quit">${esc(t(run.omni?'s3.omni.suspend':'s3.pause.quit'))}</button><button type="button" class="primary" data-act="resume">${esc(t('s3.pause.resume'))}</button></div>`, (act, id) => {
       if (act === 'resume') unpause();
       else if (act === 'lang') { setLang(id); paused = false; mode = 'play'; pause(); }
       else if (act === 'quit') {
+        if(run.omni){saveRun();closeModal();paused=false;showTitle();toast(t('s3.omni.backup'),'good');return;}
         // 撤退：這一間裡已經倒下的人還是被帶走了。
         if (!rewarded) sim.teamState(s).forEach((tm, i) => { if (tm.down) run.squad[i].down = true; });
         closeModal();
@@ -827,7 +916,7 @@
       ${kits.map(k=>`<div><b>${esc(t('s3.tpl.'+k.id+'.n'))} · ${esc(t('s3.wp.'+k.weapon+'.n'))}</b><span><strong>${esc(gadName(k.gadget))}</strong> · ${esc(t('s3.gad.'+k.gadget+'.d'))}</span><span><strong>${esc(t('s3.card.perk'))}</strong> · ${esc(t('s3.tpl.'+k.id+'.d'))}</span></div>`).join('')}
       </div><h4>${esc(t('s3.field.private'))}</h4><div class="guide-grid">
       ${S3.ops.xp.filter(x=>x.owner===id).map(x=>`<div><b>${esc(exName(x.id))} · I–${roman(x.max)}</b><span>${esc(t('s3.ex.'+x.id+'.d'))}</span></div>`).join('')}</div></details>`).join('');
-    return `<details class="guide"><summary>${esc(t('s3.field.book'))}</summary><p>${esc(t('s3.field.intro'))}</p>${jobs}</details>
+    return `${O.unlocked(meta)?`<details class="guide"><summary>OMNI / ${esc(t('s3.omni.guide'))}</summary><p>${esc(t('s3.omni.guideD'))}</p><p>${esc(t('s3.omni.power'))}</p><p>${esc(t('s3.omni.guideRisk'))}</p></details>`:''}<details class="guide"><summary>${esc(t('s3.field.book'))}</summary><p>${esc(t('s3.field.intro'))}</p>${jobs}</details>
       <details class="guide"><summary>${esc(t('s3.pause.weapons'))}</summary><div class="guide-grid">${Object.keys(D.weapons).map(k => row(k, 's3.wp.')).join('')}</div></details>
       <details class="guide"><summary>${esc(t('s3.pause.guide'))}</summary><p>${esc(t('s3.guide.route'))}</p><div class="guide-grid">${foes.map((k) => row(k, 's3.en.')).join('')}</div>
       <div class="guide-grid">${['junction', 'vent', 'barrel', 'car', 'bollard', 'camera', 'speaker'].map((k) => row(k, 's3.prop.')).join('')}</div></details>`;
@@ -875,6 +964,7 @@
     }
   }
   function showEnd(won, quit, ending) {
+    if(run.omni){const out=O.finish(run,meta);if(out){R.saveMeta(out.meta);stationEnd(out);}return;}
     const lastName = run.squad[run.active] ? nameOf(run.squad[run.active].p) : '';
     // 機器人模式不動存檔。
     const res = AUTO ? { earned: 0, meta, captured: run.squad.filter((m) => m.down).map((m) => m.p), freed: 0 } : R.finish(run, won, meta, ending);
@@ -971,6 +1061,7 @@
       set('h-boss-n', t('s3.boss.' + boss.boss + '.n') + (note ? '　' + note : ''));
     }
     const sec = D.sectors[run.sector];
+    if(run.omni)set('omni-signal','OMNI　/　'+t('s3.omni.room',{n:run.roomNo})+'　·　'+t('s3.omni.next',{n:O.nextWindow(run.omni.banked)}));
     set('h-room', t('s3.sec.' + sec.id + '.n') + '　' + t('s3.hud.room', { n: run.roomNo }) + (s.spec.mod ? '　· ' + t('s3.mod.' + s.spec.mod + '.n') : ''));
     sfx.ambient('tac', s.alert && !s.cleared ? 0.8 : calling.length ? 0.5 : 0.15);
   }
@@ -1005,7 +1096,10 @@
     sim.step(s, inp);
     for (const ev of s.ev) {
       V.event(s, ev);
-      sound(ev);
+      if(run.omni && (ev.k==='down' || ev.k==='dead')){
+        const i=ev.k==='dead'?s.active:ev.i;
+        if(O.capture(run,meta,i)){run.active=s.active;saveRun();play('omniHeld');toast(t('s3.omni.held',{name:nameOf(run.squad[i].p)}),'warn');}
+      }else sound(ev);
       if (ev.k === 'kill') { freeze = Math.max(freeze, ev.boss ? 0.35 : 0.03); if (ev.ambush) tip('trap'); }
       else if (ev.k === 'takedown') freeze = Math.max(freeze, 0.07);
       else if (ev.k === 'hurt') freeze = Math.max(freeze, 0.05);
@@ -1018,7 +1112,7 @@
       else if (ev.k === 'hijack') comm('hijack');
       else if (ev.k === 'getaway') comm('getaway', {}, true);
       else if (ev.k === 'swap') { lowSaid = false; if (!ev.forced) toast(t('s3.toast.swap', { name: nameOf(run.squad[ev.i].p) })); }
-      else if (ev.k === 'down') {
+      else if (ev.k === 'down' && !run.omni) {
         // 有人倒下、被帶走：停一下，讓玩家看清楚換了誰上來。
         const name = nameOf(run.squad[ev.i].p);
         freeze = Math.max(freeze, 0.4);
@@ -1031,7 +1125,7 @@
     // 體力快沒了，而且還有人可以換：提醒一次。
     if (!lowSaid && !s.over && !s.cleared && s.p.hp < s.p.maxHp * 0.3 && s.team.filter((m) => !m.down).length > 1) { lowSaid = true; comm('low', {}, true); tip('swap'); }
     // 母機和核心那兩場：基石會念出它對場上這個人的預測。
-    if ((s.spec.boss === 'carrier' || s.spec.boss === 'keystone') && !s.cleared && !s.over) {
+    if (!run.omni && (s.spec.boss === 'carrier' || s.spec.boss === 'keystone') && !s.cleared && !s.over) {
       predictT -= sim.DT;
       if (predictT <= 0) { predictT = 15 + Math.random() * 9; comm(activePerson().flaw && Math.random() < 0.4 ? 'predictFlaw' : 'predict', {}, false); }
     }

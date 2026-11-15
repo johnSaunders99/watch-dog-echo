@@ -15,12 +15,12 @@ nav{display:flex;gap:7px;flex-wrap:wrap}nav button{padding:6px 12px}nav button[a
 <script src="../js/ui/sfx.js"></script><script src="../js/s3/sounds-v5.js"></script><script src="../js/s3/sounds.js"></script>
 <script>
 (() => {
-  const E=window.ECHO, A=E.s3.audio, $=s=>document.querySelector(s), groups=['guns','gear','field','combat','ui'];
+  const E=window.ECHO, A=E.s3.audio, $=s=>document.querySelector(s), groups=['guns','gear','field','combat','ui','omni'];
   const languages=['zh-Hant','zh-Hans','en'], copy=[
-    ['聲音試聽室','在「裝備」聽電擊機起飛與放電，再比較定格表演的收音和禁制令的槌聲。','待命，請選一個聲音','停止','槍械','裝備','駭入與陷阱','敵人與首領','介面','新版','舊版','播放中','加裝滅音器','沒有舊版按鈕的是新增聲音。','無法啟動 Web Audio，請用支援它的瀏覽器再試。','音效分組'],
-    ['声音试听室','在“装备”里听电击机起飞与放电，再比较定格表演的收音和禁制令的槌声。','待命，请选一个声音','停止','枪械','装备','入侵与陷阱','敌人与首领','界面','新版','旧版','播放中','加装消音器','没有旧版按钮的是新增声音。','无法启动 Web Audio，请用支持它的浏览器再试。','音效分组'],
-    ['Sound audition desk','Open Gear to hear the shock drone lift off and discharge. Compare the suspended note of a tableau with the knock of an injunction.','Ready · choose a sound','Stop','Guns','Gear','Hacks & traps','Enemies & bosses','Interface','New','Old','Playing','Silencer fitted','Sounds without an Old button are new.','Web Audio could not start. Try a browser with Web Audio support.','Sound groups']];
-  let lang=languages.includes(new URLSearchParams(location.search).get('lang'))?new URLSearchParams(location.search).get('lang'):'zh-Hant', group='gear',ticket=0,ctx=null,sources=[],cache=new Map();
+    ['聲音試聽室','在 OMNI 試聽接線、換批、溢出與艙門外鎖；切換分組可聽裝備和戰鬥音效。','待命，請選一個聲音','停止','槍械','裝備','駭入與陷阱','敵人與首領','介面','新版','舊版','播放中','加裝滅音器','沒有舊版按鈕的是新增聲音。','無法啟動 Web Audio，請用支援它的瀏覽器再試。','音效分組'],
+    ['声音试听室','在 OMNI 试听接线、换批、溢出和舱门外锁；切换分组可听装备和战斗音效。','待命，请选一个声音','停止','枪械','装备','入侵与陷阱','敌人与首领','界面','新版','旧版','播放中','加装消音器','没有旧版按钮的是新增声音。','无法启动 Web Audio，请用支持它的浏览器再试。','音效分组'],
+    ['Sound audition desk','Open OMNI to hear the calibration link, handover, overflow and pod interlock. Switch groups for gear and combat sounds.','Ready · choose a sound','Stop','Guns','Gear','Hacks & traps','Enemies & bosses','Interface','New','Old','Playing','Silencer fitted','Sounds without an Old button are new.','Web Audio could not start. Try a browser with Web Audio support.','Sound groups']];
+  let lang=languages.includes(new URLSearchParams(location.search).get('lang'))?new URLSearchParams(location.search).get('lang'):'zh-Hant', group=new URLSearchParams(location.search).get('group')==='omni'?'omni':'gear',ticket=0,ctx=null,sources=[],cache=new Map();
   const i=()=>languages.indexOf(lang),w=()=>copy[i()], label=c=>typeof c.label==='string'?E.i18n.t(c.label):Array.isArray(c.label)?c.label[i()]:E.i18n.t('s3.wp.'+c.label.weapon+'.n')+' · '+w()[12];
   function stop(){ticket++; for(const s of sources)try{s.stop();}catch(e){} sources=[]; $('.is-playing')?.classList.remove('is-playing');$('#stop').disabled=true;$('#status').textContent=w()[2];}
   async function buffer(id){
@@ -45,8 +45,8 @@ nav{display:flex;gap:7px;flex-wrap:wrap}nav button{padding:6px 12px}nav button[a
   }
   function draw(){
     stop();E.i18n.set(lang);$('#lang').value=lang;const t=w();document.title='ZERO DAY / '+t[0];$('h1').textContent=t[0];$('#intro').textContent=t[1];$('#stop').textContent=t[3];$('footer').textContent=t[13];$('nav').ariaLabel=t[15];$('nav').replaceChildren();
-    for(const [j,g] of groups.entries()){const b=document.createElement('button');b.type='button';b.textContent=t[4+j];b.dataset.group=g;b.setAttribute('aria-pressed',g===group);b.onclick=()=>{group=g;draw();$('nav [aria-pressed=true]').focus()};$('nav').append(b);}
-    const rows=A.cues.filter(c=>c.group===group);$('h2').textContent=t[4+groups.indexOf(group)];$('.index').textContent=String(rows.length).padStart(2,'0')+' / '+A.cues.length;$('#list').replaceChildren();
+    for(const [j,g] of groups.entries()){const b=document.createElement('button');b.type='button';b.textContent=g==='omni'?'OMNI':t[4+j];b.dataset.group=g;b.setAttribute('aria-pressed',g===group);b.onclick=()=>{group=g;draw();$('nav [aria-pressed=true]').focus()};$('nav').append(b);}
+    const rows=A.cues.filter(c=>c.group===group);$('h2').textContent=group==='omni'?'OMNI':t[4+groups.indexOf(group)];$('.index').textContent=String(rows.length).padStart(2,'0')+' / '+A.cues.length;$('#list').replaceChildren();
     for(const [n,c] of rows.entries()){const el=document.createElement('div');el.className='cue';el.dataset.cue=c.key;el.innerHTML='<span class="serial"></span><b></b>';el.firstChild.textContent=String(n+1).padStart(2,'0');el.querySelector('b').textContent=label(c);
       for(const old of c.old?[false,true]:[false]){const b=document.createElement('button');b.type='button';b.className=old?'old':'current';b.textContent='▶ '+t[old?10:9];b.setAttribute('aria-label',label(c)+' · '+t[old?10:9]);b.onclick=()=>play(c,old,b);el.append(b);}$('#list').append(el);}
   }

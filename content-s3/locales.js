@@ -32,7 +32,7 @@
     's3.ui.record': '殘響 {echoes}　·　進去過 {runs} 晚　·　打通 {wins} 次',
     's3.ui.echoes': '手上有 {n} 個殘響',
     's3.ui.lobby.title': '安全屋',
-    's3.ui.lobby.hint': '挑三個人組成今晚的小隊。場上一次只有一個人，按 1、2、3 換人。倒下的人會被關進基石，要找到拘留室才救得回來。',
+    's3.ui.lobby.hint': '挑三個人組成今晚的小隊。場上一次只有一個人，按 1、2、3 換人。一般突襲中倒下的人會被關進基石，要找到拘留室才救得回來。',
     's3.ui.lobby.go': '出發',
     's3.ui.lobby.perks': '永久強化',
 
@@ -322,7 +322,7 @@
     's3.ui.record': '残响 {echoes}　·　进去过 {runs} 晚　·　打通 {wins} 次',
     's3.ui.echoes': '手上有 {n} 个残响',
     's3.ui.lobby.title': '安全屋',
-    's3.ui.lobby.hint': '挑三个人组成今晚的小队。场上一次只有一个人，按 1、2、3 换人。倒下的人会被关进基石，要找到拘留室才救得回来。',
+    's3.ui.lobby.hint': '挑三个人组成今晚的小队。场上一次只有一个人，按 1、2、3 换人。普通突袭中倒下的人会被关进基石，要找到拘留室才救得回来。',
     's3.ui.lobby.go': '出发',
     's3.ui.lobby.perks': '永久强化',
 
@@ -612,7 +612,7 @@
     's3.ui.record': 'Echoes {echoes}  ·  {runs} nights  ·  {wins} cleared',
     's3.ui.echoes': '{n} echoes on hand',
     's3.ui.lobby.title': 'Safe house',
-    's3.ui.lobby.hint': "Pick three people for tonight's squad. Only one is on the floor at a time: press 1, 2 or 3 to swap. Anyone who goes down is locked up in Keystone until you find the holding cells.",
+    's3.ui.lobby.hint': "Pick three people for tonight's squad. Only one is on the floor at a time: press 1, 2 or 3 to swap. In a regular raid, anyone who goes down is held at Keystone until you find the holding cells.",
     's3.ui.lobby.go': 'Go',
     's3.ui.lobby.perks': 'Permanent upgrades',
 

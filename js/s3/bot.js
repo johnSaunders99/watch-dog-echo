@@ -363,25 +363,39 @@
   // 自己打完一整趟。o：{ perks 永久強化、held 名冊裡有幾個人被關、limit 每間最多幾步 }。回傳 { won, run, rooms: [...] }。
   function playRun(seed, o = {}) {
     const m = { echoes: 0, perks: o.perks || {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [] };
-    const run = S3.run.start(seed, o.crew || S3.run.crewFor(seed), m);
-    if (o.held) run.held = o.held;
+    const people=o.crew || S3.run.crewFor(seed);
+    if(o.omni)m.roster=people.map(p=>({p,status:'ready',runs:0}));
+    const run=o.omni ? S3.omni.create(seed,people,m) : S3.run.start(seed,people,m);
+    if (o.held && !o.omni) run.held = o.held;
+    const windows=[];
     const limit = o.limit || 60 * 150, rooms = [];
-    for (let guard = 0; guard < 80 && run.phase === 'route'; guard++) {
+    for (let guard = 0; guard < (o.omni ? o.stopAt || 300 : 80) && run.phase === 'route'; guard++) {
       const spec = S3.run.enter(run, chooseDoor(run));
+      if(run.omni)S3.omni.snapshot(run,m);
       if (spec) {
         const s = sim.createRoom(spec, S3.run.simBuild(run), S3.run.carry(run));
         const bot = create(seed + ':' + run.roomNo);
         let n = 0;
         while (!s.over && !(s.cleared && s.cache.taken) && n++ < limit) { sim.step(s, bot.act(s)); s.ev.length = 0; }
-        if (n >= limit && !s.cleared) s.over = 'dead';
+        const stalled=run.omni && n>=limit && !s.over && !(s.cleared && s.cache.taken);
+        if (!run.omni && n >= limit && !s.cleared) s.over = 'dead';
         rooms.push({ no: run.roomNo, type: run.node.type, mod: run.node.mod, boss: spec.boss, secs: Math.round(s.rt), hp: Math.round(s.p.hp), hurt: Math.round(s.stats.hurt), dead: s.over === 'dead', timeout: n >= limit, silent: s.silent, down: s.team.filter((t) => t.down).length });
+        if(stalled){run.phase='timeout';break;}
         const rw = S3.run.finishRoom(run, s, m);
         if (!rw) break;
-        if (rw.kind === 'rescue') S3.run.rescue(run, null); else S3.run.take(run, chooseReward(run, rw));
+        if (rw.kind === 'rescue') S3.run.rescue(run, run.omni?m:null); else S3.run.take(run, chooseReward(run, rw));
       } else visit(run);
       if (run.phase === 'doors' || run.phase === 'done') S3.run.advance(run);
+      if(run.omni && run.phase==='window'){
+        // 同一個抵達狀態分岔：記下此刻真實退出的結算，原隊依策略撤出或繼續。
+        S3.omni.snapshot(run,m);
+        const twin=JSON.parse(JSON.stringify(m)),exit=S3.omni.decide(twin.omniRun,twin,true);
+        windows.push({no:run.roomNo,alive:S3.run.alive(run).length,earned:exit.earned});
+        S3.omni.decide(run,m,!!o.exitAt && run.roomNo>=o.exitAt);
+      }
     }
-    return { won: run.phase === 'won', run, rooms };
+    if(run.omni && run.phase==='dead')S3.omni.finish(run,m);
+    return { won: run.phase === 'won' || run.phase==='exited', run, rooms, ...(o.omni?{windows}:{} ) };
   }
 
   S3.bot = { create, playRun, chooseDoor, chooseReward, visit, health };

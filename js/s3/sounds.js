@@ -131,6 +131,11 @@
     ui('event','event','發現事件','发现事件','Encounter',()=>{ notes([392,466],.13,.21,.127,'sine',{wet:.11}); });
     ui('dream','dream','異常訊號','异常信号','Strange signal',()=>{ tone(420,0,.42,.10,489,'sine',{detune:9}); tone(617,.14,.27,.09,584); });
     ui('cameo','cameo','客串來訊','客串来讯','Contact calling',()=>{ notes([523,659,523,784],.079,.12,.12); });
+    // 同一台校準機：接線掃頻、窗口的開放五度、溢出的泛音，以及外鎖的雙響。
+    effect('omni','omniEntry',null,'接入校準機','接入校准机','Calibration link',()=>{tone(132,0,.56,.13,376,'sine',{a:.08});tone(397,.08,.46,.07,376,'triangle');metal(.53,752,.075,.10);});
+    effect('omni','omniWindow',null,'換批窗口','换批窗口','Handover window',()=>{notes([330,495],.18,.33,.115,'sine',{a:.024,wet:.22});tone(660,.41,.36,.085);});
+    effect('omni','omniOverflow',null,'漏洞溢出','漏洞溢出','Exploit overflow',()=>{notes([580,870,1160],.052,.12,.095,'triangle',{wet:.11});tone(1740,.16,.11,.035);});
+    effect('omni','omniHeld',null,'收容艙外鎖','收容舱外锁','Pod interlock',()=>{air(0,.12,.11,1750,380);metal(.11,460,.15,.05);knock(.24,105,.23,.20);tone(135,.29,.23,.09,73);});
     ui('ending','ending','行動完成','行动完成','Campaign complete',()=>{ notes([294,370,440,588],.14,.32,.151,'triangle',{wet:.15}); });
     ui('loss','loss','放棄行動','放弃行动','Withdraw',()=>{ notes([370,277],.15,.24,.14,'triangle'); });
     ui('fail','fail','行動失敗','行动失败','Run lost',()=>{ notes([349,294,174],.14,.24,.15,'triangle',{lp:900}); });

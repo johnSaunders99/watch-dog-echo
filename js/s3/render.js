@@ -13,6 +13,28 @@
     offices: { floor: '#151726', floor2: '#191b2d', line: '#23263f', wall: '#2d3050', top: '#474c76', face: '#1b1d33', accent: '#6cd6e2' },
     vault: { floor: '#0e151a', floor2: '#111b21', line: '#17323c', wall: '#1d3644', top: '#2f5a6c', face: '#11222b', accent: '#72e6a4' },
   };
+  const SIGNAL_FLOORS = [
+    {floor:'#16192b',floor2:'#181d31',line:'#2d3550',wall:'#33314c',top:'#4b4765',face:'#242538',accent:'#e7b952'},
+    {floor:'#191729',floor2:'#201d32',line:'#393048',wall:'#37304c',top:'#524660',face:'#282135',accent:'#59d4ca'},
+    {floor:'#0f1b23',floor2:'#13212b',line:'#243b48',wall:'#263a49',top:'#3c5261',face:'#192b35',accent:'#a89ce8'},
+  ];
+  // 校準紙的刻度、定位十字與黃線在地板層。視野錐、人物、煙霧與瞄準點都畫在它們上面。
+  function calibrationFloor(g,s){
+    g.save();
+    g.fillStyle='rgba(128,207,210,.045)';
+    for(let y=T;y<H-T;y+=8)g.fillRect(T,y,W-2*T,1);
+    for(let x=120;x<W-T;x+=200)for(let y=145;y<H-T;y+=150){
+      g.fillStyle='rgba(108,210,215,.24)';g.fillRect(x-6,y,13,1);g.fillRect(x,y-6,1,13);
+    }
+    g.strokeStyle='rgba(96,204,202,.28)';g.lineWidth=2;g.beginPath();
+    for(let x=80;x<W-80;x+=8){const phase=(x+s.spec.roomNo*8)%184;
+      const off=phase===48?-14:phase===56?20:phase===64?-5:0;const y=H-115+off;
+      if(x===80)g.moveTo(x,y);else g.lineTo(x,y);
+    }g.stroke();
+    g.fillStyle='rgba(226,182,76,.56)';for(let x=W/2-155;x<W/2+155;x+=28)g.fillRect(x,H-88,18,4);
+    g.font='15px monospace';g.fillText('OPTIK  /  '+String(s.spec.roomNo).padStart(3,'0'),W/2-61,H-60);
+    g.restore();
+  }
   const KIND = {
     guard: { body: '#3b4a6b', head: '#aab4c8' }, rusher: { body: '#c8642a', head: '#2a2f3a' }, shield: { body: '#4a5870', head: '#cfd6e4' },
     sniper: { body: '#5a3f7a', head: '#d9c8f0' }, bomber: { body: '#4f6b3a', head: '#2a2f3a' }, jammer: { body: '#2f6b5e', head: '#9af0d0' },
@@ -311,7 +333,7 @@
 
   // ===== 地板和牆 =====
   function bakeRoom(s) {
-    const th = THEME[s.spec.theme] || THEME.docks, tiles = s.spec.tiles;
+    const th = s.spec.omni ? SIGNAL_FLOORS[s.spec.sector] : THEME[s.spec.theme] || THEME.docks, tiles = s.spec.tiles;
     bake = document.createElement('canvas');
     bake.width = cv.width; bake.height = cv.height;
     const g = bake.getContext('2d');
@@ -342,6 +364,7 @@
     for (let x = 1; x < GW; x++) { g.beginPath(); g.moveTo(x * T, 0); g.lineTo(x * T, H); g.stroke(); }
     for (let y = 1; y < GH; y++) { g.beginPath(); g.moveTo(0, y * T); g.lineTo(W, y * T); g.stroke(); }
     g.globalAlpha = 1;
+    if(s.spec.omni)calibrationFloor(g,s);
     // 牆：上面亮、朝下的那一面暗，看起來有一點高度。
     for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
       if (!tiles[y * GW + x]) continue;

@@ -168,6 +168,7 @@
   }
   function newGame(source, seed, previous = meta()) {
     const m = blankMeta('active', previous.endings);
+    if(previous.omniRecord)m.omniRecord={...previous.omniRecord};
     m.seed = seed;
     let vets = null;
     if (source === 'inherit') {
@@ -251,7 +252,7 @@
     const m = run.squad[i], p = m.p;
     return {
       person: p, cat: m.cat, job: m.job, weapon: m.weapon, skills: p.skills, traits: p.traits, flaw: p.flaw, quirks: p.quirks,
-      exploits: run.build.exploits, extra: run.build.extra, escaped: m.escaped, reprievesUsed:m.reprievesUsed||0,
+      ...(run.omni ? {overflow:run.omni.overflow} : {}), exploits: run.build.exploits, extra: run.build.extra, escaped: m.escaped, reprievesUsed:m.reprievesUsed||0,
       gadgets: [m.gadget].concat(run.gear ? [run.gear] : []),
     };
   }
@@ -290,11 +291,12 @@
   function route(run) {
     const r = E.rng.derive(run.seed, 'route', run.sector, run.depth, run.roomNo), sec = D().sectors[run.sector];
     const roomNo = run.roomNo + 1;
+    const length = run.omni ? S3.omni.SPAN-1 : sec.rooms;
     let opts;
-    if (run.depth >= sec.rooms) opts = [{ type: 'boss', reward: 'boss', mod: null }];
+    if (run.depth >= length) opts = [{ type: 'boss', reward: 'boss', mod: null }];
     else {
       const n = run.roomNo === 0 ? 2 : r.chance(0.55) ? 3 : 2;
-      const last = run.depth === sec.rooms - 1;
+      const last = run.depth === length - 1;
       const cellsOpen = run.depth >= 1 && !(run.cells || {})[run.sector];
       opts = [];
       for (let i = 0; i < n; i++) {
@@ -320,7 +322,7 @@
         if (o.type !== 'fight' && o.type !== 'elite') continue;
         o.reward = r.weighted(REWARD_WEIGHT[o.type]);
         const pool = Object.keys(D().mods).filter((id) => (D().mods[id].from || 0) <= roomNo);
-        o.mod = r.chance(o.type === 'elite' ? 0.3 : 0.42) ? r.weighted(pool, (id) => D().mods[id].w) : null;
+        o.mod = r.chance(run.omni ? .25 + .40 * roomNo/(roomNo+60) : o.type === 'elite' ? 0.3 : 0.42) ? r.weighted(pool, (id) => D().mods[id].w) : null;
       }
       if (run.curse) { const f = opts.find((o) => o.type === 'fight' || o.type === 'elite'); f.mod = run.curse; }
     }
@@ -349,6 +351,11 @@
   // 目前這個房間的 spec。門的數量要先知道，所以先算一次打完之後的那一批門。
   function spec(run) {
     const sec = D().sectors[run.sector], boss = run.node.type === 'boss';
+    if(run.omni){
+      const pos=S3.omni.position(run.roomNo);
+      const next={...run,...pos,shops:boss?{}:run.shops,cells:boss?{}:run.cells};
+      return S3.gen.room(run.seed,run.sector,run.depth,run.roomNo,run.node,route(next).length,S3.omni.curve(run.roomNo));
+    }
     let doors = 1;
     if (!(boss && run.sector >= D().sectors.length - 1)) {
       const cells = Object.assign({}, run.cells);
@@ -367,7 +374,7 @@
   }
   // 律師的專長：到安全屋或打完首領時，把一個倒下的隊友保出來（每趟一次）。
   function bail(run) {
-    if (run.bailUsed || !hasJob(run, 'bail')) return false;
+    if (run.omni || run.bailUsed || !hasJob(run, 'bail')) return false;
     const i = run.squad.findIndex((m) => m.down);
     if (i < 0) return false;
     run.bailUsed = true;
@@ -378,7 +385,7 @@
   }
   // A senior can file one release per sector. Field arrests take precedence over safe-house custody.
   function sectorBail(run,m) {
-    if(run.bailSector===run.sector || !hasJob(run,'seniorBail'))return;
+    if(run.omni || run.bailSector===run.sector || !hasJob(run,'seniorBail'))return;
     const i=run.squad.findIndex(x=>x.down), rank=run.build.exploits.surety||0;
     let person;
     if(i>=0){const x=run.squad[i];x.down=false;x.hp=Math.round(maxHp(run,i)*(.5+.25*rank));person=x.p;}
@@ -402,10 +409,14 @@
   function finishRoom(run, s, meta) {
     const st = run.stats;
     st.kills += s.stats.kills; st.hacks += s.stats.hacks; st.takedowns += s.stats.takedowns; st.hurt += s.stats.hurt;
-    if (s.usedRevive) { run.revived = true; delete run.build.exploits.secondwind; }
+    if (s.usedRevive) {
+      if(run.omni && run.build.exploits.secondwind>1)run.build.exploits.secondwind--;
+      else delete run.build.exploits.secondwind;
+      run.revived=!run.omni;
+    }
     S3.sim.teamState(s).forEach((t, i) => {
       const mem = run.squad[i];
-      if (t.down && !mem.down) st.captured++;
+      if (t.down && !mem.down) { if(run.omni)S3.omni.capture(run,meta,i);else st.captured++; }
       mem.down = t.down; mem.hp = t.hp; mem.escaped = t.escaped; mem.reprievesUsed=t.reprievesUsed||0;
     });
     if (s.over === 'dead' || !alive(run).length) { run.phase = 'dead'; return null; }
@@ -426,6 +437,7 @@
     let reward;
     const kind = run.node.reward;
     if (kind === 'boss') {
+      if(run.omni)run.omni.cleared=run.roomNo; // 第三個首領掉的卡，當下就能用新上限。
       st.bosses++;
       heal(run, 0.1);
       bail(run);
@@ -450,7 +462,7 @@
     const w = D().rarityWeight[source] || D().rarityWeight.fight;
     const own = run.build.exploits, tags = {};
     for (const x of D().exploits) if (!x.owner && own[x.id]) tags[x.tag] = 1;
-    const pool = D().exploits.filter((x) => !x.owner && (own[x.id] || 0) < x.max && !(x.id === 'secondwind' && run.revived) && (!minRar || (minRar === 'u' ? x.rar !== 'c' : x.rar === 'r')));
+    const pool = D().exploits.filter((x) => !x.owner && (run.omni || (own[x.id] || 0) < x.max) && !(x.id === 'secondwind' && run.revived) && (!minRar || (minRar === 'u' ? x.rar !== 'c' : x.rar === 'r')));
     const out = [];
     while (out.length < n && pool.length) {
       const x = r.weighted(pool, (o) => (minRar ? 1 : w[o.rar]) * (tags[o.tag] ? 1.4 : 1) + 0.001);
@@ -465,12 +477,17 @@
     const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id), g = D().gadgets[id]; return o ? o.gadget.lv < 3 : !g.cameo && !g.signature; });
     return r.shuffle(pool).slice(0, n);
   }
+  function applyCopy(run,def) {
+    const own=run.build.exploits, id=def.id;
+    if(run.omni && (own[id]||0)>=S3.omni.cap(run,def)){
+      run.omni.overflow[id]=(run.omni.overflow[id]||0)+1;run.omni.spill++;
+    }else own[id]=(own[id]||0)+1;
+  }
   function addExploit(run, id) {
-    const def = exploitDef(id), own = run.build.exploits;
-    if(def?.owner && !run.squad.some(m=>m.p.elite===def.owner))return false;
-    if (!def || (own[id] || 0) >= def.max) { run.data += 30; return false; }
-    withMaxHp(run, () => { own[id] = (own[id] || 0) + 1; });
-    return true;
+    const def = exploitDef(id);
+    if(def?.owner && !run.squad.some(m=>m.p.elite===def.owner && (!run.omni || !m.down)))return false;
+    if(!def || (!run.omni && (run.build.exploits[id]||0)>=def.max)){run.data+=30;return false;}
+    withMaxHp(run,()=>applyCopy(run,def));return true;
   }
   // 拿一件裝備：隊上已經有同一件（誰的都算）就升級；不然放進共用的那一格（原本有東西就換掉）。
   function addGadget(run, id) {
@@ -509,6 +526,7 @@
   function rescue(run, m) {
     const rw = run.pending;
     if (!rw || rw.kind !== 'rescue') return null;
+    if(run.omni)return S3.omni.rescue(run,m,()=>findPeople(run.seed,'station'+run.roomNo,1,run.squad.map(x=>x.p).concat((m?.roster||[]).map(x=>x.p)))[0]);
     const held = m ? m.roster.find((x) => x.status === 'held') : null;
     let p, known = false, full = false;
     if (held) { held.status = 'ready'; p = held.p; known = true; run.held = Math.max(0, run.held - 1); }
@@ -533,10 +551,12 @@
 
   // 這個節點結束，往下走：下一批門、下一個區段，或是打贏了。
   function advance(run) {
+    if(run.omni && (!run.node || !['doors','done'].includes(run.phase)))return run.phase;
     const wasBoss = run.node && run.node.type === 'boss';
     run.node = null;
     run.shop = null;
     run.event = null;
+    if(run.omni)return S3.omni.advance(run);
     if (wasBoss) {
       if (run.sector >= D().sectors.length - 1) { run.phase = 'won'; return 'won'; }
       run.sector++;
@@ -550,8 +570,8 @@
 
   // ===== 黑市 =====
   function appendShelf(run,items,r=E.rng.derive('old-shelf',run.seed,run.roomNo), cost=n=>Math.round(n*(1+.35*run.sector))){
-    for(const job of new Set(run.squad.map(x=>x.p.elite).filter(Boolean))){
-      const offers=S3.ops.xp.filter(x=>x.owner===job && (run.build.exploits[x.id]||0)<x.max);
+    for(const job of new Set(run.squad.filter(x=>!run.omni || !x.down).map(x=>x.p.elite).filter(Boolean))){
+      const offers=S3.ops.xp.filter(x=>x.owner===job && (run.omni || (run.build.exploits[x.id]||0)<x.max));
       if(!offers.length){const x=S3.ops.xp.find(x=>x.owner===job);items.push({k:'exploit',id:x.id,owner:job,rank:x.max,sold:true,mastered:true,price:0});continue;}
       const x=r.pick(offers), rank=(run.build.exploits[x.id]||0)+1;
       items.push({k:'exploit',id:x.id,owner:job,rank,price:cost(42+15*(rank-1))});
@@ -561,7 +581,7 @@
     const r = rngOf(run), P = D().price;
     // 價格看隊上最會講價的人；越後面的區段，東西越貴（手上的資料也越多）。
     const mul = Math.min(...alive(run).map((i) => statsOf(run, i).st.priceMul));
-    const cost = (n) => Math.max(1, Math.round(n * mul * (1 + 0.35 * run.sector)));
+    const cost = (n) => Math.max(1, Math.round(n * mul * (run.omni ? S3.omni.price(run) : 1 + 0.35 * run.sector)));
     const items = draft(run, r, 3, 'shop').map((id) => ({ k: 'exploit', id, price: cost(P[exploitDef(id).rar]) }));
     const g = draftGadgets(run, r, 1)[0];
     if (g) items.push({ k: 'gadget', id: g, price: cost(P.gadget) });
@@ -613,6 +633,7 @@
     const pool = D().events.filter((e) => (!e.premium || (!met && (run.contacts || []).includes(e.id))) &&
       !(e.once && run.seen.includes(e.id)) && run.seen[run.seen.length - 1] !== e.id);
     const ev = r.weighted(pool, (e) => e.premium ? 0.25 : 1);
+    if(run.omni)run.seen=run.seen.filter(id=>id!==ev.id); // 一個事件最多一筆；末項仍是上一次。
     run.seen.push(ev.id);
     keep(run, r);
     return { id: ev.id, result: null };
@@ -649,7 +670,7 @@
       else out.known = true;
       out.person = mem.p;
       // 不靠兩份存檔共用物件；試玩或機器人沒有名冊，不會動到傳入的小隊。
-      if (entry) { entry.p = Object.assign({}, entry.p, { imprints: mem.p.imprints.slice() }); saveMeta(m); }
+      if (entry && !run.omni) { entry.p = Object.assign({}, entry.p, { imprints: mem.p.imprints.slice() }); saveMeta(m); }
     }
     if (fx.data) run.data += fx.data;
     if (fx.heal) heal(run, fx.heal);
@@ -677,7 +698,7 @@
             if (--own[id] <= 0) delete own[id];
             out.lost.push(id);
             const pick = draft(run, r, 1, 'elite', 'u')[0];
-            if (pick) { own[pick] = (own[pick] || 0) + 1; out.got.push(pick); }
+            if (pick) { applyCopy(run,exploitDef(pick)); out.got.push(pick); }
           }
           if (!out.lost.length) { run.data += 30; out.data = 30; }
         } else if (ids.length) {
@@ -704,6 +725,12 @@
     if (extra.length && r.chance(0.5)) { const id = r.pick(extra); u.events.push(id); events.push(id); }
     return { job, events };
   }
+  function afterLoss(m) {
+    if(!(m.wins>=1) || !m.roster.length || !m.roster.every(x=>x.status==='held' || x.status==='station'))return m;
+    const closed=blankMeta('wiped',m.endings);closed.endings.wipe=1;
+    if(m.omniRecord)closed.omniRecord={...m.omniRecord};
+    return closed;
+  }
   function finish(run, won, m, ending) {
     m = m || meta();
     const earned = run.stats.rooms + 5 * run.stats.bosses + 2 * run.stats.rescued + (won ? 15 : 0);
@@ -725,15 +752,15 @@
     m.rescued = (m.rescued || 0) + freed;
     m.vol = (m.vol || 0) + 1;
     // 小隊和中途被替換的人都已經入冊；安全屋還沒補志願者。wins 只算這局。
-    const wiped = !won && m.wins >= 1 && m.roster.length > 0 && m.roster.every((x) => x.status === 'held');
-    if (wiped) { m = blankMeta('wiped', m.endings); m.endings.wipe = 1; }
+    if(!won)m=afterLoss(m);
+    const wiped=m.campaign==='wiped';
     saveMeta(m);
     RUN.clear();
     return { earned: wiped ? 0 : earned, meta: m, captured, freed, wiped, unlocked };
   }
 
   S3.run = {
-    SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax, invitePerson,isInvitation,
+    same, afterLoss, SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax, invitePerson,isInvitation,
     meta, saveMeta, perkLv, buyPerk, inheritance, inherit, newGame, ensureRoster, volunteers, recruit, dismiss, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
     start, route, enter, spec, carry, finishRoom, take, reroll, rescue, advance, bail, heal,
     buy, restock, safe, choose, canChoose, finish, addExploit, addGadget, maxHp, exploitDef, eventDef, hurtSomeone, isRoom,

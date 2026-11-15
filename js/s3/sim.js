@@ -42,11 +42,12 @@
     for (const t of build.traits || []) apply(D.traitFx[t], 1);
     apply(D.flawFx[build.flaw], 1);
     for (const q of build.quirks || []) apply(D.quirkFx[q], 1);
-    for (const x of D.exploits) if ((!x.owner || x.owner===build.person?.elite) && build.exploits && build.exploits[x.id]) apply(x, build.exploits[x.id]);
+    for (const x of D.exploits) if ((!x.owner || x.owner===build.person?.elite) && build.exploits && build.exploits[x.id]) apply(x, build.overflow ? Math.min(x.max,build.exploits[x.id]) : build.exploits[x.id]);
     const ex = build.extra || {};
     st.maxHp += ex.maxHp || 0;
     st.bwMax += ex.bwMax || 0;
     st.focusMax *= ex.focusMul || 1;
+    if(build.overflow)S3.omni.amplify(st,build);
     st.maxHp = Math.max(30, Math.round(st.maxHp));
     return { st, fl };
   }
@@ -269,7 +270,7 @@
     };
     if (e.elite === 'armored') e.hp *= 1.8;
     if (e.elite === 'swift') e.speed *= 1.35;
-    if (e.elite) e.hp *= 1.25;
+    if (e.elite) e.hp *= 1.25 * (s.spec.omni?.intensity || 1);
     e.maxHp = e.hp;
     s.en.push(e);
     return e;
@@ -1086,7 +1087,8 @@
           pr.ty = Math.round((pr.y - (dy ? T : T / 2)) / T);
           pr.x = (pr.tx + pr.w / 2) * T;
           pr.y = (pr.ty + pr.h / 2) * T;
-          stamp(s, pr, def.solid);
+          // 心智空間在撞擊後卸載車體：殘骸不會把仍在回應的人封死在走廊裡。
+          if(s.spec.omni)pr.gone=true;else stamp(s, pr, def.solid);
           // 撞到東西就炸：車頭那一片的敵人被炸飛，還會留下一小片火。
           s.ev.push({ k: 'crash', x: pr.x + dx * T, y: pr.y + dy * T });
           blast(s, pr.x + dx * T, pr.y + dy * T, def.r * s.st.aoeMul, def.blast * s.spec.scale * s.st.aoeDmg * (pr.boost || 1), { by: 'hack', stun: 1.2, knock: 220, burn: 3, trap: true });

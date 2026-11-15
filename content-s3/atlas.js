@@ -766,6 +766,7 @@
     "ev-hotwash": "assets/s3/ev-hotwash.jpg",
     "ev-lastferry": "assets/s3/ev-lastferry.jpg",
     "ev-nightbus": "assets/s3/ev-nightbus.jpg",
+    "ev-omni": "assets/s3/ev-omni.jpg",
     "ev-sandglass": "assets/s3/ev-sandglass.jpg",
     "ev-seamstress": "assets/s3/ev-seamstress.jpg",
     "ev-tarot": "assets/s3/ev-tarot.jpg",
