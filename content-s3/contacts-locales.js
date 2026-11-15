@@ -15,7 +15,7 @@
     's3.gad.strike.n': '三響車載迫擊砲', 's3.gad.strike.d': '瞄準一處地面，連落三發。每發中心傷害 60，不傷隊友。',
     's3.gad.expert.n': '重型護航機', 's3.gad.expert.d': '跟隨 16 秒，每秒五發貫穿彈，每發傷害 12。牆和掩體仍能擋住射線。',
     's3.gad.brawl.n': '客場口哨', 's3.gad.brawl.d': '叫來三人並肩打 10 秒，每拳傷害 22。散場後不佔名冊床位。',
-    's3.gad.swarm.n': '移動蜂箱', 's3.gad.swarm.d': '蜂群在指定處停留 6 秒，每秒造成 12 傷害；敵人看不遠，子彈也失準。',
+    's3.gad.swarm.n': '移動蜂箱', 's3.gad.swarm.d': '蜂群在指定處停留 6 秒，每秒造成 14 傷害；敵人看不遠，子彈也失準。',
     's3.gad.eightball.n': '繩端黑八', 's3.gad.eightball.d': '掄繩掃過身邊一圈，不怕盾牌：傷害 85、暈眩 2 秒，冷卻 7 秒。',
   }, {
     haylift: ['乾草落在哪裡', '布景倉的棧橋斷了。正下方停著一車乾草，車輪塞了木楔。旁邊的維修梯每隔三級就少一顆螺絲。', '跳進乾草車', '扶著梯背慢慢下',
@@ -50,7 +50,7 @@
     's3.gad.strike.n': '三响车载迫击炮', 's3.gad.strike.d': '瞄准一处地面，连落三发。每发中心伤害 60，不伤队友。',
     's3.gad.expert.n': '重型护航机', 's3.gad.expert.d': '跟随 16 秒，每秒五发贯穿弹，每发伤害 12。墙和掩体仍能挡住射线。',
     's3.gad.brawl.n': '客场口哨', 's3.gad.brawl.d': '叫来三人并肩打 10 秒，每拳伤害 22。散场后不占名册床位。',
-    's3.gad.swarm.n': '移动蜂箱', 's3.gad.swarm.d': '蜂群在指定处停留 6 秒，每秒造成 12 伤害；敌人看不远，子弹也失准。',
+    's3.gad.swarm.n': '移动蜂箱', 's3.gad.swarm.d': '蜂群在指定处停留 6 秒，每秒造成 14 伤害；敌人看不远，子弹也失准。',
     's3.gad.eightball.n': '绳端黑八', 's3.gad.eightball.d': '抡绳扫过身边一圈，无视盾牌：伤害 85、眩晕 2 秒，冷却 7 秒。',
   }, {
     haylift: ['干草落在哪里', '布景仓的栈桥断了。正下方停着一车干草，车轮塞了木楔。旁边的维修梯每隔三级就少一颗螺丝。', '跳进干草车', '扶着梯背慢慢下',
@@ -85,7 +85,7 @@
     's3.gad.strike.n': 'Car-mounted mortar', 's3.gad.strike.d': 'Mark one spot for three successive rounds. Each hits for 60 at the centre; the squad is spared.',
     's3.gad.expert.n': 'Heavy escort', 's3.gad.expert.d': 'Follows for 16 seconds. Five penetrating rounds per second, 12 damage each. Walls and cover block the shot.',
     's3.gad.brawl.n': 'Away-end whistle', 's3.gad.brawl.d': 'Three mates fight for 10 seconds, dealing 22 per punch. Nobody takes up a bunk.',
-    's3.gad.swarm.n': 'Field hive', 's3.gad.swarm.d': 'A swarm covers the marked area for 6 seconds: 12 damage per second, shorter sight and shots that go wide.',
+    's3.gad.swarm.n': 'Field hive', 's3.gad.swarm.d': 'A swarm covers the marked area for 6 seconds: 14 damage per second, shorter sight and shots that go wide.',
     's3.gad.eightball.n': 'Corded eight-ball', 's3.gad.eightball.d': 'A full circle that ignores shields: 85 damage and a 2-second stun. Ready again in 7 seconds.',
   }, {
     haylift: ['A soft landing', 'The scenery-store catwalk ends in midair. Directly below sits a hay cart with chocks under its wheels. Every third rung on the service ladder is missing a bolt.', 'Drop into the hay', 'Take the ladder slowly',

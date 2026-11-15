@@ -519,7 +519,7 @@
 
   // ===== 敵人 =====
   function drawCone(s, e) {
-    if (S3.field.audience(s,e) || S3.field.isSubject(e) && S3.field.stayed(s,e) || e.state === 'combat' || e.ally > 0 || e.confused > 0 || e.stun > 0 || e.trance > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
+    if (e.aftershow>0 || S3.field.audience(s,e) || S3.field.isSubject(e) && S3.field.stayed(s,e) || e.state === 'combat' || e.ally > 0 || e.confused > 0 || e.stun > 0 || e.trance > 0 || e.spawnT > 0 || e.distract > 0 || s.blackout > 0) return;
     const sight = e.def.sight * A.sightMul(s, e);
     const col = e.state === 'suspect' ? '255,181,71' : e.aware > 0.02 ? '255,140,90' : '236,232,225';
     const g = ctx.createRadialGradient(e.x, e.y, e.r, e.x, e.y, sight);
@@ -750,7 +750,11 @@
     const rim=(z,c,fill,dash)=>{
       circle(z.x,z.y,z.r);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=2.5;
       ctx.setLineDash(dash);ctx.lineDashOffset=-clock*12;ctx.stroke();ctx.setLineDash([]);};
-    if(s.show){rim(s.show,'#e6bd69','rgba(240,194,110,.05)',[3,11]);circle(s.p.x,s.p.y,27);ctx.stroke();}
+    if(s.show){
+      const z=s.show;rim(z,z.ready?'#ffe4a1':'#cfab68','rgba(240,194,110,.05)',z.ready?[12,5]:[3,11]);
+      const progress=Math.min(1,z.charge/S3.data.gadgets.performance.windup);
+      ctx.beginPath();ctx.arc(s.p.x,s.p.y,27,-Math.PI/2,TAU*progress-Math.PI/2);ctx.lineWidth=4;ctx.stroke();
+    }
     for(const z of s.installations){
       const ward=z.kind==='ward';rim(z,ward?'#78e4cb':'#c9a5ed',ward?'rgba(74,222,190,.10)':'rgba(174,124,218,.09)',ward?[]:[16,7,3,7]);
       if(ward){
@@ -890,6 +894,8 @@
       case 'hit': flashOf.set(ev.id, 0.12); burst(ev.x, ev.y, ev.crit ? 7 : 3, ev.crit ? '#ffd23f' : '#fff', 160, 3.5, 0.22); if (ev.n >= 1) texts.push({ x: ev.x + rnd(-10, 10), y: ev.y - 18, vy: -55, life: 0.6, max: 0.6, str: String(Math.round(ev.n)), col: ev.crit ? '#ffd23f' : C.white, size: ev.crit ? 22 : 15 }); break;
       case 'kill': burst(ev.x, ev.y, ev.boss ? 60 : 14, ev.machine ? '#9fb4d8' : C.bad, ev.boss ? 420 : 240, ev.boss ? 9 : 5, ev.boss ? 1.1 : 0.45); ring(ev.x, ev.y, ev.r * 2.6, ev.machine ? C.cyan : C.white, 0.3); shake = Math.max(shake, ev.boss ? 22 : 4); if (ev.boss) whiteFlash = 0.5; break;
       case 'hurt': hurtFlash = 0.4; shake = Math.max(shake, 9); texts.push({ x: ev.x, y: ev.y - 26, vy: -50, life: 0.7, max: 0.7, str: '-' + Math.round(ev.n), col: C.bad, size: 20 }); break;
+      case 'stageReady': ring(ev.x,ev.y,42,'#ffdea0',.32,3);break;
+      case 'stageFlash': ring(ev.x,ev.y,ev.r,'#ffe6b3',.38,7);burst(ev.x,ev.y,12,'#fbd187',200,4,.32);break;
       case 'guard': ring(ev.x, ev.y, 34, C.white, 0.3); break;
       case 'dead': burst(ev.x, ev.y, 40, C.pink, 300, 6, 0.9); shake = 18; hurtFlash = 1; break;
       case 'revive': ring(ev.x, ev.y, 170, C.pink, 0.6, 8); whiteFlash = 0.4; break;

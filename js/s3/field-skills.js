@@ -7,7 +7,23 @@
     return !!(s.show && live(e) && e.def.human && !e.elite && !e.boss && nearby(s,s.show,e,s.show.r));
   }
   function curtain(s) {
-    if(s.show?.encore) for(const e of s.en) if(audience(s,e)) A.stun(s,e,1.6);
+    const z=s.show;if(!z)return;
+    const d=S.data.gadgets.performance;
+    for(const e of s.en)if(audience(s,e)){
+      e.atk=null;e.aware=0;e.call=0;
+      if(z.encore)A.stun(s,e,d.stun);else e.aftershow=d.linger;
+    }
+    if(z.ready){
+      // The flash is a payload, not mind control: a boss can be hit, never recruited into the audience.
+      let encore=false;
+      for(const e of s.en)if(live(e) && nearby(s,z,e,z.r)){
+        const front=z.encore && dist(z,e)<=d.frontRow+e.r;
+        A.hurt(s,e,d.flash*s.spec.scale*(front ? d.closeFlash : 1),{by:'env',quiet:true});
+        if(front)encore=true;
+      }
+      if(encore){const g=s.team[z.owner].gad.find(g=>g.id==='performance');g.cd=Math.max(0,g.cd-d.refund);}
+      s.ev.push({k:'stageFlash',x:z.x,y:z.y,r:z.r});
+    }
     s.show=null;
   }
   const isSubject=e=>e.kind==='turret' || e.def.fly && e.def.machine;
@@ -86,7 +102,7 @@
       case 'veil':
         p.cloak=d.dur+2*lv; for(const e of s.en){e.aware=0;if(e.call>0)e.call=S.sim.CALL;}break;
       case 'performance':
-        p.kx=p.ky=0;s.show={owner,x:p.x,y:p.y,r:d.r+70*(f.wideStage||0),t:d.dur+lv,encore:f.encore};break;
+        p.kx=p.ky=0;s.show={owner,x:p.x,y:p.y,r:d.r+70*(f.wideStage||0),t:d.dur+lv,charge:0,ready:false,encore:f.encore};break;
       case 'shockdrone':{const at=reach(d.range);if(s.shockDrone)retire(s,s.shockDrone);
         s.shockDrone={owner,slot,x:p.x,y:p.y,r:11,tx:at.x,ty:at.y,ang:p.ang,phase:0,hold:0,manual:false,
           t:(d.dur+2*lv+4*(f.overcell||0))*s.st.hijackMul,beat:.15,flash:0,sight:d.r,extra:f.coilTap||0,
@@ -95,9 +111,9 @@
         dur:d.dur+lv+2*(f.suggestion||0),ready:!!(lv||f.suggestion),beats:g.id==='metronome'?2:0,time:.72};
         s.suggestion=z;pulse(s,z);break;}
       case 'molotov': case 'pipebomb':{
-        const at=reach(d.range),flight=g.id==='molotov'?.42:.72;
-        s.payloads.push({...at,fx:p.x,fy:p.y,t:flight,flight,id:g.id,r:d.r+45*(f.fragments||0),
-          dmg:(d.dmg+12*lv)*s.st.aoeDmg,dur:d.dur+lv+2*(f.longWick||0),burn:d.burn*s.st.burnMul});break;}
+        const at=reach(d.range),flight=d.flight;
+        s.payloads.push({...at,thrower:s.team[owner],breacher:d.breacher,fx:p.x,fy:p.y,t:flight,flight,id:g.id,r:d.r+45*(f.fragments||0),
+          dmg:(d.dmg+12*lv)*s.st.aoeDmg*s.spec.scale,dur:d.dur+lv+2*(f.longWick||0),burn:d.burn*s.st.burnMul*s.spec.scale});break;}
       case 'hiveguard':
         s.zones.push({k:'swarm',owner,x:p.x,y:p.y,r:d.r,t:d.dur+lv,tick:0,
           dmg:(d.dmg+3*lv)*(1+.5*(f.hiveDose||0)),linger:1.5*(f.afterbuzz||0)});break;
@@ -106,7 +122,7 @@
         const at=follow?{x:p.x,y:p.y}:reach(d.range), r=d.r+(ward?35*(f.wideWard||0):0);
         if(!follow && A.solidAt(s,at.x,at.y)){const a=Math.atan2(at.y-p.y,at.x-p.x),end=A.rayEnd(s,p.x,p.y,a,dist(at,p),true),l=Math.max(0,end.d-20);at.x=p.x+Math.cos(a)*l;at.y=p.y+Math.sin(a)*l;}
         s.installations=s.installations.filter(z=>z.owner!==owner || z.kind!==(ward?'ward':'writ'));
-        s.installations.push({...at,owner,kind:ward?'ward':'writ',follow,r,t:d.dur+lv+(ward?0:2*(f.extension||0)),heal:ward?d.heal+lv+3*(f.triage||0):0});break;}
+        s.installations.push({...at,owner,kind:ward?'ward':'writ',follow,r,evidenceMul:d.evidenceMul,t:d.dur+lv+(ward?0:2*(f.extension||0)),heal:ward?d.heal+lv+3*(f.triage||0):0});break;}
       default:return false;
     }
     return true;
@@ -115,19 +131,30 @@
     const p=s.p;
     if(s.show){
       if(s.show.owner!==s.active || (s.show.t-=dt)<=0)curtain(s);
-      else if(s.fl.hatTips)p.bw=Math.min(s.st.bwMax,p.bw+s.fl.hatTips*dt);
+      else {
+        const z=s.show;
+        if(!z.ready && (z.charge+=dt)>=S.data.gadgets.performance.windup){
+          z.ready=true;p.guard=1;s.ev.push({k:'stageReady',x:p.x,y:p.y});
+        }
+        if(s.fl.hatTips)p.bw=Math.min(s.st.bwMax,p.bw+s.fl.hatTips*dt);
+      }
     }
     const spell=s.suggestion;
     if(spell && spell.beats>0 && (spell.time-=dt)<=0){spell.time+=.72;spell.beats--;pulse(s,spell);}
     for(const z of s.installations){
       if(z.follow && z.owner===s.active){const k=Math.min(1,305*dt/(dist(z,p)||1));z.x+=(p.x-z.x)*k;z.y+=(p.y-z.y)*k;}
       if(z.kind==='ward' && dist(z,p)<=z.r && !s.over)p.hp=Math.min(p.maxHp,p.hp+z.heal*dt);
+      // Stay the relay, not the boss. A longer breach made by a hacker is never shortened.
+      if(z.kind==='writ')for(const pr of s.props)if(pr.kind==='pylon' && dist(pr,z)<=z.r){
+        pr.down=Math.max(pr.down,dt*2);
+        for(const e of s.en)if(e.boss==='keystone')e.open=Math.max(e.open,dt*2);
+      }
       z.t-=dt;
     }
     s.installations=s.installations.filter(z=>z.t>0);
     for(const z of s.payloads)if((z.t-=dt)<=0){
-      A.blast(s,z.x,z.y,z.r,z.dmg,{by:'env',self:10,knock:130});A.noise(s,z.x,z.y,500);
-      s.zones.push({k:'fire',x:z.x,y:z.y,r:z.r*.8,t:z.dur,burn:z.burn,tick:0});
+      A.blast(s,z.x,z.y,z.r,z.dmg,{by:'env',self:z.thrower===s.team[s.active]?0:10,breacher:z.breacher,knock:80});A.noise(s,z.x,z.y,500);
+      s.zones.push({k:'fire',thrower:z.thrower,x:z.x,y:z.y,r:z.r*.8,t:z.dur,burn:z.burn,tick:0});
     }
     s.payloads=s.payloads.filter(z=>z.t>0);
     const d=s.shockDrone;if(!d)return;
@@ -145,6 +172,7 @@
       if(e.march){if(dist(e,e.march)>12)A.moveToward(s,e,e.march.x,e.march.y,145,dt);if(e.trance<=0)e.march=null;}
       return true;}
     if(!e.boss && isSubject(e) && stayed(s,e)){e.atk=null;e.call=0;e.aware=0;return true;}
+    if(e.aftershow>0){e.aftershow-=dt;e.aware=0;e.call=0;e.atk=null;return true;}
     if(!audience(s,e))return false;
     e.atk=null;e.aware=0;e.call=0;e.seen=false;e.state=s.alert?'combat':'calm';e.goal=null;
     const z=s.show,a=e.id*2.39996, x=z.x+Math.cos(a)*68,y=z.y+Math.sin(a)*68;

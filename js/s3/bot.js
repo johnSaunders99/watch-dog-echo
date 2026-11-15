@@ -58,7 +58,7 @@
           const w = 3 / (z.t + 0.1);
           dx += ((p.x - z.x) / (d || 1)) * w; dy += ((p.y - z.y) / (d || 1)) * w;
           if (z.t < 0.3 && d < z.r + 6) urgent = true;
-        } else if (z.k === 'fire') {
+        } else if (z.k === 'fire' && !s.fl.fireproof && z.thrower!==s.team[s.active]) {
           const d = hyp(p.x - z.x, p.y - z.y);
           if (d < z.r + 24) { dx += ((p.x - z.x) / (d || 1)) * 4; dy += ((p.y - z.y) / (d || 1)) * 4; }
         }
@@ -93,12 +93,12 @@
       const near = (x, y, r) => foes.filter((e) => hyp(e.x - x, e.y - y) < r + e.r).length;
       const can = (x, y) => { const h = sim.pickHack(s, x, y); return h && h.ok ? h : null; };
       let best = null, score = 0;
-      const offer = (x, y, sc) => { if (sc > score && hyp(x - p.x, y - p.y) <= range) { const h = can(x, y); if (h) { score = sc; best = { x, y, h }; } } };
+      const offer = (x, y, sc) => { if (sc > score && hyp(x - p.x, y - p.y) <= range) { const h = can(x, y); if (h && (!s.show || h.prop && ['overload','ignite','steam','drive','breach','raise'].includes(h.act))) { score = sc; best = { x, y, h }; } } };
       for (const pr of s.props) {
         if (pr.gone) continue;
         if (pr.kind === 'junction' && !pr.used && pr.fuse <= 0) { const n = near(pr.x, pr.y, 140); if (n) offer(pr.x, pr.y, n * 3 + (hyp(p.x - pr.x, p.y - pr.y) > 160 ? 1 : 0)); }
         else if (pr.kind === 'barrel' && pr.fuse <= 0 && hyp(p.x - pr.x, p.y - pr.y) > 175) { const n = near(pr.x, pr.y, 125); if (n) offer(pr.x, pr.y, n * 3.5); }
-        else if (pr.kind === 'vent' && pr.cool <= 0) { const n = near(pr.x, pr.y, 120); if (n >= 2) offer(pr.x, pr.y, n * 1.5); }
+        else if (pr.kind === 'vent' && pr.cool <= 0) { const n = near(pr.x, pr.y, 120); if (n >= (s.show?1:2)) offer(pr.x, pr.y, n * 1.5); }
         else if (pr.kind === 'pylon' && pr.down <= 0) offer(pr.x, pr.y, 9);
         else if (pr.kind === 'car' && !pr.used && !pr.moving) {
           const path = sim.carPath(s, pr), dx = DX[path.dir], dy = DY[path.dir];
@@ -107,7 +107,9 @@
           if (n && !(me > 0 && off < 60)) offer(pr.x, pr.y, n * 4);
         } else if (pr.kind === 'camera' && pr.cool <= 0 && foes.length >= 3 && p.bw >= 3) offer(pr.x, pr.y, 1.5);
       }
+      if(s.show)return best;
       for (const e of foes) {
+        if(e.trance>0)continue;
         const d = hyp(e.x - p.x, e.y - p.y);
         if (e.boss === 'bulldog') { if (e.noShield <= 0 && e.stun <= 0) offer(e.x, e.y, 5); continue; }
         if (e.kind === 'drone' && p.bw >= 2) offer(e.x, e.y, 4);
@@ -121,21 +123,60 @@
       return best;
     }
 
-    function gadgetPlan(s, foes, inp) {
+    function gadgetPlan(s, foes, inp, specialtyOnly=false) {
       const p = s.p;
       p.gad.forEach((g, i) => {
-        if (g.cd > 0 || !foes.length) return;
+        if (g.cd > 0 || !foes.length || inp.g1 && ['performance','hypnosis','metronome','molotov','pipebomb','swarm','shockdrone','injunction'].includes(p.gad[0].id) || specialtyOnly && (i || !['performance','hypnosis','metronome','molotov','pipebomb'].includes(g.id))) return;
         const key = i === 0 ? 'g1' : 'g2';
         const nearMe = foes.filter((e) => hyp(e.x - p.x, e.y - p.y) < 110 + e.r).length;
         const far = foes.slice().sort((a, b) => hyp(a.x - p.x, a.y - p.y) - hyp(b.x - p.x, b.y - p.y))[0];
         const cluster = (r, reach) => { let best = null, n = 0; for (const e of foes) { if (hyp(e.x - p.x, e.y - p.y) > reach) continue; const c = foes.filter((o) => hyp(o.x - e.x, o.y - e.y) < r).length; if (c > n) { n = c; best = e; } } return { e: best, n }; };
         if(g.id==='performance'){
-          if(foes.some(e=>e.def.human && !e.boss && !e.elite && hyp(e.x-p.x,e.y-p.y)<260)){inp[key]=true;inp.mx=inp.my=0;inp.dash=inp.fire=inp.melee=false;}
-        }else if(g.id==='shockdrone'||g.id==='molotov'||g.id==='pipebomb'||g.id==='injunction'){
-          const def=S3.data.gadgets[g.id],c=cluster(def.r,def.range),e=g.id==='injunction'?foes.find(e=>e.def.machine && !e.boss):c.e;
-          if(e && (!['molotov','pipebomb'].includes(g.id)||hyp(e.x-p.x,e.y-p.y)>def.r)){inp[key]=true;inp.ax=e.x;inp.ay=e.y;}
+          const r=S3.data.gadgets.performance.r+70*(s.fl.wideStage||0);
+          if(foes.some(e=>(e.def.human && !e.elite || e.boss) && hyp(e.x-p.x,e.y-p.y)<r+e.r && A.clear(s,p.x,p.y,e.x,e.y,true))){
+            inp[key]=true;inp.mx=inp.my=0;inp.dash=inp.fire=inp.melee=false;}
+        }else if(g.id==='hypnosis'||g.id==='metronome'){
+          const def=S3.data.gadgets[g.id],r=def.r+50*(s.fl.velvet||0);
+          const humans=foes.filter(e=>e.def.human && !e.boss && !(e.trance>.5) && hyp(e.x-p.x,e.y-p.y)<r+e.r && A.clear(s,p.x,p.y,e.x,e.y,true));
+          const angle=e=>Math.atan2(e.y-p.y,e.x-p.x);
+          let best=null,score=0;
+          for(const e of humans){const n=humans.filter(o=>Math.abs(A.angDiff(angle(e),angle(o)))<=def.arc).length,
+            value=n+.4*(e.elite?1:0)-hyp(e.x-p.x,e.y-p.y)/(3*r);
+            if(value>score){best=e;score=value;}}
+          // Pulse originates after movement in this tick. Plant the cast at the sight line just checked.
+          if(best && !inp.dash && p.dashT<=0){inp[key]=true;inp.mx=inp.my=0;inp.ax=best.x;inp.ay=best.y;inp.fire=inp.melee=false;}
+        }else if(g.id==='molotov'||g.id==='pipebomb'||g.id==='swarm'){
+          const def=S3.data.gadgets[g.id],r=def.r+(g.id==='swarm'?0:45*(s.fl.fragments||0));
+          // Aim between two foes when one blast can catch both; don't waste the throw beyond reach.
+          const within=foes.filter(e=>hyp(e.x-p.x,e.y-p.y)<=def.range+r);
+          const future=within.map(e=>{
+            const dx=p.x-e.x,dy=p.y-e.y,d=hyp(dx,dy)||1;
+            const ambush=g.id==='swarm' && (e.state==='combat' || e.kind==='rusher' || e.kind==='hound') && !e.atk && !e.stun && !e.trance;
+            const advance=ambush?Math.min(d*.4,e.def.speed*.65):0;return {x:e.x+dx*advance/d,y:e.y+dy*advance/d,r:e.r,boss:e.boss};});
+          const points=future.slice();
+          for(let j=0;j<within.length;j++)for(let k=0;k<j;k++){
+            const a=future[j],b=future[k];if(hyp(a.x-b.x,a.y-b.y)<1.7*r)points.push({x:(a.x+b.x)/2,y:(a.y+b.y)/2});}
+          let best=null,score=0;
+          for(const q of points){const d=hyp(q.x-p.x,q.y-p.y),f=Math.min(1,def.range/(d||1)),x=p.x+(q.x-p.x)*f,y=p.y+(q.y-p.y)*f;
+            const value=future.reduce((n,e)=>{const m=hyp(e.x-x,e.y-y)/(r+e.r);return n+(m<1?(1-m*.6)*(e.boss?2:1):0);},0);
+            if(value>score){score=value;best={x,y};}}
+          if(best){inp[key]=true;if(g.id!=='swarm' || hyp(best.x-inp.ax,best.y-inp.ay)>32)inp.fire=false;inp.ax=best.x;inp.ay=best.y;}
+        }else if(g.id==='shockdrone'||g.id==='injunction'){
+          const def=S3.data.gadgets[g.id],e=g.id==='injunction'?foes.find(e=>S3.field.isSubject(e) && !e.boss && hyp(e.x-p.x,e.y-p.y)<def.range+def.r):cluster(def.r,def.range).e;
+          const relay=g.id==='injunction' && s.spec.boss && s.props.find(pr=>pr.kind==='pylon' && pr.down<2 && hyp(pr.x-p.x,pr.y-p.y)<def.range+def.r && !S3.field.stayed(s,pr));
+          let at=relay || e;
+          if(g.id==='injunction'){
+            const boss=foes.find(t=>t.boss && hyp(t.x-p.x,t.y-p.y)<def.range+def.r);
+            if(boss && relay && hyp(boss.x-relay.x,boss.y-relay.y)<=2*def.r-16)
+              at={x:(boss.x+relay.x)/2,y:(boss.y+relay.y)/2};
+            else{
+              at=boss || at || (s.alert || s.spec.boss ? p : null);
+              if(at && at!==p){const x=at.x-p.x,y=at.y-p.y,f=Math.min(1,(def.r-24)/(hyp(x,y)||1));at={x:at.x-x*f,y:at.y-y*f};}
+            }
+          }
+          if(at && !(g.id==='shockdrone' && s.shockDrone)){inp[key]=true;inp.ax=at.x;inp.ay=at.y;inp.fire=false;}
         }else if(g.id==='medbeacon'){if(p.hp<p.maxHp*.85||foes.length>=2){inp[key]=true;inp.ax=p.x;inp.ay=p.y;}}
-        else if(g.id==='escortWrit'||g.id==='hiveguard'){inp[key]=foes.some(e=>(g.id==='hiveguard'||e.def.machine)&&hyp(e.x-p.x,e.y-p.y)<220);}
+        else if(g.id==='escortWrit'||g.id==='hiveguard'){inp[key]=foes.some(e=>hyp(e.x-p.x,e.y-p.y)<(g.id==='escortWrit'?470:220));}
         else if(g.id==='execute'||g.id==='rush'||g.id==='quickstep'){if(nearMe||g.id==='quickstep' && p.ammo<p.mag*.4){inp[key]=true;inp.melee=false;}}
         else if(g.id==='veil'){if(!p.cloak || p.cloak<=0)inp[key]=true;}
         else if (g.id === 'hammer' || g.id === 'sledge') { if (nearMe) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; } }
@@ -149,10 +190,10 @@
           const def = S3.data.gadgets[g.id], c = cluster(def.jamRange || def.r, def.range);
           if (c.e && hyp(c.e.x - p.x, c.e.y - p.y) > 120) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
         } else if (g.id === 'escort' || g.id === 'expert' || g.id === 'brawl') { if (s.alert || foes.some((e) => e.state === 'combat')) inp[key] = true; }
-        else if (g.id === 'strike' || g.id === 'swarm') {
+        else if (g.id === 'strike') {
           const def = S3.data.gadgets[g.id], c = cluster(def.r, def.range);
           if (c.e) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
-        } else if (g.id === 'hypnosis' || g.id==='metronome' || g.id === 'eightball') {
+        } else if (g.id === 'eightball') {
           if (hyp(far.x - p.x, far.y - p.y) < S3.data.gadgets[g.id].r) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; }
         }
         else if (g.id === 'spider') { if (s.alert) inp[key] = true; }
@@ -171,6 +212,9 @@
         let best = -1, frac = 0.45;
         s.team.forEach((m, i) => { if (i !== s.active && !m.down && m.hp / m.maxHp > frac) { frac = m.hp / m.maxHp; best = i; } });
         inp.swap = best;
+      } else if(s.active!==0 && s.swapCd<=0 && (s.cleared || s.tick<2)){
+        // The reserve bought the specialist time to recover. Hand back the room to a fit lead.
+        const lead=s.team[0];if(lead.build.person?.elite && !lead.down && lead.hp>=lead.maxHp*.6)inp.swap=0;
       }
       // 打完了：撿獎勵箱，然後走去門口。
       if (s.cleared) {
@@ -215,7 +259,7 @@
         const py = s.spec.boss && p.bw >= 2 ? s.props.filter((q) => q.kind === 'pylon' && q.down <= 0).sort((x, y) => hyp(x.x - p.x, x.y - p.y) - hyp(y.x - p.x, y.y - p.y))[0] : null;
         if (py && hyp(py.x - p.x, py.y - p.y) > s.st.hackRange * 0.9) [mx, my] = toward(s, py.x, py.y);
         // 被電暈的就衝過去制伏。
-        const down = foes.filter((e) => (e.stun > 0.35 || e.trance>.5 || (e.distract > 0.5 && e.state !== 'combat')) && !e.boss && hyp(e.x - p.x, e.y - p.y) < 190).sort((x, y) => hyp(x.x - p.x, x.y - p.y) - hyp(y.x - p.x, y.y - p.y))[0];
+        const down = foes.filter((e) => (e.stun > 0.35 || e.trance>.5 || (e.distract > 0.5 && e.state !== 'combat')) && !e.boss && hyp(e.x - p.x, e.y - p.y) < (e.trance>0 ? Math.min(430,e.trance*s.st.speed+sim.LUNGE) : 190)).sort((x, y) => hyp(x.x - p.x, x.y - p.y) - hyp(y.x - p.x, y.y - p.y))[0];
         if (down && !dg.urgent) [mx, my] = toward(s, down.x, down.y);
         if (sim.takedownTarget(s)) inp.melee = true;
         else if (melee && d < 58 + tgt.r && p.meleeCd <= 0 && !tgt.atk) inp.melee = true;
@@ -227,10 +271,18 @@
         if (dg.urgent && p.dashN > 0 && rng.chance(0.8)) inp.dash = true;
         inp.focus = p.hp < p.maxHp * 0.35 && dg.any;
 
-        const hp = hackPlan(s, foes);
-        if (hp) { inp.hack = true; inp.ax = hp.x; inp.ay = hp.y; inp.fire = false; }
-        else gadgetPlan(s, foes, inp);
-        if(s.show && !dg.urgent && s.show.t>4 && foes.some(e=>S3.field.audience(s,e))){inp.mx=inp.my=0;inp.fire=inp.dash=inp.melee=false;}
+        const hypnotist=s.build.person?.elite==='hypnotist';
+        if(hypnotist && (tgt.boss || tgt.def.machine || tgt.state==='combat' && !tgt.trance) && los && inp.fire && (p.focus>35 || p.focusing))inp.focus=true;
+        if(!s.show && !inp.dash && !(inp.melee && down?.trance>0))gadgetPlan(s,foes,inp,true);
+        if(!(inp.g1||inp.g2)){
+          const hp=hackPlan(s,foes);
+          if(hp){inp.hack=true;inp.ax=hp.x;inp.ay=hp.y;inp.fire=false;}
+          else if(!s.show)gadgetPlan(s,foes,inp);
+        }
+        if(down?.trance>0 && !dg.urgent){inp.fire=false;if(!inp.g1 && !inp.g2 && !inp.hack){inp.ax=down.x;inp.ay=down.y;}}
+        if(s.show && !dg.urgent && (inp.hack || s.show.t>S3.data.gadgets.performance.dur-1.15)){
+          inp.mx=inp.my=0;inp.fire=inp.dash=inp.melee=false;inp.reload=p.ammo<p.mag;
+        }
       } else {
         // 場上暫時沒人（增援還沒到）：回場地中間等。
         const [mx, my] = toward(s, W / 2, H * 0.6);

@@ -248,6 +248,16 @@
   function spawn(s, kind, x, y, o = {}) {
     const D = S3.data;
     const def = kind === 'boss' ? Object.assign({ boss: true, human: false, sight: 2000, fov: 4, cost: 0 }, D.bosses[o.boss]) : D.enemies[kind];
+    // A wreck can seal a reinforcement gate after generation. Never leave a ground unit in the border wall.
+    if(o.wave && !def.fly && solidAt(s,x,y)){
+      const reachable=field(s,s.p.x,s.p.y);
+      let best=Infinity,bx=x,by=y;
+      for(let i=0;i<reachable.length;i++)if(reachable[i]>=0 && !s.solid[i]){
+        const cx=(i%GW+.5)*T,cy=(Math.floor(i/GW)+.5)*T,d=(cx-x)**2+(cy-y)**2;
+        if(d<best){best=d;bx=cx;by=cy;}
+      }
+      x=bx;y=by;
+    }
     const e = {
       id: s.nextId++, kind, def, x, y, r: def.r, ang: o.ang || 0, base: o.ang || 0, mvAng: o.ang || 0,
       hp: def.hp * s.spec.scale, speed: def.speed, state: s.alert || o.wave ? 'combat' : 'calm', aware: 0, call: 0,
@@ -301,6 +311,8 @@
     if (e.dead || e.spawnT > 0) return 0;
     const fl = s.fl;
     let d = src.by==='melee' ? dmg*(1+(fl.terraceFists||0)) : dmg;
+    const writ=s.installations.find(z=>z.evidenceMul && hyp(e.x-z.x,e.y-z.y)<=z.r);
+    if(writ)d*=writ.evidenceMul;
     if (e.mark > 0) d *= fl.press ? 1.5 : 1.3;
     if (e.stun > 0 && fl.vuln) d *= 1 + 0.35 * fl.vuln;
     if (src.by === 'gun' && e.elite === 'armored') d *= 0.7;
@@ -349,7 +361,7 @@
     if (s.fl.salvage && e.def.machine && !src.expire) shock(s, e.x, e.y, 110, 8, 1, 'env');
     if (e.boss) for (const o of s.en) if (!o.dead && o !== e) kill(s, o, { by: 'env', expire: true });
     // 倒下的時候，旁邊正好看著的同伴會起疑。
-    if (!s.alert) for (const o of s.en) if (!o.dead && o.state === 'calm' && o.distract <= 0 && hyp(o.x - e.x, o.y - e.y) < (src.assassin ? 80 : 260) && Math.abs(angDiff(Math.atan2(e.y - o.y, e.x - o.x), o.ang)) < o.def.fov * 1.3 && clear(s, o.x, o.y, e.x, e.y)) { o.state = 'suspect'; o.goal = { x: e.x, y: e.y }; o.look = 0; }
+    if (!s.alert && !src.unwitnessed) for (const o of s.en) if (!o.dead && o.state === 'calm' && o.distract <= 0 && hyp(o.x - e.x, o.y - e.y) < (src.assassin ? 80 : 260) && Math.abs(angDiff(Math.atan2(e.y - o.y, e.x - o.x), o.ang)) < o.def.fov * 1.3 && clear(s, o.x, o.y, e.x, e.y)) { o.state = 'suspect'; o.goal = { x: e.x, y: e.y }; o.look = 0; }
   }
   function drop(s, e) {
     const total = e.def.data * s.spec.dataMul * s.st.dataMul * (e.elite ? 2 : 1) + s.gainAcc;
@@ -381,7 +393,8 @@
     // 清場之後房間就安全了（剩下的火、還沒炸的油桶都不會再傷到人），小隊的體力在打完那一刻就定了。
     if (s.over || s.cleared || p.inv > 0 || p.dashT > 0) return false;
     if (p.guard > 0) { p.guard = 0; p.inv = 0.5; s.ev.push({ k: 'guard', x: p.x, y: p.y }); return true; }
-    const d = dmg * s.st.dmgTaken * (o.hound ? s.st.houndDmg : 1);
+    const withinWrit=S3.field.stayed(s,p);
+    const d = dmg * (withinWrit ? .4 : 1) * (s.fl.watchGuard && p.focusing ? .5 : 1) * s.st.dmgTaken * (o.hound ? s.st.houndDmg : 1);
     p.hp -= d;
     p.inv = 0.4;
     p.hurtT = 0.3;
@@ -468,17 +481,18 @@
         if (o.burn) e.burn = Math.max(e.burn, o.burn);
         if (o.knock) { const a = Math.atan2(e.y - y, e.x - x); e.kx += Math.cos(a) * o.knock; e.ky += Math.sin(a) * o.knock; }
         if (o.noShield) e.noShield = Math.max(e.noShield, o.noShield);
-        if (dmg) (o.trap ? trapHurt : hurt)(s, e, dmg * (1 - 0.4 * clamp(d / r, 0, 1)), o.quiet ? { by: o.by || 'env', quiet: true } : { by: o.by || 'env' });
+        const shrapnel=o.breacher && (e.def.machine || e.elite==='armored' || e.boss==='carrier' || e.boss==='keystone');
+        if (dmg) (o.trap ? trapHurt : hurt)(s, e, dmg * (shrapnel ? o.breacher : 1) * (1 - 0.4 * clamp(d / r, 0, 1)), o.quiet ? { by: o.by || 'env', quiet: true } : { by: o.by || 'env' });
       }
       if (o.self && !s.fl.hardhat && hyp(s.p.x - x, s.p.y - y) < r * 0.8 + s.p.r) hitPlayer(s, o.self);
     }
     for (const pr of s.props) if (pr.kind === 'barrel' && !pr.gone && pr.fuse <= 0 && hyp(pr.x - x, pr.y - y) < r) pr.fuse = 0.12 + s.rng.next() * 0.1;
   }
   // 電擊爆發：電到的敵人會暈；有「連鎖」的話電弧再跳到附近的敵人。
-  function shock(s, x, y, r, dmg, stunDur, by, trap) {
+  function shock(s, x, y, r, dmg, stunDur, by, trap, power=1) {
     const rr = r * s.st.aoeMul * (s.spec.mod === 'rain' ? 1.4 : 1);
     const before = s.en.filter((e) => !e.dead && e.ally <= 0 && hyp(e.x - x, e.y - y) - e.r <= rr);
-    blast(s, x, y, rr, dmg * s.st.aoeDmg, { stun: stunDur, by: by || 'hack', shock: true, noShield: 3, trap });
+    blast(s, x, y, rr, dmg * s.st.aoeDmg * power, { stun: stunDur, by: by || 'hack', shock: true, noShield: 3, trap });
     if (!s.fl.chain) return;
     let jumps = 2 * s.fl.chain, from = { x, y };
     const done = new Set(before);
@@ -493,7 +507,7 @@
       done.add(best);
       s.ev.push({ k: 'arc', x: from.x, y: from.y, x2: best.x, y2: best.y });
       stun(s, best, stunDur * 0.6);
-      (trap ? trapHurt : hurt)(s, best, 15 * s.st.aoeDmg, { by: by || 'hack' });
+      (trap ? trapHurt : hurt)(s, best, 15 * s.st.aoeDmg * power, { by: by || 'hack' });
       from = best;
     }
   }
@@ -591,11 +605,12 @@
     s.stats.hacks++;
     s.ev.push({ k: 'hack', x: p.x, y: p.y, x2: h.x, y2: h.y, act: h.act });
     if (pr) {
-      const def = pr.def;
+      const def = pr.def, stage=s.show ? S3.data.gadgets.performance.trap : 1;
+      if (h.act==='overload' || h.act==='ignite' || h.act==='drive')pr.stageMul=stage;
       if (h.act === 'overload') { pr.fuse = def.fuse; pr.used = false; }
       else if (h.act === 'ignite') pr.fuse = 0.35;
       else if (h.act === 'steam') {
-        s.zones.push({ k: 'steam', x: pr.x, y: pr.y, r: def.r * s.st.aoeMul, t: def.dur, burn: def.burn * s.st.burnMul, tick: 0 });
+        s.zones.push({ k: 'steam', x: pr.x, y: pr.y, r: def.r * s.st.aoeMul, t: def.dur, burn: def.burn * s.st.burnMul * stage, tick: 0 });
         pr.cool = 12;
         s.ev.push({ k: 'steam', x: pr.x, y: pr.y });
       } else if (h.act === 'drive') {
@@ -603,14 +618,14 @@
         // 車頭轉向要衝的那一頭（畫面跟著轉）。
         pr.go = pr.dir = carPath(s, pr).dir;
         pr.moving = true;
-        pr.boost = s.fl.driver ? 1.5 : 1;
+        pr.boost = (s.fl.driver ? 1.5 : 1)*stage;
         pr.hit = new Set();
         s.ev.push({ k: 'rev', x: pr.x, y: pr.y });
       } else if (h.act === 'raise') {
         pr.up = def.dur;
         stamp(s, pr, 3);
         for (const o of s.en) if (!o.dead && !o.def.fly && Math.abs(o.x - pr.x) < pr.w * T / 2 + o.r && Math.abs(o.y - pr.y) < pr.h * T / 2 + o.r) {
-          if (o.ally <= 0) { stun(s, o, def.stun); trapHurt(s, o, def.dmg * s.spec.scale, { by: 'hack' }); }
+          if (o.ally <= 0) { stun(s, o, def.stun); trapHurt(s, o, def.dmg * s.spec.scale * stage, { by: 'hack' }); }
           moveCircle(s, o, 0, 0);
         }
         moveCircle(s, p, 0, 0);
@@ -693,6 +708,7 @@
     const p = s.p, st = s.st, fl = s.fl;
     let d = s.weapon.dmg * st.dmgMul;
     if (crit) d *= st.critMul;
+    if (p.focusing && fl.selfFocus) d *= fl.watchGuard ? 3 : 2;
     if (p.focusing && fl.focusDmg) d *= 1.4;
     if (fl.hoard) d *= 1 + Math.min(0.5, (s.baseData + s.gain) / 1000);
     if (fl.nightowl && s.spec.sector >= 1) d *= 1.1;
@@ -795,12 +811,16 @@
         p.ang = Math.atan2(t.y - p.y, t.x - p.x);
         s.stats.takedowns++;
         s.ev.push({ k: 'takedown', x: t.x, y: t.y });
-        if (combatExec(s, t)) {
+        const quietCue=t.trance>0 && t.def.human && !t.boss;
+        if(quietCue){
+          kill(s,t,{by:'melee',unwitnessed:true});
+          if(fl.selfFocus)p.hp=Math.min(p.maxHp,p.hp+12);
+          if(fl.watchGuard)p.guard=1;
+        }else if (combatExec(s, t)) {
           const g=p.gad.find(g=>g.id==='execute');
           s.team[s.active].execCd=g ? (g.cd=S3.data.gadgets.execute.cd*(1-.2*(g.lv-1))) : 4;
           kill(s,t,{by:'melee'});
         }
-        else if (t.trance>0 && t.def.human && !t.boss) kill(s,t,{by:'melee',assassin:!!fl.assassin});
         else if (t.boss || t.def.big || t.elite) hurt(s, t, 70 + st.meleeDmg, { by: 'melee', assassin: !!fl.assassin });
         else kill(s, t, { by: 'melee', assassin: !!fl.assassin });
         p.bw = Math.min(st.bwMax, p.bw + 1);
@@ -808,7 +828,7 @@
         if(fl.vanish)p.cloak=2*fl.vanish;
         if(fl.deadletter)addData(s,12*fl.deadletter);
         if (fl.lifesteal) p.hp = Math.min(p.maxHp, p.hp + 5 * fl.lifesteal);
-        if (fl.loud) noise(s, p.x, p.y, 160);
+        if (fl.loud && !quietCue) noise(s, p.x, p.y, 160);
       } else {
         p.meleeCd = 0.55;
         p.lock = 0.12;
@@ -1029,13 +1049,13 @@
             pr.used = true;
             if (s.fl.recycle) pr.cool = 10;
             // 設施的傷害跟著區段變強（後面的敵人血比較厚），陷阱才不會越後面越沒用。
-            shock(s, pr.x, pr.y, def.r, def.dmg * s.spec.scale, def.stun, 'hack', true);
+            shock(s, pr.x, pr.y, def.r, def.dmg * s.spec.scale, def.stun, 'hack', true, pr.stageMul || 1);
             noise(s, pr.x, pr.y, 520);
           } else if (pr.kind === 'barrel') {
             pr.gone = true;
             stamp(s, pr, 0);
-            blast(s, pr.x, pr.y, def.r * s.st.aoeMul, def.dmg * s.spec.scale * s.st.aoeDmg, { by: 'env', burn: 3, self: def.self, knock: 200, trap: true });
-            s.zones.push({ k: 'fire', x: pr.x, y: pr.y, r: 70, t: def.fire * (s.spec.mod === 'rain' ? 0.5 : 1), burn: 8 * s.st.burnMul, tick: 0 });
+            blast(s, pr.x, pr.y, def.r * s.st.aoeMul, def.dmg * s.spec.scale * s.st.aoeDmg * (pr.stageMul || 1), { by: 'env', burn: 3, self: def.self, knock: 200, trap: true });
+            s.zones.push({ k: 'fire', x: pr.x, y: pr.y, r: 70, t: def.fire * (s.spec.mod === 'rain' ? 0.5 : 1), burn: 8 * s.st.burnMul * (pr.stageMul || 1), tick: 0 });
             noise(s, pr.x, pr.y, 600);
           }
         }
@@ -1070,7 +1090,7 @@
           // 撞到東西就炸：車頭那一片的敵人被炸飛，還會留下一小片火。
           s.ev.push({ k: 'crash', x: pr.x + dx * T, y: pr.y + dy * T });
           blast(s, pr.x + dx * T, pr.y + dy * T, def.r * s.st.aoeMul, def.blast * s.spec.scale * s.st.aoeDmg * (pr.boost || 1), { by: 'hack', stun: 1.2, knock: 220, burn: 3, trap: true });
-          s.zones.push({ k: 'fire', x: pr.x + dx * T * 0.8, y: pr.y + dy * T * 0.8, r: 55, t: 3 * (s.spec.mod === 'rain' ? 0.5 : 1), burn: 8 * s.st.burnMul, tick: 0 });
+          s.zones.push({ k: 'fire', x: pr.x + dx * T * 0.8, y: pr.y + dy * T * 0.8, r: 55, t: 3 * (s.spec.mod === 'rain' ? 0.5 : 1), burn: 8 * s.st.burnMul * (pr.stageMul || 1), tick: 0 });
           noise(s, pr.x, pr.y, 600);
           for (const e of s.en) if (!e.dead && !e.def.fly) moveCircle(s, e, 0, 0);
           moveCircle(s, p, 0, 0);
@@ -1126,7 +1146,7 @@
         if (z.tick <= 0) {
           z.tick = 0.5;
           for (const e of s.en) if (!e.dead && e.ally <= 0 && !e.def.fly && hyp(e.x - z.x, e.y - z.y) < z.r + e.r) { hurt(s, e, z.burn * 0.5, { by: 'env', quiet: true }); if (z.k === 'fire') e.burn = Math.max(e.burn, 1.5); }
-          if (z.k === 'fire' && !s.fl.fireproof && hyp(p.x - z.x, p.y - z.y) < z.r) hitPlayer(s, 5);
+          if (z.k === 'fire' && z.thrower!==s.team[s.active] && !s.fl.fireproof && hyp(p.x - z.x, p.y - z.y) < z.r) hitPlayer(s, 5);
         }
       } else if (z.t <= 0) {
         if (z.k === 'tele') {

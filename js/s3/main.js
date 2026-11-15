@@ -942,9 +942,9 @@
     set('h-gad', p.gad.map((g, i) => {
       const cd = D.gadgets[g.id].cd * (1 - 0.2 * (g.lv - 1)), recon = g.id === 'eagle' && s.recon;
       const fieldState=g.id==='shockdrone' && s.shockDrone?.owner===s.active ? (s.shockDrone.manual?'remote':'patrol')
-        :g.id==='performance' && s.show?'stage':s.suggestion?.ready && s.suggestion.id===g.id && s.suggestion.owner===s.active && s.en.some(e=>e.trance>0 && e.tranceCast===s.suggestion)?'order':null;
+        :g.id==='performance' && s.show?(s.show.ready?'stageReady':'stage'):s.suggestion?.ready && s.suggestion.id===g.id && s.suggestion.owner===s.active && s.en.some(e=>e.trance>0 && e.tranceCast===s.suggestion)?'order':null;
       const name = fieldState?t('s3.field.'+fieldState):recon ? t(recon.orbit ? 's3.gad.detonate' : 's3.gad.flying') : gadName(g.id);
-      const timer = fieldState==='stage'?Math.ceil(s.show.t):fieldState==='patrol'||fieldState==='remote'?Math.ceil(s.shockDrone.t):recon && recon.orbit ? Math.ceil(recon.t) : Math.ceil(g.cd);
+      const timer = g.id==='performance' && s.show?Math.ceil(s.show.t):fieldState==='patrol'||fieldState==='remote'?Math.ceil(s.shockDrone.t):recon && recon.orbit ? Math.ceil(recon.t) : Math.ceil(g.cd);
       return `<div class="gad${fieldState || recon && recon.orbit ? ' armed' : g.cd > 0 ? ' cd' : ''}"><kbd>${i ? 'E' : 'Q'}</kbd><span>${esc(name)}</span><i style="width:${g.cd > 0 ? ((g.cd / cd) * 100).toFixed(0) : 0}%"></i>${timer ? `<em>${timer}</em>` : ''}</div>`;
     }).join(''), 'innerHTML');
     // 狀態：未被發現、被發現、警報、增援、清場

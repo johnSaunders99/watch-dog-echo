@@ -64,7 +64,7 @@
     hooligan:[T('terrace','shotgun','brawl',{maxHp:24}),T('turnstile','pistol','rush',{}, {lifesteal:1})],
     beekeeper:[T('apiary','taser','swarm',{}, {hiveMark:1}),T('veilguard','nailgun','hiveguard',{}, {guard:1})],
     statue:[T('plinth','silenced','performance',{}, {still:1}),T('encore','shotgun','performance',{}, {encore:1})],
-    hypnotist:[T('watch','silenced','hypnosis',{focusRegen:1.5}),T('beat','taser','metronome',{}, {guard:1})],
+    hypnotist:[T('watch','silenced','hypnosis',{focusRegen:1.5},{selfFocus:1,watchGuard:1}),T('beat','taser','metronome',{}, {guard:1,selfFocus:1})],
     anarchist:[T('bottle','shotgun','molotov',{}, {trapDouble:1}),T('fuse','nailgun','pipebomb',{}, {scrapBlast:1})],
     paramedic:[T('station','taser','medbeacon',{}, {nurse:1}),T('stretcher','pistol','medbeacon',{}, {mobileWard:1})],
     barrister:[T('chambers','silenced','injunction',{}, {seniorBail:1}),T('circuit','taser','escortWrit',{}, {seniorBail:1})],

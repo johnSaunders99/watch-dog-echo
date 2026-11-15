@@ -30,10 +30,13 @@ SHEETS = [
                'camera', 'speaker', 'spider', 'mine', 'med', 'data', 'cache', 'sergei']},
     # 上排：扳手的巨鎚、謝爾蓋、工人的貨運無人機。下排：達西的固定翼無人機（兩格只轉旋翼）、我方蜘蛛機器人。
     {'file': 'gear-3.png', 'atlas': 'gear', 'anchor': 'box', 'scale': 0.4, 'grid': (3, 2),
+     'despill': {'eagle', 'eagle2'},  # 綠幕透過狹窄翼縫；保留其他裝備的綠色塗裝。
      'names': ['smash', 'sergei', 'cargo', 'eagle', 'eagle2', 'spider']},
     {'file': 'drones-1.png', 'atlas': 'drones', 'anchor': 'box', 'scale': 0.4, 'grid': (2, 2),
+     'despill': {'escort', 'kamikaze', 'missile'},
      'names': ['escort', 'kamikaze', 'expert', 'missile']},
     {'file': 'drones-2.png', 'atlas': 'support', 'anchor': 'body', 'scale': 0.4, 'grid': (3, 1),
+     'despill': {'shockdrone', 'shockdrone-zap'},
      'names': ['shockdrone', 'shockdrone-zap', 'medbeacon']},
 ]
 
@@ -58,7 +61,7 @@ DOLLS = {'file': 'doll-1.png', 'atlas': 'doll', 'scale': 0.4, 'grid': (4, 2),
          'names': ['hoodie', 'tee', 'jacket', 'hivis', 'overalls', 'suit', 'waistcoat', 'coat'],
          'held': [{'file': 'held-1.png', 'scale': 0.4, 'grid': (3, 2),
                    'names': ['pistol', 'taser', 'shotgun', 'nailgun', 'silenced', 'sledge']},
-                  {'file': 'held-2.png', 'scale': 0.4, 'grid': (2, 1),
+                  {'file': 'held-2.png', 'scale': 0.4, 'grid': (2, 1), 'despill': {'rifle'},
                    'names': ['rifle', 'carbine']}]}
 
 # 舊合集留作對照，不當成單張插圖輸出。
@@ -94,6 +97,22 @@ def key_green(rgb):
     alpha = np.where(bg, 1.0 - np.clip((spill - 30.0) / 90.0, 0.0, 1.0), 1.0)
     g2 = np.where(bg, np.maximum(r, b) + np.minimum(spill, 10.0) * alpha, g)
     return np.dstack([r, g2, b, alpha * 255.0]) / 255.0
+
+
+def despill(crop, source, glow=False):
+    """Unmix green-screen light before resizing. The key alone misses transparent arcs and narrow rotor gaps."""
+    raw = source.astype(np.float32) / 255.0
+    r, g, b = raw.transpose(2, 0, 1)
+    excess = np.maximum(0, g - np.maximum(r, b))
+    # Only the electric frame has a broad luminous blue fringe; flat sprites need just the saturated green in gaps.
+    mask = excess > (0 if glow else .28 * g)
+    removed = np.minimum(1.6 * excess, g - np.maximum(r, .78 * b + .22 * r)) if glow else excess
+    alpha = np.minimum(crop[..., 3], 1 - removed)
+    # Green screen contributes green but no red/blue. Recover straight colour, keeping the bright arc core untouched.
+    colour = raw.copy()
+    colour[..., 1] -= removed
+    clean = np.dstack([np.clip(colour / np.maximum(alpha[..., None], 1e-5), 0, 1), alpha])
+    return np.where(mask[..., None], clean, crop)
 
 
 def segments(profile, want, min_size=12):
@@ -185,16 +204,25 @@ def pack(atlas_name, sprites, cols=4):
     return {'src': 'assets/s3/' + atlas_name + '.png', 'items': items}
 
 
+def keyed_sprites(path, sheet):
+    source = np.asarray(Image.open(path).convert('RGB'))
+    rgba = key_green(source)
+    boxes = cells(rgba[..., 3], *sheet.get('grid', (4, 4)))
+    for name, (x0, y0, x1, y1) in zip(sheet['names'], boxes):
+        box = np.s_[max(0, y0 - 3):y1 + 3, max(0, x0 - 3):x1 + 3]
+        crop = rgba[box]
+        if name in sheet.get('despill', ()):
+            crop = despill(crop, source[box], glow=name == 'shockdrone-zap')
+        yield name, crop
+
+
 def build(sheet):
     path = os.path.join(SRC, sheet['file'])
     if not os.path.exists(path):
         print('skip (no source):', sheet['file'])
         return None
-    rgba = key_green(np.asarray(Image.open(path).convert('RGB')))
-    boxes = cells(rgba[..., 3], *sheet.get('grid', (4, 4)))
     sprites = []
-    for name, (x0, y0, x1, y1) in zip(sheet['names'], boxes):
-        crop = rgba[max(0, y0 - 3):y1 + 3, max(0, x0 - 3):x1 + 3]
+    for name, crop in keyed_sprites(path, sheet):
         small = resize_rgba(crop, sheet['scale'])
         ax, ay, r = anchor_of(small[..., 3], sheet['anchor'])
         sprites.append((name, small, {'ax': ax, 'ay': ay, 'r': r}))
@@ -275,10 +303,7 @@ def dolls():
                             pixels = np.asarray(sheet.crop((x,y,x+it['w'],y+it['h'])).convert('RGBA'), dtype=np.float32) / 255
                             sprites.append((name,pixels,{k:it[k] for k in ('ax','ay','r')}))
             continue
-        rgba = key_green(np.asarray(Image.open(hpath).convert('RGB')))
-        boxes = cells(rgba[..., 3], *held['grid'])
-        for name, (x0, y0, x1, y1) in zip(held['names'], boxes):
-            crop = rgba[max(0, y0 - 3):y1 + 3, max(0, x0 - 3):x1 + 3]
+        for name, crop in keyed_sprites(hpath, held):
             small = resize_rgba(crop, held['scale'])
             ax, ay, r = anchor_of(small[..., 3], 'box')
             sprites.append(('held-' + name, small, {'ax': ax, 'ay': ay, 'r': r}))

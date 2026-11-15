@@ -117,7 +117,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     const add = (pre, ids, tails = ['']) => { for (const id of ids) for (const t of tails) want.add(pre + id + t); };
     add('s3.ex.', D.exploits.map((x) => x.id), ['.n', '.d']);
     add('s3.tpl.',Object.values(S3.ops.templates).flat().map(k=>k.id),['.n','.d']);
-    add('s3.field.',['book','intro','kit','private','signal','remote','patrol','stage','order']);
+    add('s3.field.',['book','intro','kit','private','signal','remote','patrol','stage','stageReady','order']);
     add('s3.gad.', Object.keys(D.gadgets), ['.n', '.d']);
     add('s3.wp.', Object.keys(D.weapons), ['.n', '.d']);
     add('s3.en.', Object.keys(D.enemies), ['.n', '.d']);
@@ -1325,7 +1325,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     cast(s, 800, 450);
     if (!inside.bees || outside.bees > 0 || A.sightMul(s, inside) !== .38 || A.sightMul(s, outside) !== 1) fail('s3 swarm: did not shorten only vision inside the hive');
     go(s, 370);
-    if (!near(inside.maxHp - inside.hp, 72*1.3) || outside.hp !== outside.maxHp || s.zones.length || inside.bees > 0) fail('s3 swarm: six-second damage, boundary or sight recovery');
+    if (!near(inside.maxHp - inside.hp, 84*1.3) || outside.hp !== outside.maxHp || s.zones.length || inside.bees > 0) fail('s3 swarm: six-second damage, boundary or sight recovery');
     const shotAngle = (bees) => {
       const z = field('beekeeper', [foe('turret', 800, 660)]), t = z.en[0];
       t.bees = bees; t.state = 'combat'; t.ang = DOWN; t.atk = { k: 'burst', t: 0, n: 2 };
@@ -1335,12 +1335,12 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
 
     s=field('hypnotist',[foe('rusher',800,630),foe('guard',880,833),foe('turret',900,630)]);
     const [frozen,side,robot]=s.en; frozen.state='combat';cast(s,800,500);
-    if(!near(frozen.trance,5)||side.trance>0||robot.trance>0||sim.takedownTarget(s)!==frozen)fail('s3 hypnosis: cone, machine exemption or frontal takedown');
-    go(s,284);if(frozen.y!==630||frozen.trance<=0)fail('s3 hypnosis: target moved early');
+    if(!near(frozen.trance,8)||side.trance>0||robot.trance>0||sim.takedownTarget(s)!==frozen)fail('s3 hypnosis: cone, machine exemption or frontal takedown');
+    go(s,461);if(frozen.y!==630||frozen.trance<=0)fail('s3 hypnosis: target moved early');
     go(s,55);if(frozen.trance>0||frozen.y===630)fail('s3 hypnosis: trance did not end');
     s=field('hypnotist',[{...foe('heavy',800,685),elite:'armored'},foe('turret',1100,300)]);
     const heavy=s.en[0];heavy.ang=DOWN;heavy.state='combat';cast(s,heavy.x,heavy.y);
-    if(!near(heavy.trance,2.5))fail('s3 hypnosis: elite duration');sim.step(s,pad({melee:true}));
+    if(!near(heavy.trance,4))fail('s3 hypnosis: elite duration');sim.step(s,pad({melee:true}));
     if(!heavy.dead)fail('s3 hypnosis: a tranced human elite should submit from the front');
     s=field('hypnotist',[Object.assign(foe('boss',800,620),{boss:'bulldog'})]);cast(s,800,600);
     if(s.en[0].trance>0)fail('s3 hypnosis: boss not exempt');
@@ -1358,7 +1358,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     s=field('statue',[guard(),{...foe('guard',990,700),elite:'armored'},anchor()],null,'encore',{wideStage:1,hatTips:2},[{kind:'junction',tx:13,ty:13,w:1,h:1}]);
     const [crowd,elite]=s.en;crowd.ang=DOWN;sim.step(s,pad({mx:1,g1:true}));ck(!s.show && !s.p.gad[0].cd,'cannot cast a moving performance');
     cast(s,800,610);const startDist=Math.hypot(crowd.x-s.p.x,crowd.y-s.p.y);
-    ck(s.show?.r===340 && S3.field.audience(s,crowd) && !S3.field.audience(s,elite),'audience boundaries');
+    ck(s.show?.r===470 && S3.field.audience(s,crowd) && !S3.field.audience(s,elite),'audience boundaries');
     s.p.bw=1;go(s,42);ck(!crowd.atk && !crowd.call && !crowd.aware && Math.hypot(crowd.x-s.p.x,crowd.y-s.p.y)<startDist && s.p.bw>2,'crowd actually approaches without spotting; earnings');
     s.p.bw=6;const box=s.props[0];sim.step(s,pad({hack:true,ax:box.x,ay:box.y}));ck(s.stats.hacks===1 && box.fuse>0 && s.show,'hack stays open on stage');
     sim.step(s,pad({fire:true}));ck(!s.show && crowd.stun>0 && s.p.shots===1,'shoot to close, encore stuns spectators');
@@ -1366,14 +1366,14 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
 
     s=field('drone_expert',[guard(),foe('heavy',850,615),anchor()],null,'flightdeck',{puppet:1,salvage:1,coilTap:1,overcell:1});
     const stationary=s.p.x;cast(s,800,615);const d=s.shockDrone;
-    ck(d && near(d.t,15*1.35*1.6) && near(d.dmg,16*1.35*1.6),'shock craft snapshots puppet and battery');
+    ck(d && near(d.t,15*1.35*1.6) && near(d.dmg,18*1.35*1.6),'shock craft snapshots puppet and battery');
     const flights=go(s,25);ck(d.y<700 && flights.includes('arc') && s.en.slice(0,2).every(e=>e.stun>0),'tap patrol and arcing');
     go(s,12,pad({g1Hold:true}));const dx=d.x;go(s,15,pad({g1Hold:true,mx:1,fire:true}));ck(d.manual && d.x>dx+60 && s.p.x===stationary && !s.p.shots,'steer the craft, not the shooter');
     s.p.inv=0;s.p.guard=0;const hp=s.p.hp;A.hitPlayer(s,10);ck(s.p.hp<hp,'pilot body still takes damage');const release=d.x;sim.step(s,pad());ck(!d.manual && d.tx===release,'release sets patrol centre');
     d.t=.001;s.ev=[];sim.step(s,pad());ck(!s.shockDrone && s.ev.some(e=>e.k==='shock'),'retirement triggers salvage');
 
     s=field('hypnotist',[guard(),foe('guard',858,606),anchor()],null,'beat',{suggestion:1,velvet:2});cast(s,800,510);
-    const candidates=s.en.slice(0,2);ck(candidates.every(e=>e.trance>5) && s.suggestion.r===390,'metronome cone and extended trance');
+    const candidates=s.en.slice(0,2);ck(candidates.every(e=>e.trance>5) && s.suggestion.r===480,'metronome cone and extended trance');
     cast(s,1020,620);const ordered=candidates.filter(e=>e.march);ck(ordered.length===1 && !s.suggestion.ready,'one walking order');
     if(ordered[0]){const x=ordered[0].x;go(s,30);ck(ordered[0].x>x+30,'ordered human walks');}
     s=field('hypnotist',[guard(),anchor()]);s.p.gad[0].lv=2;cast(s,800,610);cast(s,960,610);ck(!!s.en[0].march,'gear II also unlocks orders');
@@ -1403,6 +1403,62 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     ck(law?.t>10 && s.props[0].down>0 && !tur.atk && S3.field.stayed(s,air) && !S3.field.isSubject(dog),'injunction disables camera, drone and turret, not hounds');
     const ax=air.x,ay=air.y;go(s,20);ck(!tur.atk && air.x===ax && air.y===ay,'disabled machines cannot move or aim');
     law.t=.001;go(s,20);ck(!s.installations.length && s.props[0].down<=0 && (air.x!==ax || air.y!==ay || tur.atk),'machines resume');
+
+    // A closing flash needs a full pose, works on a visible resistant target but never through a wall.
+    for(const kit of ['plinth','encore']){
+      s=field('statue',[guard(),foe('heavy',870,680),anchor()],null,kit);
+      const [fan,front]=s.en;fan.hp=front.hp=3000;front.elite='armored';
+      cast(s,800,610);go(s,25);sim.step(s,pad({mx:1}));
+      ck(!s.p.guard && front.hp===3000 && (kit==='plinth'?fan.aftershow>2.4:fan.stun>3.4),'early exit only releases the audience: '+kit);
+      s.p.gad[0].cd=0;cast(s,800,610);go(s,53);ck(s.show?.ready && s.p.guard===1,'gold ring arms exactly one guard');
+      const blind=A.spawn(s,'turret',1050,775);s.solid[A.idx(18,15)]=1;
+      const hp=blind.hp,cd=s.p.gad[0].cd;sim.step(s,pad({mx:1}));
+      ck(near(3000-front.hp,kit==='encore'?300:150) && blind.hp===hp && near(cd-s.p.gad[0].cd,kit==='encore'?4:0),'charged front row, refund and wall: '+kit);
+    }
+    const trapAfterCurtain=on=>{
+      const f=field('statue',[foe('heavy',860,675),anchor()],null,'plinth',{},[{kind:'junction',tx:16,ty:13,w:1,h:1}]);
+      f.alert=true;const e=f.en[0];e.stun=20;e.hp=3000;if(on)cast(f,825,675);
+      sim.step(f,pad({hack:true,ax:825,ay:675}));sim.step(f,pad({mx:1}));go(f,40);
+      return 3000-e.hp;
+    };
+    const baseTrap=trapAfterCurtain(false);ck(baseTrap>0 && near(trapAfterCurtain(true),2.5*baseTrap),'the fuse remembers when it was hacked');
+
+    // Trance takedowns suppress the witness/noise event, including a loud operative's own noise.
+    for(const kit of ['watch','beat']){
+      s=field('hypnotist',[foe('guard',800,660),foe('guard',993,715),anchor()],null,kit);
+      const [subject,witness]=s.en;witness.ang=Math.atan2(subject.y-witness.y,subject.x-witness.x);
+      cast(s,800,650);witness.trance=0;witness.state='calm';witness.blind=5;s.fl.loud=1;s.p.hp=40;s.p.guard=0;s.ev=[];
+      sim.step(s,pad({melee:true}));ck(subject.dead && witness.state==='calm' && !s.ev.some(ev=>ev.k==='noise') && s.p.hp===52 && s.p.guard===(kit==='watch'?1:0),'unwitnessed takedown and recovery: '+kit);
+      s=field('hypnotist',[anchor()],null,kit);s.st.critChance=0;
+      sim.step(s,pad({focus:true,fire:true,ax:1300,ay:775}));
+      ck(near(s.bul.find(b=>b.side==='p')?.dmg,s.weapon.dmg*s.st.dmgMul*(kit==='watch'?3:2)),'focused shot: '+kit);
+      s.p.guard=0;s.p.inv=0;const hp=s.p.hp;A.hitPlayer(s,20);
+      ck(near(hp-s.p.hp,20*s.st.dmgTaken*(kit==='watch'?.5:1)),'focused defense: '+kit);
+    }
+    s=field('hypnotist',[foe('turret',800,705),foe('guard',1030,775)],null,'watch');
+    const bot=S3.bot.create('trance-aim');const aimed=bot.act(s);ck(aimed.g1 && aimed.ax===1030 && !aimed.fire,'bot aims past an immune machine without shooting');
+    sim.step(s,aimed);s.p.meleeCd=0;s.en[0].stun=0;const approach=bot.act(s);ck(!approach.fire && approach.mx>0,'bot approaches its subject instead of firing');
+
+    // Owner identity survives a switch; floor fires from barrels and other people's charges remain hazards.
+    for(const kit of ['bottle','fuse'])for(const swap of [false,true]){
+      s=field('anarchist',[anchor()],null,kit);s.en[0].stun=60;cast(s,s.p.x,s.p.y);
+      if(swap)sim.swapTo(s,1);s.p.inv=0;s.p.guard=0;const hp=s.p.hp;
+      go(s,70);ck(swap?s.p.hp<hp:s.p.hp===hp,'own payload vs teammate: '+kit+'/'+swap);
+      if(!swap){s.zones.push({k:'fire',x:s.p.x,y:s.p.y,r:40,t:1,burn:5,tick:0});go(s,1);ck(s.p.hp<hp,'unowned fire still burns: '+kit);}
+    }
+    s=field('anarchist',[anchor()],null,'fuse');s.en[0].hp=3000;
+    {const e=s.en[0];A.blast(s,e.x,e.y,50,100,{breacher:2.5});ck(e.hp===2750,'shrapnel against a machine');}
+    for(const kit of ['chambers','circuit']){
+      s=field('barrister',[foe('turret',835,745),anchor()],null,kit,{},[{kind:'pylon',tx:16,ty:14,w:1,h:1}]);
+      const e=s.en[0];e.hp=1000;cast(s,800,775);ck(s.props[0].down>0,'relay stayed during injunction');
+      s.p.inv=0;s.p.guard=0;const hp=s.p.hp;A.hitPlayer(s,20);A.hurt(s,e,10);
+      ck(near(hp-s.p.hp,8*s.st.dmgTaken) && near(1000-e.hp,kit==='chambers'?18:10),'protection and stationary filing: '+kit);
+      s.installations[0].t=.001;go(s,5);ck(s.props[0].down<=0,'relay resumes when the order expires');
+    }
+    // A crashed car seals a gate against the border. The reinforcement still enters on reachable floor.
+    s=field('statue',[anchor()],null,'plinth',{},[{kind:'car',tx:1,ty:11,w:2,h:1,dir:0}]);
+    const reinforcement=A.spawn(s,'heavy',36,575,{wave:true}),grid=A.field(s,s.p.x,s.p.y);
+    ck(!A.solidAt(s,reinforcement.x,reinforcement.y) && grid[A.idx(Math.floor(reinforcement.x/T),Math.floor(reinforcement.y/T))]>=0,'reinforcement at a blocked gate');
 
     for(const rank of [1,2,3]){
       s=field('hooligan',[anchor()],null,'terrace',{terraceFists:rank});const e=s.en[0];e.hp=2000;s.alert=true;
