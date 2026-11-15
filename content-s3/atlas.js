@@ -772,6 +772,7 @@
     "ev-wrench": "assets/s3/ev-wrench.jpg",
     "ev-yellowtag": "assets/s3/ev-yellowtag.jpg",
     "pt-elite-hitman": "assets/s3/pt-elite-hitman.jpg",
+    "pt-mina": "assets/s3/pt-mina.jpg",
     "title": "assets/s3/title.jpg",
     "ev-marcus": "assets/s3/ev-marcus.jpg",
     "ev-bluedoor": "assets/s3/ev-bluedoor.jpg",

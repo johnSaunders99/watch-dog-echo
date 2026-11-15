@@ -12,6 +12,8 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
   const E = page.E, S3 = E.s3, D = S3.data, sim = S3.sim, A = sim.api, R = S3.run;
   const LANGS = ['zh-Hant', 'zh-Hans', 'en'];
   const T = sim.T;
+  const ST = S3.story;
+  const storyLines = [...ST.linesFor(Object.values(ST.beats).flat(), {}), ...ST.endings.flatMap(e => e.lines), ...Object.values(ST.hub).flat()];
 
   // ===== 頭像與紙娃娃共用的外觀，包含尚未交付的零件 =====
   section('零時差：頭像零件與缺件備援');
@@ -142,9 +144,8 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     add('s3.job.', Object.keys(D.jobFx));
     add('s3.mark.', Object.keys(D.imprints));
     // 劇本：每一句台詞（含依前兩季結局換掉的那幾句）、說話的人、結局、無線電、安全屋的閒聊。
-    const ST = S3.story;
     const lineKeys = (l) => [l.k].concat(...['v1', 's2', 'ally'].map((f) => Object.values(l[f] || {})));
-    for (const l of [...Object.values(ST.beats).flat(), ...ST.endings.flatMap((e) => e.lines), ...Object.values(ST.hub).flat()]) for (const k of lineKeys(l)) want.add(k);
+    for (const l of storyLines) for (const k of lineKeys(l)) want.add(k);
     for (const b of Object.values(ST.bossBeats)) for (const k of b.again) want.add(k);
     for (const c of Object.values(ST.comms)) for (const k of c.k) want.add(k);
     add('s3.who.', Object.keys(ST.speakers));
@@ -171,11 +172,61 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     console.log(`${want.size} keys in three languages, none missing, none unused`);
   }
 
+  section('零時差：CM-26 退件單、核心通話與四個結局');
+  {
+    const ck = (ok, why) => { if (!ok) fail('s3 CM-26: ' + why); };
+    const sequence = lines => lines.map(l => l.who + ':' + l.k).join('|');
+    const keys = (base, pairs) => pairs.map(([who, k]) => who + ':' + base + k).join('|');
+    const cb = 's3.st.carrier.', carrier = ST.beats.carrier_down.slice(-3);
+    ck(sequence(carrier) === keys(cb, [['echo','d4'],['bagley','slip'],['maya','d5']]) && carrier[0].v1.stay === cb + 'd4.stay', 'room 13, including stay');
+    const base = 's3.st.choice.';
+    const inner = keys(base, [['console','receipt'],['','live'],['echo','thumb'],['mina','button'],['echo','echo'],['mina','line']]);
+    const before = ':' + base + '1', after = 'bagley:' + base + '2';
+    const whole = [before, inner, after].join('|');
+    // 既有結局、核心和母機的紀錄不是這通電話的已讀旗標。
+    const m = R.meta();
+    Object.assign(m, { endings: { return: 1 }, wins: 1, story: { carrier_down: 1, core_meet: 1, ended: 'return' } });
+    R.saveMeta(m);
+    const old = R.meta();
+    const finale = ST.linesFor(ST.beats.choice, old.story);
+    ck(sequence(finale) === whole && sequence(ST.linesFor([ST.minaReveal], old.story)) === inner, 'old winner sees the entire call in either entry');
+    for (const line of finale.slice(0, -2)) ck(!ST.completeLine(old.story, line), 'early read mark: ' + line.k);
+    ck(sequence(ST.linesFor(ST.beats.choice, old.story)) === whole && !R.meta().story.mina_reveal, 'interrupted call stays unread');
+    ck(ST.completeLine(old.story, finale[6]) && !ST.completeLine(old.story, finale[6]), 'complete exactly once on last line');
+    R.saveMeta(old);
+    const again = R.meta();
+    ck(again.story.mina_reveal && again.endings.return && again.story.core_meet &&
+      sequence(ST.linesFor(ST.beats.choice, again.story)) === [before, after].join('|') &&
+      !ST.linesFor([ST.minaReveal], again.story).length, 'read state survives reload; only the call is omitted');
+    storage.clear();
+
+    const endings = [
+      ['return', '', 'call', '4', null], ['burn', 'mina', 'slip', '3', '4'],
+      ['open', '', 'post', '2', '3'], ['teach', '', 'wire', '4', '5'],
+    ];
+    for (const [id, who, k, prev, next] of endings) {
+      const e = ST.endings.find(e => e.id === id), prefix = 's3.end.' + id + '.';
+      const i = e.lines.findIndex(l => l.k === prefix + k && l.who === who);
+      ck(e.lines[i-1]?.k === prefix + prev && e.lines[i+1]?.k === (next ? prefix + next : undefined), 'ending cue: ' + id);
+    }
+    ck(ST.endings.find(e => e.id === 'teach').need === 3, 'teach rescue threshold');
+
+    const test = sandbox([...scripts, 'js/ui/art.js']), S = test.E.s3;
+    const img = { complete: true, naturalWidth: 512 }, silhouette = test.E.art.avatar('crowd');
+    S.assets = { img: () => img, url: p => p };
+    const pt = S.pictures['pt-mina'];
+    ck(pt === 'assets/s3/pt-mina.jpg' && S.portraits.speaker('mina').includes('src="' + pt + '"'), 'published silhouette');
+    img.naturalWidth = 0;
+    ck(S.portraits.speaker('mina') === silhouette, 'broken file must fall back to a faceless silhouette');
+    delete S.pictures['pt-mina'];
+    ck(S.portraits.speaker('mina') === silhouette, 'unlisted portrait must also fall back');
+    console.log('room 13, six ordered cues on a prior winner, interrupted/completed reads, four ending cues, published/broken/unlisted portrait');
+  }
+
   // ===== 資料表 =====
   section('第三季：資料表');
   {
-    const ST = S3.story;
-    for (const l of [...Object.values(ST.beats).flat(), ...ST.endings.flatMap((e) => e.lines), ...Object.values(ST.hub).flat()]) if (l.who && !ST.speakers[l.who]) fail(`s3 story: unknown speaker ${l.who}`);
+    for (const l of storyLines) if (l.who && !ST.speakers[l.who]) fail(`s3 story: unknown speaker ${l.who}`);
     for (const [id, b] of Object.entries(ST.bossBeats)) {
       if (!D.bosses[id]) fail(`s3 story: lines for unknown boss ${id}`);
       for (const k of [b.meet, b.down]) if (k && !ST.beats[k]) fail(`s3 story: boss ${id} points at missing beat ${k}`);

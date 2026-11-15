@@ -121,6 +121,12 @@
     const path=S3.pictures[S3.ops.profiles[p.elite].portrait], im=path && S3.assets.img(path);
     return im?.complete && im.naturalWidth ? `<img src="${S3.assets.url(path)}" alt="">` : E.art.avatar('agent');
   }
-  S3.portraits = { partsOf, prepare, neckFit, face };
+  function speaker(who) {
+    const sp = S3.story.speakers[who];
+    if (!sp) return '';
+    const path = S3.pictures?.['pt-' + who], im = path && S3.assets.img(path);
+    return im?.complete && im.naturalWidth ? `<img src="${S3.assets.url(path)}" alt="">` : E.art.avatar(sp.art);
+  }
+  S3.portraits = { partsOf, prepare, neckFit, face, speaker };
   E.faces.useIllustrator(paint);
 })(window.ECHO);

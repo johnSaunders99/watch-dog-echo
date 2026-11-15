@@ -107,11 +107,7 @@
     if (!p) return {};
     return { name: nameOf(p), n: p.threat, flaw: p.flaw ? L(E.people.flawOf(p).name) : '' };
   }
-  function portrait(who) {
-    if (pictures['pt-' + who]) return `<img src="${asset(pictures['pt-' + who])}" alt="">`;
-    const sp = ST.speakers[who];
-    return sp ? E.art.avatar(sp.art) : '';
-  }
+  const portrait = S3.portraits.speaker;
 
   // 隊上誰有這件裝備：{ i 第幾個隊員（共用的那一格是 -1）, g 裝備 }；沒有人有就是 null。
   function gadgetOwner(id) {
@@ -209,10 +205,11 @@
   }
 
   // ===== 劇情對話：一句一句播，點一下或按空白鍵換下一句，Esc 整段跳過 =====
-  // lines：[{ who, k }]。o：{ vars 台詞裡的變數, bg 背景插圖（S3.pictures 的 key）, banner 畫面上方的大字 }。
+  // entries：台詞 { who, k } 或只讀一次的 { once, lines }。o：{ vars 台詞裡的變數, bg 背景插圖（S3.pictures 的 key）, banner 畫面上方的大字 }。
   let talkState = null;
-  function talk(lines, o, done) {
-    if (AUTO || !lines || !lines.length) { done(); return; }
+  function talk(entries, o, done) {
+    const lines = AUTO || !entries ? [] : ST.linesFor(entries, meta.story);
+    if (!lines.length) { done(); return; }
     const back = mode;
     for (const k of Object.keys(keys)) keys[k] = false;
     mode = 'talk';
@@ -224,11 +221,17 @@
     $('s3-talk').hidden = false;
     talkNext();
   }
+  function finishTalkLine(st) {
+    clearInterval(st.timer);
+    st.timer = null;
+    $('talk-text').textContent = st.full;
+    if (ST.completeLine(meta.story, st.lines[st.i])) R.saveMeta(meta);
+  }
   function talkNext() {
     const st = talkState;
     if (!st) return;
     // 字還沒跑完：先把整句顯示出來。
-    if (st.timer) { clearInterval(st.timer); st.timer = null; $('talk-text').textContent = st.full; return; }
+    if (st.timer) { finishTalkLine(st); return; }
     st.i++;
     if (st.i >= st.lines.length) { talkEnd(); return; }
     const l = st.lines[st.i];
@@ -242,8 +245,8 @@
     const step = E.i18n.lang === 'en' ? 3 : 1;
     st.timer = setInterval(() => {
       st.shown = Math.min(st.full.length, st.shown + step);
-      el.textContent = st.full.slice(0, st.shown);
-      if (st.shown >= st.full.length) { clearInterval(st.timer); st.timer = null; }
+      if (st.shown >= st.full.length) finishTalkLine(st);
+      else el.textContent = st.full.slice(0, st.shown);
     }, 22);
     play('click');
   }
@@ -258,6 +261,9 @@
     st.done();
   }
   $('s3-talk').addEventListener('click', () => { sfx.unlock(); talkNext(); });
+  // 其他入口只播這通電話；已讀時直接交還控制權，不開結局選單。
+  S3.playMinaReveal = (next, options = {}) => talk([ST.minaReveal], options, next);
+
   // 只播一次的劇情段落（記在永久進度裡）。
   function beat(id, o, next) {
     const lines = ST.beats[id];
@@ -823,7 +829,7 @@
       ${S3.ops.xp.filter(x=>x.owner===id).map(x=>`<div><b>${esc(exName(x.id))} · I–${roman(x.max)}</b><span>${esc(t('s3.ex.'+x.id+'.d'))}</span></div>`).join('')}</div></details>`).join('');
     return `<details class="guide"><summary>${esc(t('s3.field.book'))}</summary><p>${esc(t('s3.field.intro'))}</p>${jobs}</details>
       <details class="guide"><summary>${esc(t('s3.pause.weapons'))}</summary><div class="guide-grid">${Object.keys(D.weapons).map(k => row(k, 's3.wp.')).join('')}</div></details>
-      <details class="guide"><summary>${esc(t('s3.pause.guide'))}</summary><div class="guide-grid">${foes.map((k) => row(k, 's3.en.')).join('')}</div>
+      <details class="guide"><summary>${esc(t('s3.pause.guide'))}</summary><p>${esc(t('s3.guide.route'))}</p><div class="guide-grid">${foes.map((k) => row(k, 's3.en.')).join('')}</div>
       <div class="guide-grid">${['junction', 'vent', 'barrel', 'car', 'bollard', 'camera', 'speaker'].map((k) => row(k, 's3.prop.')).join('')}</div></details>`;
   }
 

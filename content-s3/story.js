@@ -15,9 +15,33 @@
 
   // 說話的人：頭像用 js/ui/art.js 的哪一張；有畫好的頭像（S3.pictures 的 pt-<id>）就用那一張。
   const speakers = {
+    console: { art: 'device' }, mina: { art: 'crowd' },
     bagley: { art: 'bagley' }, echo: { art: 'echo' }, maya: { art: 'maya' }, harlow: { art: 'guard' },
     keystone: { art: 'device' }, hastings: { art: 'agent' }, kahn: { art: 'agent' }, hale: { art: 'hale' }, cassie: { art: 'cassie' },
   };
+
+  // 揭曉可嵌在四選一前，也可單獨播。結局圖鑑不能代替這段通話的已讀紀錄。
+  const minaReveal = { once: 'mina_reveal', lines: [
+    say('console', 's3.st.choice.receipt'),
+    say('', 's3.st.choice.live'),
+    say(EC, 's3.st.choice.thumb'),
+    say('mina', 's3.st.choice.button'),
+    say(EC, 's3.st.choice.echo'),
+    say('mina', 's3.st.choice.line'),
+  ] };
+  function linesFor(entries, read) {
+    return entries.flatMap(entry => {
+      if (!entry.once) return [entry];
+      if (read[entry.once]) return [];
+      return entry.lines.map((line, i) => i === entry.lines.length - 1 ? { ...line, completes: entry.once } : line);
+    });
+  }
+  // 整句顯示完才呼叫；只有段末有標記，中途跳過或關閉不算讀完。
+  function completeLine(read, line) {
+    if (!line.completes || read[line.completes]) return false;
+    read[line.completes] = 1;
+    return true;
+  }
 
   // ===== 劇情段落：每一段只播一次（記在永久進度的 story 裡）=====
   const beats = {
@@ -82,6 +106,7 @@
       say(K, 's3.st.carrier.d2'),
       say(EC, 's3.st.carrier.d3'),
       say(EC, 's3.st.carrier.d4', { v1: { stay: 's3.st.carrier.d4.stay' } }),
+      say(B, 's3.st.carrier.slip'),
       say(M, 's3.st.carrier.d5'),
     ],
     // 第一次進基石機房：黑斯廷斯。
@@ -101,6 +126,7 @@
     // 核心停下來之後：要怎麼處理基石裡的東西。
     choice: [
       say('', 's3.st.choice.1'),
+      minaReveal,
       say(B, 's3.st.choice.2'),
     ],
   };
@@ -116,10 +142,10 @@
   // ===== 結局：打倒核心之後四選一 =====
   // need：要先從拘留室救出幾個人才選得到（Echo 要看過基石算不到的事，才有把握）。
   const endings = [
-    { id: 'return', lines: [say('', 's3.end.return.1'), say('', 's3.end.return.2'), say(EC, 's3.end.return.3'), say(B, 's3.end.return.4')] },
-    { id: 'burn', lines: [say('', 's3.end.burn.1'), say('', 's3.end.burn.2'), say(M, 's3.end.burn.3'), say(B, 's3.end.burn.4')] },
-    { id: 'open', lines: [say('', 's3.end.open.1'), say('', 's3.end.open.2'), say(EC, 's3.end.open.3')] },
-    { id: 'teach', need: 3, lines: [say(EC, 's3.end.teach.1'), say('', 's3.end.teach.2'), say(K, 's3.end.teach.3'), say('', 's3.end.teach.4'), say(B, 's3.end.teach.5'), say(M, 's3.end.teach.6')] },
+    { id: 'return', lines: [say('', 's3.end.return.1'), say('', 's3.end.return.2'), say(EC, 's3.end.return.3'), say(B, 's3.end.return.4'), say('', 's3.end.return.call')] },
+    { id: 'burn', lines: [say('', 's3.end.burn.1'), say('', 's3.end.burn.2'), say(M, 's3.end.burn.3'), say('mina', 's3.end.burn.slip'), say(B, 's3.end.burn.4')] },
+    { id: 'open', lines: [say('', 's3.end.open.1'), say('', 's3.end.open.2'), say('', 's3.end.open.post'), say(EC, 's3.end.open.3')] },
+    { id: 'teach', need: 3, lines: [say(EC, 's3.end.teach.1'), say('', 's3.end.teach.2'), say(K, 's3.end.teach.3'), say('', 's3.end.teach.4'), say('', 's3.end.teach.wire'), say(B, 's3.end.teach.5'), say(M, 's3.end.teach.6')] },
   ];
 
   // ===== 無線電：打的時候偶爾插進來的一句，不會暫停遊戲 =====
@@ -145,5 +171,5 @@
     vets: [say(M, 's3.hub.vets.1')],
   };
 
-  S3.story = { speakers, beats, bossBeats, sectorBeats, endings, comms, hub };
+  S3.story = { speakers, beats, bossBeats, sectorBeats, endings, comms, hub, minaReveal, linesFor, completeLine };
 })(window.ECHO = window.ECHO || {});
