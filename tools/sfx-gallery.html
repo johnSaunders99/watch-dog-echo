@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>零時差｜聲音試聽室</title>
+<style>
+*{box-sizing:border-box} :root{color-scheme:dark;--a:#91e5d5;--line:#35454a;--dim:#b1c0c3}body{margin:0;background:#101719;color:#f1eee5;font:16px/1.5 system-ui,"Microsoft JhengHei",sans-serif}main{max-width:1080px;margin:auto;padding:28px clamp(16px,4vw,48px) 60px}
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:11px}.eyebrow,.index,.serial{font:12px/1.4 Consolas,monospace;letter-spacing:.13em;color:var(--a)}.eyebrow:before{content:"";display:inline-block;height:8px;width:18px;margin-right:9px;background:repeating-linear-gradient(90deg,var(--a) 0 2px,transparent 2px 4px)}
+h1{font-size:clamp(34px,5vw,55px);letter-spacing:-.035em;line-height:1.14;margin:25px 0 8px}p{color:var(--dim);margin:0}.transport{margin:22px 0 18px;border-left:3px solid var(--a);background:#1a2729;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}.transport strong{font-weight:620}button,select{font:inherit;color:#e5ebe5;background:#192326;border:1px solid #506469;border-radius:4px;padding:5px 12px;cursor:pointer}button:hover:not(:disabled),select:hover{border-color:var(--a)}button:focus-visible,select:focus-visible{outline:2px solid #ffaa9a;outline-offset:3px}button:disabled{opacity:.4;cursor:default}
+nav{display:flex;gap:7px;flex-wrap:wrap}nav button{padding:6px 12px}nav button[aria-pressed=true]{background:var(--a);color:#0e2422;border-color:transparent}section>div:first-child{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid #b8cfcb;margin-top:24px}h2{font-size:23px;margin:0 0 7px}
+#list{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}.cue{display:flex;min-height:62px;align-items:center;gap:8px;border-bottom:1px solid var(--line)}.cue b{font-size:15px;font-weight:600;line-height:1.35;flex:1}.serial{font-size:11px;color:#849c9d}.cue button{font-size:13px;white-space:nowrap;padding:5px 8px}.current{background:#263e3b;color:#b6f3e6;border-color:#467369}.old{color:var(--dim)}.is-playing{outline:2px solid #e4a393;outline-offset:1px}footer{margin-top:24px;color:var(--dim);font-size:13px} @media(max-width:760px){#list{grid-template-columns:1fr}.cue{min-height:57px}}@media(prefers-reduced-motion:no-preference){button{transition:background .12s,border-color .12s}}
+</style></head><body><main>
+<header><span class="eyebrow">ZERO DAY &nbsp;/&nbsp; AUDIO DESK</span><select id="lang" aria-label="Language"><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option><option value="en">English</option></select></header>
+<h1></h1><p id="intro"></p><div class="transport"><strong id="status" role="status"></strong><button type="button" id="stop" disabled></button></div>
+<nav></nav><section><div><h2></h2><span class="index"></span></div><div id="list"></div></section><footer></footer></main>
+<script src="../js/engine/i18n.js"></script><script src="../content-s3/data.js"></script><script src="../content-s3/locales.js"></script><script src="../content-s3/guide-locales.js"></script><script src="../content-s3/squad-locales.js"></script><script src="../content-s3/contacts-locales.js"></script>
+<script src="../js/ui/sfx.js"></script><script src="../js/s3/sounds-v5.js"></script><script src="../js/s3/sounds.js"></script>
+<script>
+(() => {
+  const E=window.ECHO, A=E.s3.audio, $=s=>document.querySelector(s), groups=['guns','gear','field','combat','ui'];
+  const languages=['zh-Hant','zh-Hans','en'], copy=[
+    ['聲音試聽室','從工程無人機開始：聽槳葉起轉、貨箱落地，再和舊版的喊聲比較。','待命，請選一個聲音','停止','槍械','裝備','駭入與陷阱','敵人與首領','介面','新版','舊版','播放中','加裝滅音器','沒有舊版按鈕的是新增聲音。','無法啟動 Web Audio，請用支援它的瀏覽器再試。','音效分組'],
+    ['声音试听室','从工程无人机开始：听桨叶起转、货箱落地，再和旧版的喊声比较。','待命，请选一个声音','停止','枪械','装备','入侵与陷阱','敌人与首领','界面','新版','旧版','播放中','加装消音器','没有旧版按钮的是新增声音。','无法启动 Web Audio，请用支持它的浏览器再试。','音效分组'],
+    ['Sound audition desk','Start with the cargo drone: compare its rotor and falling crate with the chatter in the old version.','Ready · choose a sound','Stop','Guns','Gear','Hacks & traps','Enemies & bosses','Interface','New','Old','Playing','Silencer fitted','Sounds without an Old button are new.','Web Audio could not start. Try a browser with Web Audio support.','Sound groups']];
+  let lang=languages.includes(new URLSearchParams(location.search).get('lang'))?new URLSearchParams(location.search).get('lang'):'zh-Hant', group='gear',ticket=0,ctx=null,sources=[],cache=new Map();
+  const i=()=>languages.indexOf(lang),w=()=>copy[i()], label=c=>typeof c.label==='string'?E.i18n.t(c.label):Array.isArray(c.label)?c.label[i()]:E.i18n.t('s3.wp.'+c.label.weapon+'.n')+' · '+w()[12];
+  function stop(){ticket++; for(const s of sources)try{s.stop();}catch(e){} sources=[]; $('.is-playing')?.classList.remove('is-playing');$('#stop').disabled=true;$('#status').textContent=w()[2];}
+  async function buffer(id){
+    if(cache.has(id))return cache.get(id);
+    const b=await E.sfx.render(id,2.8),l=b.getChannelData(0),r=b.getChannelData(1);
+    let n=l.length;while(n>1&&Math.abs(l[n-1])+Math.abs(r[n-1])<.001)n--;
+    const result=[b,Math.min(b.duration,n/b.sampleRate+.04)];
+    if(id!==A.byKey.sergei.id && id!==A.byKey.sergei.old){if(cache.size>=12)cache.delete(cache.keys().next().value);cache.set(id,result);}return result;
+  }
+  async function play(c,old,button){
+    stop();const t=ticket;
+    try{
+      if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();
+      // Match the in-game fuse; A/B switches stop even the queued touchdown, not just the rotor.
+      const sequence=[[old?c.old:c.id,0]];
+      if(c.key==='cargo')sequence.push([old?A.byKey.cargoDrop.old:A.byKey.cargoDrop.id,E.s3.data.gadgets.cargo.fuse]);
+      const scores=await Promise.all(sequence.map(async ([id,at])=>[...await buffer(id),at]));if(t!==ticket)return;
+      $('#status').textContent=w()[11]+' · '+label(c)+' / '+w()[old?10:9];$('#stop').disabled=false;button.classList.add('is-playing');
+      let pending=scores.length;const start=ctx.currentTime+.018;
+      for(const [b,d,at] of scores){const s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);sources.push(s);s.onended=()=>{s.disconnect();if(t===ticket&&!--pending)stop();};s.start(start+at,0,d);}
+    }catch(e){if(t===ticket){stop();$('#status').textContent=w()[14];}}
+  }
+  function draw(){
+    stop();E.i18n.set(lang);$('#lang').value=lang;const t=w();document.title='ZERO DAY / '+t[0];$('h1').textContent=t[0];$('#intro').textContent=t[1];$('#stop').textContent=t[3];$('footer').textContent=t[13];$('nav').ariaLabel=t[15];$('nav').replaceChildren();
+    for(const [j,g] of groups.entries()){const b=document.createElement('button');b.type='button';b.textContent=t[4+j];b.dataset.group=g;b.setAttribute('aria-pressed',g===group);b.onclick=()=>{group=g;draw();$('nav [aria-pressed=true]').focus()};$('nav').append(b);}
+    const rows=A.cues.filter(c=>c.group===group);$('h2').textContent=t[4+groups.indexOf(group)];$('.index').textContent=String(rows.length).padStart(2,'0')+' / '+A.cues.length;$('#list').replaceChildren();
+    for(const [n,c] of rows.entries()){const el=document.createElement('div');el.className='cue';el.dataset.cue=c.key;el.innerHTML='<span class="serial"></span><b></b>';el.firstChild.textContent=String(n+1).padStart(2,'0');el.querySelector('b').textContent=label(c);
+      for(const old of c.old?[false,true]:[false]){const b=document.createElement('button');b.type='button';b.className=old?'old':'current';b.textContent='▶ '+t[old?10:9];b.setAttribute('aria-label',label(c)+' · '+t[old?10:9]);b.onclick=()=>play(c,old,b);el.append(b);}$('#list').append(el);}
+  }
+  $('#stop').onclick=stop;$('#lang').onchange=e=>{lang=e.target.value;draw()};document.addEventListener('keydown',e=>{if(e.key==='Escape')stop()});draw();
+})();
+</script></body></html>

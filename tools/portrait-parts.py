@@ -90,8 +90,9 @@ def extract(im, kind, target):
     rgb, green, cyan, magenta, yellow = keys(im)
     val = rgb.max(axis=2)
     fg = green < .17
-    anchors = None
+    anchors, landmark = None, None
     if kind == 'face':
+        landmark = round(skull(im)[3] * 100 / WORK, 2)
         anchors = feature_anchors(yellow, rgb, target[3])
         # Stop above the grey shoulder seam. Continue the actual painted neck down under V-necks;
         # neither the template's grey shoulders nor its horizontal neckline belong to the face.
@@ -115,8 +116,13 @@ def extract(im, kind, target):
         near = nd.distance_transform_edt(~seed) <= .0105*WORK
         ink = near & fg & (cyan < .10)
         if kind == 'outfit':
+            # A white shirt, tie or undershirt can span the whole gap between magenta lapels.
+            # Keep it from the bottom of the actual cyan neck, not from a fixed horizontal cut.
+            yy = np.arange(WORK)[:, None]
+            last_skin = np.where(cyan > .15, yy, -1).max(axis=0)
             y0 = np.where(seed.any(axis=1))[0][0]
-            ink[max(y0+int(.08*WORK), int(.71*WORK)):] = (fg & (cyan < .10))[max(y0+int(.08*WORK), int(.71*WORK)):]
+            cloth = (fg & (cyan < .10)) & (yy > last_skin) & (yy >= y0)
+            ink |= nd.binary_propagation(seed, mask=cloth | seed)
         filled = nd.binary_fill_holes(ink)
         fg = (ink | filled) & fg & (cyan < .10)
         masks = {'tint': bounded_tint(magenta, val)}
@@ -129,6 +135,13 @@ def extract(im, kind, target):
     base = Image.fromarray(byte(lum), 'L').convert('LA')
     base.putalpha(Image.fromarray(byte(fg), 'L'))
     base = base.resize((SIZE, SIZE), Image.LANCZOS)
+    if kind == 'outfit':
+        # Visible collar: first solid fabric on the centre line below the jaw.
+        alpha = np.asarray(base.getchannel('A'))
+        rows = np.flatnonzero(alpha[int(.57*SIZE):, SIZE//2] >= 160)
+        if not len(rows):
+            raise ValueError('no centre neckline')
+        landmark = round((rows[0] + int(.57*SIZE)) * 100 / SIZE, 2)
     box = base.getchannel('A').getbbox()
     if not box:
         raise ValueError('empty layer after keying')
@@ -137,7 +150,7 @@ def extract(im, kind, target):
         alpha = Image.fromarray(byte(m*fg), 'L').resize((SIZE, SIZE), Image.LANCZOS).crop(box)
         mask = Image.new('LA', alpha.size, (255, 0)); mask.putalpha(alpha)
         layers[channel] = mask
-    return layers, [box[0], box[1], box[2]-box[0], box[3]-box[1]], anchors, err
+    return layers, [box[0], box[1], box[2]-box[0], box[3]-box[1]], anchors, err, landmark
 
 
 def build(src, project):
@@ -155,7 +168,7 @@ def build(src, project):
             if path.name not in present:
                 missing.append(key); continue
             try:
-                layers, box, anchors, err = extract(plate(path), kind, target)
+                layers, box, anchors, err, landmark = extract(plate(path), kind, target)
             except (OSError, ValueError) as exc:
                 print('SKIP %s: %s' % (key, exc)); missing.append(key); continue
             for suffix, layer in layers.items():
@@ -165,6 +178,8 @@ def build(src, project):
             items[key] = {'box': box}
             if anchors:
                 items[key]['features'] = anchors
+            if landmark is not None:
+                items[key]['chin' if kind == 'face' else 'collar'] = landmark
             print(key + (' (skull residual %.2f px at %d)' % (err, SIZE) if err is not None else ''))
     manifest = project / 'content-s3' / 'portrait-parts.js'
     manifest.parent.mkdir(parents=True, exist_ok=True)

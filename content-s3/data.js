@@ -14,11 +14,13 @@
     nailgun: { dmg: 5, rate: 8, mag: 30, reload: 1.6, speed: 880, spread: 0.07, pellets: 1, range: 760, noise: 300, sneak: 2, pierce: 1 },
     silenced: { dmg: 11, rate: 3.4, mag: 10, reload: 1.1, speed: 950, spread: 0.02, pellets: 1, range: 900, noise: 0, sneak: 3 },
     match: { dmg: 16, rate: 5.2, mag: 14, reload: 1, speed: 1050, spread: 0.014, pellets: 1, range: 950, noise: 0, sneak: 3 },
+    rifle: { dmg: 18, rate: 8, mag: 30, reload: 1.8, speed: 1100, spread: 0.052, pellets: 1, range: 1050, noise: 2000, roomAlarm: true, sneak: 2 },
+    carbine: { dmg: 16, rate: 7.5, mag: 30, reload: 1.8, speed: 1100, spread: 0.027, pellets: 1, range: 1050, noise: 1850, roomAlarm: true, sneak: 2 },
   };
   // 職業分類決定武器；少數職業有自己的。
   const weaponByCategory = { hacker: 'taser', physical: 'shotgun', social: 'silenced', specialist: 'pistol' };
   const weaponByJob = { builder: 'nailgun', locksmith: 'nailgun', drone_op: 'pistol', parkour: 'pistol',
-    hitman: 'match', spy: 'silenced', drone_expert: 'pistol', hooligan: 'shotgun', beekeeper: 'taser', statue: 'silenced' };
+    hitman: 'rifle', spy: 'match', drone_expert: 'pistol', hooligan: 'shotgun', beekeeper: 'taser', statue: 'silenced' };
 
   // ===== 能力值 =====
   // addStats 裡的能力用加的，其他用乘的（每疊一層再乘一次）。

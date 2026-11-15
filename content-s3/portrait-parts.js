@@ -16,7 +16,8 @@ window.ECHO.s3.portraitParts = {
         57.81,
         39.84,
         52.81
-      ]
+      ],
+      "chin": 61.09
     },
     "face-y-smile": {
       "box": [
@@ -31,7 +32,8 @@ window.ECHO.s3.portraitParts = {
         57.5,
         39.84,
         51.72
-      ]
+      ],
+      "chin": 61.09
     },
     "face-y-smirk": {
       "box": [
@@ -46,7 +48,8 @@ window.ECHO.s3.portraitParts = {
         57.97,
         40.31,
         53.28
-      ]
+      ],
+      "chin": 61.09
     },
     "face-y-frown": {
       "box": [
@@ -61,7 +64,8 @@ window.ECHO.s3.portraitParts = {
         57.5,
         41.41,
         53.75
-      ]
+      ],
+      "chin": 61.09
     },
     "face-m-neutral": {
       "box": [
@@ -76,7 +80,8 @@ window.ECHO.s3.portraitParts = {
         57.66,
         39.77,
         52.03
-      ]
+      ],
+      "chin": 61.09
     },
     "face-m-smile": {
       "box": [
@@ -91,7 +96,8 @@ window.ECHO.s3.portraitParts = {
         57.81,
         39.69,
         51.88
-      ]
+      ],
+      "chin": 61.09
     },
     "face-m-smirk": {
       "box": [
@@ -106,7 +112,8 @@ window.ECHO.s3.portraitParts = {
         57.97,
         40.47,
         52.66
-      ]
+      ],
+      "chin": 61.09
     },
     "face-m-frown": {
       "box": [
@@ -121,7 +128,8 @@ window.ECHO.s3.portraitParts = {
         57.66,
         40.0,
         52.66
-      ]
+      ],
+      "chin": 61.09
     },
     "face-o-neutral": {
       "box": [
@@ -136,7 +144,8 @@ window.ECHO.s3.portraitParts = {
         57.66,
         39.53,
         53.12
-      ]
+      ],
+      "chin": 61.09
     },
     "face-o-smile": {
       "box": [
@@ -151,7 +160,8 @@ window.ECHO.s3.portraitParts = {
         57.27,
         39.38,
         51.88
-      ]
+      ],
+      "chin": 61.09
     },
     "face-o-smirk": {
       "box": [
@@ -166,7 +176,8 @@ window.ECHO.s3.portraitParts = {
         57.5,
         40.62,
         52.97
-      ]
+      ],
+      "chin": 61.09
     },
     "face-o-frown": {
       "box": [
@@ -181,7 +192,8 @@ window.ECHO.s3.portraitParts = {
         57.66,
         40.94,
         53.91
-      ]
+      ],
+      "chin": 61.09
     },
     "hair-crop": {
       "box": [
@@ -301,7 +313,8 @@ window.ECHO.s3.portraitParts = {
         195,
         254,
         125
-      ]
+      ],
+      "collar": 75.0
     },
     "outfit-polo": {
       "box": [
@@ -309,7 +322,8 @@ window.ECHO.s3.portraitParts = {
         205,
         252,
         115
-      ]
+      ],
+      "collar": 75.62
     },
     "outfit-tee": {
       "box": [
@@ -317,7 +331,8 @@ window.ECHO.s3.portraitParts = {
         217,
         252,
         103
-      ]
+      ],
+      "collar": 75.0
     },
     "outfit-hivis": {
       "box": [
@@ -325,7 +340,8 @@ window.ECHO.s3.portraitParts = {
         223,
         255,
         97
-      ]
+      ],
+      "collar": 80.0
     },
     "outfit-jacket": {
       "box": [
@@ -333,7 +349,8 @@ window.ECHO.s3.portraitParts = {
         198,
         252,
         122
-      ]
+      ],
+      "collar": 71.25
     },
     "outfit-overalls": {
       "box": [
@@ -341,7 +358,8 @@ window.ECHO.s3.portraitParts = {
         221,
         250,
         99
-      ]
+      ],
+      "collar": 75.94
     },
     "outfit-turnout": {
       "box": [
@@ -349,7 +367,8 @@ window.ECHO.s3.portraitParts = {
         186,
         253,
         134
-      ]
+      ],
+      "collar": 69.69
     },
     "outfit-sport": {
       "box": [
@@ -357,7 +376,8 @@ window.ECHO.s3.portraitParts = {
         198,
         252,
         122
-      ]
+      ],
+      "collar": 71.56
     },
     "outfit-suit": {
       "box": [
@@ -365,7 +385,8 @@ window.ECHO.s3.portraitParts = {
         217,
         252,
         103
-      ]
+      ],
+      "collar": 70.62
     },
     "outfit-blazer": {
       "box": [
@@ -373,7 +394,8 @@ window.ECHO.s3.portraitParts = {
         213,
         252,
         107
-      ]
+      ],
+      "collar": 81.88
     },
     "outfit-waistcoat": {
       "box": [
@@ -381,7 +403,8 @@ window.ECHO.s3.portraitParts = {
         220,
         247,
         100
-      ]
+      ],
+      "collar": 75.31
     },
     "outfit-denim": {
       "box": [
@@ -389,7 +412,8 @@ window.ECHO.s3.portraitParts = {
         199,
         256,
         121
-      ]
+      ],
+      "collar": 75.62
     },
     "outfit-coat": {
       "box": [
@@ -397,7 +421,8 @@ window.ECHO.s3.portraitParts = {
         173,
         254,
         147
-      ]
+      ],
+      "collar": 70.62
     },
     "outfit-scrubs": {
       "box": [
@@ -405,7 +430,8 @@ window.ECHO.s3.portraitParts = {
         217,
         246,
         103
-      ]
+      ],
+      "collar": 81.25
     },
     "outfit-workshirt": {
       "box": [
@@ -413,7 +439,8 @@ window.ECHO.s3.portraitParts = {
         202,
         254,
         118
-      ]
+      ],
+      "collar": 74.69
     },
     "outfit-cardigan": {
       "box": [
@@ -421,7 +448,8 @@ window.ECHO.s3.portraitParts = {
         212,
         252,
         108
-      ]
+      ],
+      "collar": 72.19
     },
     "outfit-tactical": {
       "box": [
@@ -429,7 +457,8 @@ window.ECHO.s3.portraitParts = {
         201,
         252,
         119
-      ]
+      ],
+      "collar": 70.62
     },
     "outfit-sweater": {
       "box": [
@@ -437,7 +466,8 @@ window.ECHO.s3.portraitParts = {
         219,
         252,
         101
-      ]
+      ],
+      "collar": 74.06
     },
     "hat-headset": {
       "box": [

@@ -49,11 +49,13 @@ PANELS = [
 ]
 
 # 主角的紙娃娃（切法見 dolls()）：身體 4×2，全部光頭、朝右、兩手在胸前，衣服畫成洋紅（#FF00FF）、皮膚畫成青色（#00FFFF），
-# 遊戲照每個人的頭像替衣服和皮膚上色，頭髮和帽子用程式畫；手上的東西 3×2，照一般道具切。
+# 遊戲照頭像替衣服和皮膚上色，頭髮和帽子用程式畫；手上物件各表依自己的 grid 照一般道具切。
 DOLLS = {'file': 'doll-1.png', 'atlas': 'doll', 'scale': 0.4, 'grid': (4, 2),
          'names': ['hoodie', 'tee', 'jacket', 'hivis', 'overalls', 'suit', 'waistcoat', 'coat'],
-         'held': {'file': 'held-1.png', 'scale': 0.4, 'grid': (3, 2),
-                  'names': ['pistol', 'taser', 'shotgun', 'nailgun', 'silenced', 'sledge']}}
+         'held': [{'file': 'held-1.png', 'scale': 0.4, 'grid': (3, 2),
+                   'names': ['pistol', 'taser', 'shotgun', 'nailgun', 'silenced', 'sledge']},
+                  {'file': 'held-2.png', 'scale': 0.4, 'grid': (2, 1),
+                   'names': ['rifle', 'carbine']}]}
 
 # 舊合集留作對照，不當成單張插圖輸出。
 RETIRED = {'gear-1.png', 'gear-2.png'}
@@ -250,9 +252,24 @@ def dolls():
         sprites.append((name, small, dict(same, hr=hr * sc, gx=gx * sc, gy=gy * sc)))
         sprites.append((name + '.c', resize_rgba(mask_rgba(cloth), sc), same))
         sprites.append((name + '.s', resize_rgba(mask_rgba(skin), sc), same))
-    held = DOLLS['held']
-    hpath = os.path.join(SRC, held['file'])
-    if os.path.exists(hpath):
+    for held in DOLLS['held']:
+        hpath = os.path.join(SRC, held['file'])
+        if not os.path.isfile(hpath):
+            print('skip (no source):', held['file'])
+            # Keep previously published optional sprites if the artist temporarily moves a sheet.
+            manifest = os.path.join(ROOT, 'content-s3', 'atlas.js')
+            if os.path.isfile(manifest):
+                with open(manifest, encoding='utf-8') as f:
+                    previous = json.JSONDecoder().raw_decode(f.read().split('S3.atlas = ', 1)[1])[0].get('doll', {})
+                old = previous.get('items', {})
+                names = ['held-' + n for n in held['names'] if 'held-' + n in old]
+                if names:
+                    with Image.open(os.path.join(ROOT, previous['src'])) as sheet:
+                        for name in names:
+                            it = old[name]; x, y = it['x'], it['y']
+                            pixels = np.asarray(sheet.crop((x,y,x+it['w'],y+it['h'])).convert('RGBA'), dtype=np.float32) / 255
+                            sprites.append((name,pixels,{k:it[k] for k in ('ax','ay','r')}))
+            continue
         rgba = key_green(np.asarray(Image.open(hpath).convert('RGB')))
         boxes = cells(rgba[..., 3], *held['grid'])
         for name, (x0, y0, x1, y1) in zip(held['names'], boxes):
@@ -260,8 +277,6 @@ def dolls():
             small = resize_rgba(crop, held['scale'])
             ax, ay, r = anchor_of(small[..., 3], 'box')
             sprites.append(('held-' + name, small, {'ax': ax, 'ay': ay, 'r': r}))
-    else:
-        print('skip (no source):', held['file'])
     return pack(DOLLS['atlas'], sprites, cols=6)
 
 
@@ -322,7 +337,7 @@ def pictures():
     """插圖（首領、事件、標題）：素材資料夾裡不是合集圖的 PNG，縮小之後存成 JPEG。
     檔名開頭決定寬度：ev- 事件 960、pt- 頭像 512，其他 1280。回傳 { 名稱: 路徑 }。"""
     out = {}
-    sheets = set(s['file'] for s in SHEETS) | set(s['file'] for s in PANELS) | RETIRED | {DOLLS['file'], DOLLS['held']['file']}
+    sheets = {s['file'] for s in SHEETS + PANELS + DOLLS['held']} | RETIRED | {DOLLS['file']}
     for f in sorted(os.listdir(SRC)):
         name, ext = os.path.splitext(f)
         if ext.lower() != '.png' or f in sheets:

@@ -58,6 +58,18 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
         ck(data.readUInt32BE(16)===w && data.readUInt32BE(20)===h, id + suffix + ' does not match its crop');
       }
     }
+    let pairCount=0, lo=Infinity, hi=-Infinity;
+    for (const [id,f] of Object.entries(catalog.items).filter(([id])=>id.startsWith('face-'))) {
+      ck(f.chin>54 && f.chin<66,id+' measured chin');
+      for (const top of tops) {
+        const outfit=catalog.items['outfit-'+top], collar=outfit?outfit.collar:71;
+        ck(collar>60 && collar<88,top+' measured collar');
+        const fit=P.neckFit(f.chin,collar), visible=collar-(f.chin+fit.drop);
+        ck(visible>=4.74 && visible<=7.76,id+' / '+top+' neck '+visible);
+        lo=Math.min(lo,visible);hi=Math.max(hi,visible);pairCount++;
+      }
+    }
+    console.log(pairCount+' chin/collar combinations; visible neck '+lo.toFixed(2)+'–'+hi.toFixed(2)+' on a 100-unit portrait');
     const alt = {...p, age:72, flaw:'hothead', traits:[]};
     ck(E.faces.look(alt) !== L && E.faces.look(alt).mood === 'cross' && E.faces.look({...p}) === L, 'same district/id across campaigns');
 
@@ -67,7 +79,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     });
     const a = P.partsOf(sample), look = E.faces.look(sample), ids = [a.face,a.hair,a.beard,a.outfit,a.hat];
     const test = sandbox(['js/engine/rng.js','js/engine/people.js','content-s2/people.js','content-s3/data.js','js/ui/faces.js']);
-    test.E.s3.portraitParts = {path:'parts/',size:320,items:Object.fromEntries(ids.map(id=>[id,{box:[0,0,320,320],features:[42,40,58,40,52]}]))};
+    test.E.s3.portraitParts = {path:'parts/',size:320,items:Object.fromEntries(ids.map(id=>[id,{box:[0,0,320,320],features:[42,40,58,40,52],chin:61,collar:76}]))};
     require('vm').runInContext(fs.readFileSync(path.join(root,'js/s3/portraits.js'),'utf8'),test.ctx);
     const F = test.E.faces, renderer = test.E.s3.portraits;
     const draw = (missing, round) => {
@@ -76,6 +88,9 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     };
     const art = draw(null,false), circle = F.of(sample,{round:true});
     ck(ids.every(id=>art.includes('data-part="' + id + '"')) && [look.skin,look.iris,look.hairC,look.o.col,a.hatCol].every(c=>art.includes('flood-color="' + c + '"')), 'full selection or tint');
+    const parts = art.split('<g transform="translate(0 ' + renderer.neckFit(61,76).drop + ')">');
+    ck(parts.length === 3 && parts[1].includes('data-part="' + a.face + '"') && parts[1].includes('</g></g><g data-part="' + a.outfit + '"')
+      && [a.hair,a.beard,a.hat].every(id=>parts[2].includes('data-part="' + id + '"')), 'both head layers must move together around a fixed collar');
     ck(circle.includes('<clipPath') && !art.includes('undefined') && !art.includes('NaN'), 'broken square or round portrait');
     const firstIds = new Set([...art.matchAll(/ id="([^"]+)"/g)].map(m=>m[1]));
     ck(![...circle.matchAll(/ id="([^"]+)"/g)].some(m=>firstIds.has(m[1])), 'duplicate filter IDs between coexisting portraits');
@@ -970,7 +985,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       old.shop = { items: [{ k: 'gadget', id: 'hammer', price: 75 }] };
       storage.set('watchdogs-echo.s3.run', JSON.stringify({ v: 2, data: old }));
       const r = R.load();
-      if (r.v !== 3 || r.squad.map(kit).join() !== expected || r.gear.id !== id || r.gear.lv !== 2 || r.phase !== old.phase || r.rng !== old.rng ||
+      if (r.v !== 4 || r.squad.map(kit).join() !== expected || r.gear.id !== id || r.gear.lv !== 2 || r.phase !== old.phase || r.rng !== old.rng ||
         r.pending.picks.includes('hammer') || r.pending.picks.includes('blackout') || r.shop.items[0].id !== 'sledge') fail('s3 save: own, shared or unclaimed gear migrated incorrectly');
       sim.createRoom(arena(), R.simBuild(r), R.carry(r));
       R.save(r); if (JSON.stringify(R.load()) !== JSON.stringify(r)) fail('s3 save: converted run did not round-trip');
@@ -1023,12 +1038,12 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     const scoutGuard = s.en[0], scoutHp = scoutGuard.hp;
     const pulses = go(s, 138);
     if (!s.recon.orbit || scoutGuard.mark <= 0 || !scoutGuard.goal || scoutGuard.goal.x !== 800 || scoutGuard.goal.y !== 375 ||
-      scoutGuard.hp !== scoutHp || pulses.includes('pshot') || pulses.filter((k) => k === 'noise').length < 2 || s.alert) fail('s3 eagle: did not scout and lure quietly through the wall');
+      scoutGuard.hp !== scoutHp || pulses.includes('pshot') || pulses.filter(k=>k==='eagleLure').length<2 || pulses.filter((k) => k === 'noise').length < 2 || s.alert) fail('s3 eagle: did not scout and lure quietly through the wall');
     const drone = A.spawn(s, 'drone', 800, 330), jammer = A.spawn(s, 'jammer', 780, 365), ambush = A.spawn(s, 'guard', 855, 390);
     for (const e of [drone, jammer]) { e.hp = e.maxHp = 300; e.state = 'combat'; }
     sim.swapTo(s, 1); deploy(s, 800, 375, true);
     if (s.recon || !ambush.dead || !near(drone.stun, 4) || !near(jammer.stun, 1.5) || !near(s.props[0].down, 4) || A.jammed(s, jammer.x, jammer.y) ||
-      s.team.some((m) => !near(m.gad[1].cd, 16)) || !s.ev.some((e) => e.k === 'shock')) fail('s3 eagle: manual pulse, trap, machine outage or shared cooldown wrong');
+      s.team.some((m) => !near(m.gad[1].cd, 16)) || !s.ev.some((e) => e.k === 'shock' && S3.audio.fromEvent(e)[0]==='eaglePulse')) fail('s3 eagle: manual pulse, trap, machine outage or shared cooldown wrong');
     go(s, 100); if (jammer.stun > 0 || A.jammed(s, jammer.x, jammer.y) || s.props[0].aware) fail('s3 eagle: jammer electronics woke with the operator or camera spotted early');
     go(s, 145); if (!A.jammed(s, jammer.x, jammer.y) || s.props[0].down > 0) fail('s3 eagle: electronics did not recover');
     s = room({}, { gadgets: [gad('eagle', 2)] }); deploy(s, 2000, 775);
@@ -1173,7 +1188,28 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     let s = field('hitman', [foe('heavy', 800, 720)]);
     s.p.ammo = 1; s.p.reload = 0.9;
     sim.step(s, pad({ dash: true }));
-    if (s.p.reload || s.p.ammo !== 14 || s.weapon.noise || s.weapon.dmg <= D.weapons.pistol.dmg || s.weapon.rate <= D.weapons.pistol.rate) fail('s3 hitman: dash reload or custom suppressed pistol');
+    if (s.p.reload || s.p.ammo !== 30 || s.weapon !== D.weapons.rifle) fail('s3 hitman: rifle or dash reload');
+    const W=D.weapons, sustained=w=>w.dmg*w.pellets*w.mag/(w.mag/w.rate+w.reload);
+    if (Object.values(W).some(w=>w!==W.rifle && sustained(w)>=sustained(W.rifle)) || W.carbine.spread>=W.rifle.spread || W.carbine.dmg>=W.rifle.dmg ||
+        W.rifle.noise<=W.carbine.noise || W.carbine.noise<=W.shotgun.noise || Object.values(D.weaponByJob).concat(Object.values(D.weaponByCategory)).includes('carbine')) fail('s3 arsenal: firepower, noise or unassigned carbine');
+    for (const w of ['rifle','carbine']) for (const silent of [false,true]) {
+      const r=R.start('far-hearing',[S3.ops.person('hitman')],newMeta());r.squad[0].weapon=w;if(silent) r.build.exploits.silencer=1;
+      const test=sim.createRoom(arena({enemies:[foe('guard',80,80),foe('turret',1500,100)]}),R.simBuild(r),R.carry(r));
+      sim.step(test,pad({fire:true}));
+      if(test.alert===silent || test.en.some(e=>(e.state==='combat')===silent) || !test.ev.some(e=>e.k==='shot' && e.suppressed===silent)) fail('s3 arsenal: full-room alarm / silencer '+w);
+    }
+    {
+      const ps=[S3.ops.person('hitman'),S3.ops.person('spy'),crew[0]], r=R.start('old-rifles',ps,newMeta());
+      r.v=3;r.active=1;r.phase='room';r.squad[0].weapon='match';r.squad[1].weapon='silenced';r.squad[0].hp=38;
+      const roster=r.squad.map((m,i)=>({...m,status:i?'ready':'held',runs:4})), oldWeapon=r.squad[2].weapon;
+      storage.set('watchdogs-echo.s3.meta',JSON.stringify({v:3,data:{...newMeta(),roster}}));
+      storage.set('watchdogs-echo.s3.run',JSON.stringify({v:3,data:r}));
+      const restored=R.load(), m=R.meta(), expected=['rifle','match',oldWeapon].join();
+      if(restored.v!==4 || restored.active!==1 || restored.phase!=='room' || restored.rng!==r.rng || restored.squad[0].hp!==38 ||
+        m.roster[0].status!=='held' || [restored.squad,m.roster].some(a=>a.map(x=>x.weapon).join()!==expected)) fail('s3 v3 roster/run weapon migration');
+      R.save(restored);if(JSON.stringify(R.load())!==JSON.stringify(restored))fail('s3 v4 weapon round trip');
+      storage.clear();
+    }
     s = field('hitman', [Object.assign(foe('heavy', 800, 725), { elite: 'armored' }), foe('turret', 830, 728)]);
     const [victim, next] = s.en; victim.state = next.state = 'combat'; next.cd = 20;
     sim.step(s, pad({ melee: true }));
@@ -1192,7 +1228,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     if (!spyTarget.dead || witness.state !== 'calm') fail('s3 spy: extended silent takedown alerted a distant witness');
     s = field('spy', [foe('turret', 800, 375)]);
     sim.step(s, pad({ fire: true }));
-    if (!s.bul.some((b) => b.sneak === 4.5 && b.assassin) || s.weapon.noise) fail('s3 spy: suppressed ambush multiplier');
+    if (!s.bul.some((b) => b.sneak === 4.5 && b.assassin) || s.weapon.noise || s.weapon!==W.match || s.p.mag!==14) fail('s3 spy: custom suppressed pistol and ambush multiplier');
     s = field('spy', [foe('turret', 800, 375), foe('turret', 1060, 375)]); const [at, away] = s.en;
     at.maxHp = at.hp = 400; at.cd = away.cd = 20;
     cast(s, 800, 375); const mark = s.zones[0];
@@ -1284,7 +1320,8 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       const seed = 'operative-' + id, crew = [S3.ops.person(id), ...R.crewFor(seed).slice(0, 2)];
       const out = S3.bot.playRun(seed, { crew });
       if (!['won', 'dead'].includes(out.run.phase) || !out.rooms.length || out.rooms.some((r) => r.timeout || !Number.isFinite(r.hp + r.secs))) fail('s3 operative bot: ' + id + ' did not finish normally');
-      console.log(seed + ': ' + out.run.phase + ', room ' + out.run.roomNo + ', bosses ' + out.run.stats.bosses);
+      console.log(seed + ': ' + out.run.phase + ', room ' + out.run.roomNo + ', bosses ' + out.run.stats.bosses
+        + ', no-alert clears ' + out.rooms.filter(r=>r.silent && !r.dead).length + '/' + out.rooms.length);
     }
   }
 
@@ -1334,9 +1371,35 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     const used = new Set();
     // play('名稱') 和 play(條件 ? '甲' : '乙')：只收開頭、問號和冒號後面的字串，條件裡拿來比較的字串不算。
     for (const m of text.matchAll(/play\(([^;]*?)\)/g)) for (const q of m[1].matchAll(/(?:^|[?:]\s*)'(\w+)'/g)) used.add(q[1]);
-    for (const block of text.matchAll(/const (?:SHOT|GADGET_SOUND|EVENT_SOUND) = \{([^}]*)\}/g)) for (const q of block[1].matchAll(/: '(\w+)'/g)) used.add(q[1]);
-    for (const name of used) if (!X.names.includes(name)) fail(`s3 sfx: ${name} is used but not defined`);
-    for (const g of Object.keys(D.gadgets)) if (!new RegExp(`\\b${g}: '\\w+'`).test(text)) fail(`s3 sfx: gadget ${g} has no sound`);
+    for (const block of text.matchAll(/const EVENT_SOUND = \{([^}]*)\}/g)) for (const q of block[1].matchAll(/: '(\w+)'/g)) used.add(q[1]);
+    const audio=S3.audio, route=ev=>audio.fromEvent(ev)?.[0], heard=new Set();
+    for(const [k,defs] of [['shot',D.weapons],['gadget',D.gadgets]]) for(const id of Object.keys(defs)){
+      const key=route({k,id,w:id}), cue=audio.byKey[key];
+      if(!cue || heard.has(cue.id)) fail('s3 sfx: missing or shared '+id); else heard.add(cue.id);
+      if(k==='shot' && defs[id].noise) used.add(route({k,w:id,suppressed:true}));
+      used.add(key);
+    }
+    for(const pet of ['ally','spider','expert','escort']) used.add(route({k:'pshot',id:pet}));
+    for(const k of 'eshot hit hurt dead down swap getaway dash hack denied boom shock zap arc steam spotted alarm clang takedown melee swing leap reload crash rev wave clear phase revive snipe lob hijack raise breach mark shriek guard sneeze eagleLure'.split(' ')) used.add(route({k}));
+    for(const event of [{k:'kill'},{k:'kill',machine:true},{k:'kill',boss:true},{k:'pickup',what:'data'},{k:'pickup',what:'med'},
+        {k:'boom',cue:'cargoDrop'},{k:'shock',cue:'eaglePulse'}]) used.add(route(event));
+    for (const name of used) if (!audio.byKey[name] || !X.names.includes(audio.byKey[name].id)) fail(`s3 sfx: ${name} is used but not defined`);
+    const galleryHtml=fs.readFileSync(path.join(root,'tools/sfx-gallery.html'),'utf8');
+    const gallery=sandbox([...galleryHtml.matchAll(/<script src="\.\.\/([^"]+)"/g)].map(m=>m[1])).E;
+    // A distinct cue id alone would not catch the original bug: only Sergei may use the voice synth.
+    let scores, voice = 0;
+    require('vm').runInNewContext(fs.readFileSync(path.join(root,'js/s3/sounds.js'),'utf8'), {window:{ECHO:{sfx:{add(make) {
+      scores = make({osc(){},hiss(){},rotor(){},speak(){voice++;},rnd:(a,b)=>(a+b)/2,pick:a=>a[0]});
+    }}}}});
+    for(const cue of audio.cues){
+      if(!used.has(cue.key)) fail('s3 sound has no checked playback path: '+cue.key);
+      voice=0; scores[cue.id](); if(voice !== (cue.key==='sergei' ? 1 : 0)) fail('s3 voice synth: '+cue.key);
+      if(!gallery.sfx.names.includes(cue.id) || (cue.old && !gallery.sfx.names.includes(cue.old)))fail('s3 sound gallery A/B: '+cue.key);
+      for(const lang of LANGS){E.i18n.set(lang);const k=typeof cue.label==='string'?cue.label:cue.label.weapon?'s3.wp.'+cue.label.weapon+'.n':null;
+        if(k?!page.tables[lang][k]:!cue.label[LANGS.indexOf(lang)])fail('s3 sound gallery label: '+lang+' '+cue.key);}
+    }
+    if(new Set(audio.cues.map(c=>c.id)).size!==audio.cues.length || new Set(['eagle','eagleLure','eaglePulse'].map(k=>audio.byKey[k]?.id)).size!==3 ||
+       audio.fromEvent({k:'shriek',cue:false})!==null || audio.fromEvent({k:'shot',w:'rifle'})[1]<90)fail('s3 cue registry / duplicate / automatic fire');
     // 音樂：三種情境的每一步都排得出來。
     if (X.now() !== 0) fail('s3 music: the clock should be readable once sound is on');
     for (const mode of ['calm', 'fight', 'boss']) {
@@ -1347,6 +1410,6 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     S3.music.set('fight');
     if (S3.music.mode !== 'fight') fail('s3 music: mode not set');
     S3.music.set(null);
-    console.log(`${mine.length} sounds built without errors, ${used.size} used by the game, music in three moods`);
+    console.log(`${mine.length} sounds built without errors, ${used.size} playback routes covered, music in three moods`);
   }
 };

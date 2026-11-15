@@ -109,15 +109,16 @@
   const HELD = {
     pistol: { len: 1.9, grip: 0.1 }, taser: { len: 1.9, grip: 0.1 }, silenced: { len: 2.7, grip: 0.08 },
     shotgun: { len: 3.6, grip: 0.26 }, nailgun: { len: 2.1, grip: 0.12 }, sledge: { len: 3.6, grip: 0.12 },
-    hammer: { len: 4.5, grip: 0.16 },
+    hammer: { len: 4.5, grip: 0.16 }, match: { len: 2.7, grip: .08, sprite: 'silenced' },
+    rifle: { len: 3.9, grip: .32 }, carbine: { len: 3.65, grip: .30 },
   };
   function heldItem(ctx, id, x, y, R) {
-    if (id === 'match') id = 'silenced';
     const h = HELD[id] || HELD.pistol, len = h.len * R;
-    const sh = id === 'hammer' ? sheets.gear : sheets.doll, it = sh && sh.items[id === 'hammer' ? 'smash' : 'held-' + id];
+    const sh = id === 'hammer' ? sheets.gear : sheets.doll, it = sh && sh.items[id === 'hammer' ? 'smash' : 'held-' + (h.sprite || id)];
     if (it) {
       const k = len / it.w;
       ctx.drawImage(sh.img, it.x, it.y, it.w, it.h, x - h.grip * len, y - (it.h * k) / 2, len, it.h * k);
+      if (id === 'match') { ctx.fillStyle = '#c0cbd2'; ctx.fillRect(x + .19 * len, y - .09 * R, .19 * len, .12 * R); }
       return;
     }
     const w = R * 0.42, x0 = x - h.grip * len;
@@ -125,7 +126,17 @@
       ctx.beginPath(); ctx.rect(x0 + a * len, y - ww / 2, (b - a) * len, ww);
       ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = C.out; ctx.lineWidth = Math.max(1, R * 0.1); ctx.stroke();
     };
-    if (id === 'shotgun') { bar('#6b4a2e', 0, 0.38, w * 1.1); bar('#2a2d36', 0.3, 1, w * 0.8); bar('#4a3a2a', 0.55, 0.75, w * 1.25); }
+    if (id === 'rifle' || id === 'carbine') {
+      const wood = id === 'rifle', stock = wood ? '#ab7045' : '#48515c';
+      bar(stock, 0, .31, w * 1.16); bar('#414751', .28, .82, w); bar('#30353b', .79, 1, w * .55);
+      bar(stock, .57, .79, w * 1.15);
+      ctx.fillStyle = '#353c42'; ctx.beginPath(); ctx.moveTo(x0+.4*len,y); ctx.lineTo(x0+.49*len,y);
+      ctx.quadraticCurveTo(x0+.49*len,y+w*1.5,x0+(wood ? .57 : .50)*len,y+w*2);
+      ctx.lineTo(x0+(wood ? .48 : .41)*len,y+w*2); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (!wood) ctx.strokeRect(x0+.34*len,y-w*1.1,.29*len,w*.6);
+    }
+    else if (id === 'match') { bar('#74828b', 0,.51,w*1.06); bar('#293039',.47,.69,w*.55); bar('#404856',.65,1,w*.9); }
+    else if (id === 'shotgun') { bar('#6b4a2e', 0, 0.38, w * 1.1); bar('#2a2d36', 0.3, 1, w * 0.8); bar('#4a3a2a', 0.55, 0.75, w * 1.25); }
     else if (id === 'nailgun') { bar('#ff8a1e', 0, 0.7, w * 1.3); bar('#5a606e', 0.68, 1, w * 0.6); }
     else if (id === 'taser') { bar('#ffd23f', 0, 0.85, w); bar('#1c2028', 0.82, 1, w * 0.8); }
     else if (id === 'silenced') { bar('#2a2d36', 0, 0.55, w); bar('#1c2028', 0.5, 1, w * 0.7); }

@@ -448,7 +448,7 @@
   // ===== 範圍效果 =====
   // 爆炸。side：'p' 傷敵人（self 是連自己也會受的傷）、'e' 只傷玩家。會引爆範圍內的油桶。trap：算陷阱（見 trapHurt）。
   function blast(s, x, y, r, dmg, o = {}) {
-    s.ev.push({ k: o.shock ? 'shock' : 'boom', x, y, r });
+    s.ev.push({ k: o.shock ? 'shock' : 'boom', x, y, r, cue: o.cue });
     if (o.side === 'e') {
       if (hyp(s.p.x - x, s.p.y - y) < r + s.p.r) hitPlayer(s, dmg);
     } else {
@@ -750,8 +750,11 @@
             stun: shockShot, burn: fl.incend && s.rng.chance(0.15 * fl.incend) ? 3 : 0, knock: w.knock || 0, sneak: w.sneak * (fl.assassin ? 1.5 : 1) * (fl.silent ? 1.5 : 1), assassin: !!fl.assassin, hit: null,
           });
         }
-        s.ev.push({ k: 'shot', x: p.x, y: p.y, ang: p.ang, w: s.build.weapon });
-        if (!fl.silent && w.noise) noise(s, p.x, p.y, w.noise * st.noiseMul, true);
+        s.ev.push({ k: 'shot', x: p.x, y: p.y, ang: p.ang, w: s.build.weapon, suppressed: !!fl.silent && w.noise > 0 });
+        if (!fl.silent && w.noise) {
+          noise(s, p.x, p.y, w.noise * st.noiseMul, true);
+          if (w.roomAlarm && !s.cleared) raise(s);
+        }
       }
     }
 
@@ -896,7 +899,7 @@
       const at = reach(def.range);
       s.decoys.push({ x: at.x, y: at.y, t: def.dur + lv, r: def.r });
       noise(s, at.x, at.y, def.r);
-      s.ev.push({ k: 'shriek', x: at.x, y: at.y, r: def.r });
+      s.ev.push({ k: 'shriek', x: at.x, y: at.y, r: def.r, cue: false }); // The activation already plays the decoy speaker.
     } else if (g.id === 'mine') {
       if (s.mines.length >= def.max) s.mines.shift();
       s.mines.push({ x: p.x, y: p.y, arm: 0.6, r: def.r * (1 + 0.15 * lv), stun: def.stun + 0.5 * lv, dmg: def.dmg + 10 * lv });
@@ -908,7 +911,7 @@
     s.recon = null;
     s.eagleCd = def.cd * (1 - 0.2 * (z.lv - 1));
     for (const m of s.team) for (const g of m.gad) if (g.id === 'eagle') g.cd = s.eagleCd;
-    blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', trap: true, shock: true });
+    blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', trap: true, shock: true, cue: 'eaglePulse' });
     for (const e of s.en) {
       if (e.dead || e.ally > 0 || e.spawnT > 0 || hyp(e.x - z.x, e.y - z.y) > z.r + e.r) continue;
       if (e.def.machine || e.boss === 'carrier' || e.boss === 'keystone') { e.stun = Math.max(e.stun, def.emp); e.atk = null; }
@@ -931,7 +934,7 @@
     if (z.t <= 0) { detonateEagle(s); return; }
     for (const e of s.en) if (!e.dead && e.ally <= 0 && e.spawnT <= 0 && hyp(e.x - z.x, e.y - z.y) <= def.scan + e.r) e.mark = Math.max(e.mark, 1);
     z.beat -= dt;
-    if (z.beat <= 0) { z.beat = def.beat; noise(s, z.x, z.y, def.noise); }
+    if (z.beat <= 0) { z.beat = def.beat; noise(s, z.x, z.y, def.noise); s.ev.push({ k: 'eagleLure', x: z.x, y: z.y }); }
   }
   function scramble(s, z) {
     const def = S3.data.gadgets.sergei;
@@ -1104,7 +1107,7 @@
       } else if (z.t <= 0) {
         if (z.k === 'tele') {
           if (z.side === 'p') {
-            blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', knock: 160 });
+            blast(s, z.x, z.y, z.r, z.dmg, { by: 'env', knock: 160, cue: z.crate ? 'cargoDrop' : undefined });
             noise(s, z.x, z.y, 500);
             if (z.crate) {
               if (z.cargo === 'sergei') scramble(s, z);
@@ -1155,7 +1158,7 @@
       if (pet.cd <= 0) {
         pet.cd = 1 / pet.rate;
         s.bul.push({ x: pet.x, y: pet.y, vx: Math.cos(pet.ang) * 820, vy: Math.sin(pet.ang) * 820, r: 3, side: 'p', by: 'ally', dmg: pet.dmg * s.st.hijackMul, life: 0.7, pierce: pet.pierce, tracer: pet.kind === 'expert', bounce: 0 });
-        s.ev.push({ k: 'pshot', x: pet.x, y: pet.y, ang: pet.ang });
+        s.ev.push({ k: 'pshot', id: pet.kind, x: pet.x, y: pet.y, ang: pet.ang });
       }
     }
     s.pets = s.pets.filter((x) => x.t > 0);

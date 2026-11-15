@@ -5,12 +5,12 @@
   const profiles = {
     hitman: {
       name: L('Hitman', '殺手', '杀手'), fixedName: L('Leon Voss', '里昂・沃斯', '利昂·沃斯'), age: 44, district: 'soho',
-      bio: L('Soho. Voss used to take contracts on folded theatre tickets. The last ticket held a seat number and no name. Voss kept it.', '蘇豪。沃斯以前在摺好的戲票上接單。最後一張只有座位號，沒有人名。那張票至今還在西裝口袋裡。', '苏豪。沃斯以前在折好的戏票上接单。最后一张只有座位号，没有人名。那张票至今还在西装口袋里。'),
+      bio: L('Soho. Voss used to take contracts on folded theatre tickets. The last ticket held a seat number and no name. Voss kept it. If a job turns loud, the assault rifle comes out.', '蘇豪。沃斯以前在摺好的戲票上接單。最後一張只有座位號，沒有人名。那張票至今還在西裝口袋裡。要是潛入變成交火，沃斯就換突擊步槍。', '苏豪。沃斯以前在折好的戏票上接单。最后一张只有座位号，没有人名。那张票至今还在西装口袋里。要是潜入变成交火，沃斯就换突击步枪。'),
       category: 'physical', skills: [1, 3, 1], portrait: 'pt-elite-hitman', look: look('bald', '#30251f', '#d9a77c', 'suit', '#2b2d33'),
     },
     spy: {
       name: L('Spy', '間諜', '间谍'), fixedName: L('Kit Arden', '基特・阿登', '基特·阿登'), age: 37, district: 'westminster',
-      bio: L('Westminster. Arden counted the place settings at embassy dinners. An extra knife meant an unlisted guest. An extra driver meant trouble.', '西敏。阿登以前替使館晚宴數餐具：多一把刀，是多一位沒登記的賓客；多一個司機，就該走了。', '威斯敏斯特。阿登以前替使馆晚宴数餐具：多一把刀，是多一位没登记的宾客；多一个司机，就该走了。'),
+      bio: L('Westminster. Arden counted the place settings at embassy dinners. An extra knife meant an unlisted guest. An extra driver meant trouble. The custom suppressed pistol stayed under the jacket.', '西敏。阿登以前替使館晚宴數餐具：多一把刀，是多一位沒登記的賓客；多一個司機，就該走了。訂製消音手槍始終藏在外套裡。', '威斯敏斯特。阿登以前替使馆晚宴数餐具：多一把刀，是多一位没登记的宾客；多一个司机，就该走了。定制消音手枪始终藏在外套里。'),
       category: 'social', skills: [2, 1, 3], portrait: 'pt-elite-spy', look: look('side', '#3a2618', '#f0cdb0', 'suit', '#1e2747'),
     },
     drone_expert: {

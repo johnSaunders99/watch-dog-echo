@@ -35,6 +35,11 @@
   const group = (transform, g) => g ? `<g transform="${transform}">${g}</g>` : '';
   const vector = (id, g) => `<g data-vector-part="${id}">${g}</g>`;
   const solidCaps = new Set(['hardhat','firehelmet','bikehelmet','cap','flatcap','beanie']);
+  // Normalized portrait units. Higher collars stay higher; a deep V shows a little more neck.
+  function neckFit(chin, collar) {
+    const raw = collar - chin, gap = Math.max(4.75, Math.min(7.75, 4.75 + (raw - 8) * .22));
+    return { drop: raw - gap, gap };
+  }
   const flood = (id, col) => `<filter id="@p-${id}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feFlood flood-color="${col}"/><feComposite in2="SourceAlpha" operator="in"/></filter>`;
   const backdrop = '<linearGradient id="@p-bg" x2=".94" y2=".45"><stop stop-color="#54283e"/><stop offset=".42" stop-color="#1f2437"/><stop offset="1" stop-color="#19434b"/></linearGradient>';
   const rim = '<filter id="@p-rim" x="-10%" y="-8%" width="120%" height="116%" color-interpolation-filters="sRGB">'
@@ -60,10 +65,12 @@
     const capped = solidCaps.has(L.o.hat);
     const underCap = g => capped && g ? `<g clip-path="url(#@p-brim)">${g}</g>` : g;
     // 後髮先墊在肩膀後；上衣蓋住脖子下緣；瀏海、帽子和眼鏡在臉前。
-    let g = H && H.back ? underCap(H.back(P.hairC)) : '';
-    g += layer(P.face, ['skin', 'iris']);
     const clothIsPainted = available(P.outfit);
-    g += clothIsPainted ? layer(P.outfit, ['cloth']) + ink.extra(L.o) : group('translate(0 -6)', vector(P.outfit, ink.top(L.o)) + ink.extra(L.o));
+    const {drop} = neckFit(atlas.items[P.face].chin, clothIsPainted ? atlas.items[P.outfit].collar : 71);
+    const head = 'translate(0 ' + drop + ')';
+    const back = group(head, (H && H.back ? underCap(H.back(P.hairC)) : '') + layer(P.face, ['skin', 'iris']));
+    const body = clothIsPainted ? layer(P.outfit, ['cloth']) + ink.extra(L.o) : group('translate(0 -6)', vector(P.outfit, ink.top(L.o)) + ink.extra(L.o));
+    let g = '';
     if (L.freckles) g += group(alignEyes, ink.spots(E.faces.tone(P.skin, -.28)));
     if (L.earring) g += group(`translate(50 ${eyesY+7.8}) scale(1.13 .85) translate(-50 -51.5)`, ink.studs);
     if (P.beard) {
@@ -88,9 +95,10 @@
       const top = atlas.items[id].box[1] * 100 / atlas.size;
       if (top < eyesY) zoom = Math.min(zoom, (eyeLine - 2.5) / (eyesY - top));
     }
+    const cameraY = Math.max(100 - 100 * zoom, eyeLine - (eyesY + drop * .68) * zoom);
     return `<defs>${defs}</defs><rect width="100" height="100" fill="url(#@p-bg)"/>`
       + '<path d="M0 76L100 10V22L0 88Z M0 91L100 25V27L0 93Z" fill="#c8e8f3" opacity=".035"/>'
-      + `<g transform="translate(${(1-zoom)*50} ${eyeLine-eyesY*zoom}) scale(${zoom})"><g filter="url(#@p-rim)">${g}</g></g>`;
+      + `<g transform="translate(${(1-zoom)*50} ${cameraY}) scale(${zoom})"><g filter="url(#@p-rim)">${back}${body}${group(head,g)}</g></g>`;
   }
   function paint(p, L, ink, tier, opt) {
     if (!scenes.has(L)) scenes.set(L, compose(p, L, ink));
@@ -100,6 +108,6 @@
     const id = 'p5-' + (++serial);
     return ink.framed(scene.replace(/@p/g, id), tier, opt, id + '-clip');
   }
-  S3.portraits = { partsOf, prepare };
+  S3.portraits = { partsOf, prepare, neckFit };
   E.faces.useIllustrator(paint);
 })(window.ECHO);

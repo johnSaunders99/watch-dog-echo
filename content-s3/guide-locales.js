@@ -28,10 +28,14 @@
 
     // ----- 武器 -----
     's3.wp.pistol.n': '手槍', 's3.wp.pistol.d': '均衡。',
+    's3.pause.weapons': '武器手冊',
+    's3.wp.match.n': '訂製消音手槍', 's3.wp.match.d': '間諜的 14 發短槍，比一般滅音手槍更準、單發更重。槍聲不會引來守衛。',
     's3.wp.taser.n': '電擊槍', 's3.wp.taser.d': '每第三發電暈目標。',
     's3.wp.shotgun.n': '霰彈槍', 's3.wp.shotgun.d': '近距離一次六顆，會把人打退。',
     's3.wp.nailgun.n': '釘槍', 's3.wp.nailgun.d': '射得很快，釘子會穿過一個敵人。',
     's3.wp.silenced.n': '滅音手槍', 's3.wp.silenced.d': '沒有槍聲，偷襲的傷害三倍。',
+    's3.wp.rifle.n': '突擊步槍', 's3.wp.rifle.d': '殺手的 30 發全自動步槍，持續火力最高。沒裝滅音器，第一槍就會驚動全房。',
+    's3.wp.carbine.n': '卡賓槍', 's3.wp.carbine.d': '30 發，散布比突擊步槍小，單發傷害略低。未滅音仍會驚動全房。',
 
     // ----- 駭入的動作 -----
     's3.hack.free': '免費',
@@ -162,10 +166,14 @@
     's3.mod.overtime.n': '加班', 's3.mod.overtime.d': '敌人多三成，资料 +50%',
 
     's3.wp.pistol.n': '手枪', 's3.wp.pistol.d': '均衡。',
+    's3.pause.weapons': '武器手册',
+    's3.wp.match.n': '定制消音手枪', 's3.wp.match.d': '间谍的 14 发手枪，比普通消音手枪更准，单发威力也更大。枪声不会引来守卫。',
     's3.wp.taser.n': '电击枪', 's3.wp.taser.d': '每第三发电晕目标。',
     's3.wp.shotgun.n': '霰弹枪', 's3.wp.shotgun.d': '近距离一次六颗，会把人打退。',
     's3.wp.nailgun.n': '钉枪', 's3.wp.nailgun.d': '射得很快，钉子会穿过一个敌人。',
     's3.wp.silenced.n': '消音手枪', 's3.wp.silenced.d': '没有枪声，偷袭的伤害三倍。',
+    's3.wp.rifle.n': '突击步枪', 's3.wp.rifle.d': '杀手的 30 发全自动步枪，持续火力最高。没装消音器，第一枪就会惊动全房。',
+    's3.wp.carbine.n': '卡宾枪', 's3.wp.carbine.d': '30 发，散布比突击步枪小，单发伤害略低。未消音仍会惊动全房。',
 
     's3.hack.free': '免费',
     's3.hack.overload': '过载',
@@ -286,10 +294,14 @@
     's3.mod.overtime.n': 'Overtime', 's3.mod.overtime.d': '30% more enemies, data +50%',
 
     's3.wp.pistol.n': 'Pistol', 's3.wp.pistol.d': 'Balanced.',
+    's3.pause.weapons': 'Weapons guide',
+    's3.wp.match.n': 'Custom suppressed pistol', 's3.wp.match.d': 'The spy’s 14-round sidearm is more accurate and hits harder than the standard silenced pistol. Guards cannot hear the shot.',
     's3.wp.taser.n': 'Shock pistol', 's3.wp.taser.d': 'Every third shot stuns.',
     's3.wp.shotgun.n': 'Shotgun', 's3.wp.shotgun.d': 'Six pellets at close range, with a shove.',
     's3.wp.nailgun.n': 'Nail gun', 's3.wp.nailgun.d': 'Very fast, and each nail goes through one enemy.',
     's3.wp.silenced.n': 'Silenced pistol', 's3.wp.silenced.d': 'No noise, and triple damage on the unaware.',
+    's3.wp.rifle.n': 'Assault rifle', 's3.wp.rifle.d': 'The hitman’s 30-round automatic has the highest sustained firepower. The first shot alerts the whole room unless you fit a silencer.',
+    's3.wp.carbine.n': 'Carbine', 's3.wp.carbine.d': '30 rounds. Tighter spread and less damage per shot than the assault rifle; unsuppressed fire still alerts the whole room.',
 
     's3.hack.free': 'free',
     's3.hack.overload': 'Overload',

@@ -304,7 +304,7 @@
     if (e.cd <= 0 && Math.abs(A.angDiff(want, e.ang)) < 0.25) {
       e.cd = 0.4;
       s.bul.push({ x: e.x + Math.cos(e.ang) * e.r, y: e.y + Math.sin(e.ang) * e.r, vx: Math.cos(e.ang) * 560, vy: Math.sin(e.ang) * 560, r: 4, side: 'p', by: 'ally', dmg: e.def.dmg * 2.2 * s.st.hijackMul * s.spec.scale, life: 1.5, pierce: 0, bounce: 0 });
-      s.ev.push({ k: 'pshot', x: e.x, y: e.y, ang: e.ang });
+      s.ev.push({ k: 'pshot', id: 'ally', x: e.x, y: e.y, ang: e.ang });
     }
   }
 

@@ -4,7 +4,11 @@
 (function (E) {
   const S3 = (E.s3 = E.s3 || {});
   const D = () => S3.data;
-  const SAVE_VERSION = 3;
+  const SAVE_VERSION = 4;
+  function migrateWeapon(m) {
+    const id = m.p.elite || m.p.occupation;
+    if (m.weapon && (id === 'hitman' || id === 'spy')) m.weapon = D().weaponByJob[id];
+  }
   // 舊隊員自己的 Q 換成一般裝備；已經放在共用 E 的裝備是玩家的，不轉換。
   function migrateMember(m) {
     if (!m.gadget) return;
@@ -19,6 +23,7 @@
       return Object.assign({ roster: [], vol: 0, story: {}, rescued: 0 }, m, { perks });
     },
     2: (m) => { (m.roster || []).forEach(migrateMember); return m; },
+    3: (m) => { (m.roster || []).forEach(migrateWeapon); return m; },
   });
   const RUN = E.save.slot('watchdogs-echo.s3.run', SAVE_VERSION, {
     2: (run) => {
@@ -28,9 +33,10 @@
         ? { eagle: 'kamikaze', sergei: 'cargo', hammer: 'sledge', blackout: 'escort' }[id] : id;
       if (run.pending && run.pending.kind === 'gadget') run.pending.picks = [...new Set(run.pending.picks.map(replace))];
       if (run.shop) for (const it of run.shop.items) if (it.k === 'gadget' && !it.sold) it.id = replace(it.id);
-      run.v = SAVE_VERSION;
+      run.v = 3;
       return run;
     },
+    3: (run) => { run.squad.forEach(migrateWeapon); run.v = SAVE_VERSION; return run; },
   });
   const REWARD_WEIGHT = { fight: { exploit: 50, gadget: 12, data: 16, heal: 13, max: 9 }, elite: { exploit: 60, gadget: 40 } };
   const SQUAD = 3, ROSTER_MAX = 8, RECRUIT_COST = 2;

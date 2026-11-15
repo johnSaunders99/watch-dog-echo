@@ -76,57 +76,14 @@
   const lastPlayed = {};
   function play(name, gap = 0) {
     const now = performance.now();
-    if (gap && now - (lastPlayed[name] || 0) < gap) return;
+    if (gap && now - (lastPlayed[name] ?? -Infinity) < gap) return;
     lastPlayed[name] = now;
-    sfx.play(name);
+    sfx.play(S3.audio.byKey[name].id);
   }
-  const SHOT = { pistol: 's3gun', taser: 's3taser', shotgun: 's3shotgun', nailgun: 's3nail', silenced: 's3silenced', match: 's3silenced' };
   const EVENT_SOUND = { bluedoor: 'dream', cat: 'dream', wrench: 'cameo', darcy: 'cameo', aiden: 'cameo', marcus: 'cameo' };
-  const GADGET_SOUND = { escort: 'droneJam', kamikaze: 'emp', cargo: 'sergei', eagle: 'prof', blackout: 'blackout', sergei: 'sergei', hammer: 'smash', sledge: 'smash', mask: 'dream', spider: 'droneJam', lure: 's3shriek', mine: 'lock',
-    strike: 'lock', expert: 'droneJam', brawl: 's3wave', swarm: 's3shriek', hypnosis: 'dream', eightball: 's3swing' };
   function sound(ev) {
-    switch (ev.k) {
-      case 'shot': play(SHOT[ev.w] || 's3gun', 40); break;
-      case 'eshot': play('s3eshot', 70); break;
-      case 'pshot': play('s3nail', 90); break;
-      case 'hit': play('s3hit', 45); break;
-      case 'kill': play(ev.boss ? 's3bossdown' : ev.machine ? 's3scrap' : 's3kill', 50); break;
-      case 'hurt': play('s3hurt'); break;
-      case 'dead': case 'down': play('desync'); break;
-      case 'swap': play('s3dash'); break;
-      case 'getaway': play('bleed'); break;
-      case 'dash': play('s3dash'); break;
-      case 'hack': play('s3hack', 60); break;
-      case 'denied': play('s3deny', 150); break;
-      case 'boom': play('s3boom', 60); break;
-      case 'shock': play('s3shock', 60); break;
-      case 'zap': play('s3zap', 60); break;
-      case 'arc': play('s3zap', 60); break;
-      case 'steam': play('s3steam'); break;
-      case 'spotted': play('spotted', 300); break;
-      case 'alarm': play('alarm'); break;
-      case 'clang': play('s3clang', 60); break;
-      case 'takedown': play('takedown'); break;
-      case 'melee': case 'swing': case 'leap': play('s3swing', 80); break;
-      case 'pickup': play(ev.what === 'data' ? 's3pick' : 'gain', 40); break;
-      case 'reload': play('s3reload'); break;
-      case 'crash': play('crash'); break;
-      case 'rev': play('s3rev'); break;
-      case 'gadget': play(GADGET_SOUND[ev.id] || 'blip'); break;
-      case 'wave': play('s3wave'); break;
-      case 'clear': play('s3clear'); break;
-      case 'phase': play('s3phase'); break;
-      case 'revive': play('bleed'); break;
-      case 'snipe': play('s3snipe'); break;
-      case 'lob': play('s3lob', 100); break;
-      case 'hijack': play('droneJam'); break;
-      case 'raise': play('lock'); break;
-      case 'breach': play('camOff'); break;
-      case 'mark': play('prof'); break;
-      case 'shriek': play('s3shriek'); break;
-      case 'guard': play('s3clang'); break;
-      case 'sneeze': play('noise'); break;
-    }
+    const cue = S3.audio.fromEvent(ev);
+    if (cue) play(...cue);
   }
 
   // ===== 文字小工具 =====
@@ -692,7 +649,7 @@
   // 首領登場：整張插圖加名字。第一次見面播完整的一段，之後每次只講一句。
   function bossIntro(id, next) {
     const bb = ST.bossBeats[id], o = { bg: 'boss-' + id, banner: t('s3.boss.' + id + '.n') };
-    play('s3phase');
+    play('phase');
     if (bb.meet && !meta.story[bb.meet]) beat(bb.meet, o, next);
     else talk([{ who: bb.who, k: oneOf(bb.again) }], o, next);
   }
@@ -856,11 +813,12 @@
     onModalKey = (e) => { if (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'Tab') { e.preventDefault(); unpause(); } };
   }
   function unpause() { closeModal(); paused = false; mode = 'play'; acc = 0; }
-  // 敵人和設施的簡短說明。
+  // 武器可單獨攤開比對，不必捲過整份敵人和設施表。
   function guideHtml() {
     const foes = Object.keys(D.enemies).filter((k) => D.enemies[k].from <= (run ? run.roomNo + 1 : 99));
     const row = (k, pre) => `<div><b>${esc(t(pre + k + '.n'))}</b><span>${esc(t(pre + k + '.d'))}</span></div>`;
-    return `<details class="guide"><summary>${esc(t('s3.pause.guide'))}</summary><div class="guide-grid">${foes.map((k) => row(k, 's3.en.')).join('')}</div>
+    return `<details class="guide"><summary>${esc(t('s3.pause.weapons'))}</summary><div class="guide-grid">${Object.keys(D.weapons).map(k => row(k, 's3.wp.')).join('')}</div></details>
+      <details class="guide"><summary>${esc(t('s3.pause.guide'))}</summary><div class="guide-grid">${foes.map((k) => row(k, 's3.en.')).join('')}</div>
       <div class="guide-grid">${['junction', 'vent', 'barrel', 'car', 'bollard', 'camera', 'speaker'].map((k) => row(k, 's3.prop.')).join('')}</div></details>`;
   }
 
@@ -922,7 +880,7 @@
     const people = won ? (res.freed ? t('s3.end.freed', { n: res.freed }) : '') : res.captured.length ? t('s3.end.captured', { names: listOf(res.captured.map(nameOf)) }) : t('s3.end.safe');
     const u = res.unlocked, hire = u && u.job && S3.ops.person(u.job);
     const unlocks = u && (hire || u.events.length) ? `<div class="win-contacts">${hire ? face(hire) : ''}<div>
-      ${hire ? `<b>${esc(t('s3.ops.arrival', { name: nameOf(hire), job: jobOf(hire) }))}</b>` : ''}
+      ${hire ? `<b>${esc(t('s3.ops.arrival', { name: nameOf(hire), job: jobOf(hire) }))}</b><span class="chip">${esc(t('s3.wp.' + R.memberOf(hire).weapon + '.n'))}</span>` : ''}
       ${u.events.map((id) => `<div>${esc(t('s3.ops.contact', { name: t('s3.ev.' + id + '.t') }))}</div>`).join('')}</div></div>` : '';
     const show = () => {
       mode = 'menu';
