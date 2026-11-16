@@ -57,21 +57,25 @@
   for (const [id, def] of Object.entries(profiles)) { def.id = id; def.perk = id; }
   // Personal kit belongs to the person, never to the visit or to a squad slot.
   const T=(id,weapon,gadget,mods={},flags={})=>({id,weapon,gadget,mods,flags});
+  // Class identity survives a kit change; the kit only selects its weapon, gear and variation.
+  const shared={hitman:{flags:{combatExec:1}},spy:{flags:{longReach:1}},drone_expert:{mods:{hijackMul:1.12}},
+    hooligan:{flags:{lifesteal:1}},paramedic:{flags:{nurse:1}},barrister:{flags:{seniorBail:1}},
+    hypnotist:{flags:{selfFocus:1}}};
   const templates={
-    hitman:[T('contract','rifle','execute',{pierce:1},{combatExec:1}),T('runner','carbine','quickstep',{}, {dashLoad:1,decoy:1})],
+    hitman:[T('contract','rifle','execute',{pierce:1}),T('runner','carbine','quickstep',{}, {dashLoad:1,decoy:1})],
     spy:[T('spotter','match','strike',{}, {assassin:1}),T('undercover','match','veil',{}, {freeFirst:1})],
-    drone_expert:[T('flightdeck','pistol','shockdrone',{hijackMul:1.35}),T('gunship','taser','expert',{}, {freeFirst:1})],
-    hooligan:[T('terrace','shotgun','brawl',{maxHp:24}),T('turnstile','pistol','rush',{}, {lifesteal:1})],
+    drone_expert:[T('flightdeck','pistol','shockdrone',{hijackMul:1.35/1.12}),T('gunship','taser','expert',{}, {freeFirst:1})],
+    hooligan:[T('terrace','shotgun','brawl',{maxHp:24}),T('turnstile','pistol','rush')],
     beekeeper:[T('apiary','taser','swarm',{}, {hiveMark:1}),T('veilguard','nailgun','hiveguard',{}, {guard:1})],
     statue:[T('plinth','silenced','performance',{}, {still:1}),T('encore','shotgun','performance',{}, {encore:1})],
-    hypnotist:[T('watch','silenced','hypnosis',{focusRegen:1.5},{selfFocus:1,watchGuard:1}),T('beat','taser','metronome',{}, {guard:1,selfFocus:1})],
+    hypnotist:[T('watch','silenced','hypnosis',{focusRegen:1.5},{watchGuard:1}),T('beat','taser','metronome',{}, {guard:1})],
     anarchist:[T('bottle','shotgun','molotov',{}, {trapDouble:1}),T('fuse','nailgun','pipebomb',{}, {scrapBlast:1})],
-    paramedic:[T('station','taser','medbeacon',{}, {nurse:1}),T('stretcher','pistol','medbeacon',{}, {mobileWard:1})],
-    barrister:[T('chambers','silenced','injunction',{}, {seniorBail:1}),T('circuit','taser','escortWrit',{}, {seniorBail:1})],
+    paramedic:[T('station','taser','medbeacon',{}, {stationWard:1}),T('stretcher','pistol','medbeacon',{}, {mobileWard:1})],
+    barrister:[T('chambers','silenced','injunction'),T('circuit','taser','escortWrit')],
   };
   const personal=(job,id,max,mods,flags)=>({owner:job,id,max,rar:'u',tag:'body',mods:mods||{},flags:flags||{}});
   const xp=[
-    personal('hitman','reprieve',2,null,{reprieve:1}),personal('hitman','sidesteps',3,{dashCharges:1}),
+    personal('hitman','reprieve',2,null,{bloodReturn:1}),personal('hitman','sidesteps',3,{dashCharges:1}),
     personal('spy','vanish',3,null,{vanish:1}),personal('spy','deadletter',2,null,{deadletter:1}),
     personal('drone_expert','coilTap',2,null,{coilTap:1}),personal('drone_expert','overcell',3,null,{overcell:1}),
     personal('hooligan','terraceFists',3,null,{terraceFists:1}),personal('hooligan','chant',2,null,{chant:1}),
@@ -96,19 +100,49 @@
     const quirks=p.quirks && p.quirks.length?p.quirks:[one.id,r.weighted(habits.filter(q=>q!==one && q.id!==one.rival),q=>q.weight??1).id];
     return {...p,elite:id,template:(kits.find(t=>t.id===forced)||r.pick(kits)).id,traits,quirks};
   }
+  const colleagues={}, byId=new Map();
+  const extras={hitman:'straps',spy:'bowtie',hooligan:'scarf',anarchist:'scarf',paramedic:'stetho'};
+  function register(job,row,retired=false){
+    const d=profiles[job], stem=d.portrait.slice('pt-elite-'.length);
+    const look={...d.look,...row.look,job:d,iris:'#695548',sleepy:row.traits.includes('nightowl'),
+      o:{...d.look.o,extra:extras[job],tie:job==='spy'?'#322f45':'#242831',
+        ...(job==='hooligan'?{scarf:'#c83b46',stripe:'#efe9db'}:job==='anarchist'?{scarf:'#a63745',stripe:'#682a34'}:{}),...row.look.o}};
+    const def={...row,job,retired,id:'peer-'+job+'-'+row.key,portrait:(retired?'pt-alumni-':'pt-recruit-')+stem+'-'+row.slot,look};
+    byId.set(def.id,def);return def;
+  }
+  for(const [job,rows] of Object.entries(E.s3.casting.peers))colleagues[job]=rows.map(row=>register(job,row));
+  for(const [job,rows] of Object.entries(E.s3.casting.retired))for(const row of rows)register(job,row,true);
+  const colleagueOf=p=>byId.get(p.id);
+  // Shared by the dossier and the drawn fallback; the saved age still seeds that person's original equipment.
+  const ageOf=p=>colleagueOf(p)?.age ?? p.age;
+  function castPerson(job,id,identity,loadout){
+    const d=profiles[job],[hack,physical,social]=d.skills;
+    return {id,elite:job,occupation:job,district:d.district,fixedName:{...identity.fixedName},age:identity.age,
+      skills:{hack,physical,social},template:loadout.kit,traits:[...loadout.traits],quirks:[...loadout.quirks],flaw:loadout.flaw||null,threat:48};
+  }
+  // seed remains accepted for old callers. Only explicit test/preview loadouts override a contact's kit.
   function person(id,seed,forced) {
-    const d=profiles[id], [hack,physical,social]=d.skills;
-    return fit({id:'elite-'+id,elite:id,occupation:id,district:d.district,fixedName:d.fixedName,age:d.age,
-      skills:{hack,physical,social},traits:[],quirks:[],flaw:null,threat:48},seed,forced);
+    const p=castPerson(id,'elite-'+id,profiles[id],E.s3.casting.leads[id]);
+    if(forced && templates[id].some(t=>t.id===forced))p.template=forced;
+    return p;
+  }
+  function colleague(def,alumnus=false){
+    const p=castPerson(def.job,def.id,def,def);
+    if(def.job==='drone_expert')p.occupation='drone_op';
+    p.rare=true;if(alumnus)p.alumnus=true;
+    return p;
   }
   function street(seed,p) {
-    if(p.occupation==='drone_op')return fit(p,seed);
+    if(p.occupation==='drone_op'){
+      if(p.elite)return p;
+      return colleague(E.rng.derive(seed,'street-pilot',p.district,p.id).pick(colleagues.drone_expert));
+    }
     const r=E.rng.derive(seed,'street-signal',p.id);
     if(p.rare || !r.chance(1/256)) return p;
     const id=r.pick(Object.keys(signatures)), v=signatures[id];
     return {...p,id:'signal-'+id,signal:id,occupation:v.job,fixedName:v.name,age:v.age,heritage:'british',rare:true,traits:v.traits.slice(),quirks:v.quirks.slice(),flaw:null,
       skills:id==='lynx'?{hack:3,physical:1,social:1}:id==='leopard'?{hack:0,physical:3,social:1}:{hack:1,physical:1,social:3}};
   }
-  function lookOf(p){return p.signal?signatures[p.signal].look:p.elite&&p.occupation!=='drone_op'?profiles[p.elite].look:null;}
-  E.s3.ops={profiles,templates,xp,templateOf,fit,person,street,signatures,lookOf,jobOf:p=>profiles[p.elite] || E.people.occupationOf(p)};
+  function lookOf(p){return colleagueOf(p)?.look || (p.signal?signatures[p.signal].look:p.elite&&!p.alumnus&&p.occupation!=='drone_op'?profiles[p.elite].look:null);}
+  E.s3.ops={profiles,templates,shared,xp,templateOf,fit,person,street,signatures,lookOf,ageOf,colleagues,colleagueOf,colleague,jobOf:p=>profiles[p.elite] || E.people.occupationOf(p)};
 })(window.ECHO);

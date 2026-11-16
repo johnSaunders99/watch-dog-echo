@@ -123,10 +123,10 @@
       return best;
     }
 
-    function gadgetPlan(s, foes, inp, specialtyOnly=false) {
+    function gadgetPlan(s, foes, inp, specialtyOnly=false, personalOnly=false) {
       const p = s.p;
       p.gad.forEach((g, i) => {
-        if (g.cd > 0 || !foes.length || inp.g1 && ['performance','hypnosis','metronome','molotov','pipebomb','swarm','shockdrone','injunction'].includes(p.gad[0].id) || specialtyOnly && (i || !['performance','hypnosis','metronome','molotov','pipebomb'].includes(g.id))) return;
+        if (personalOnly && i || g.cd > 0 || !foes.length || inp.g1 && ['performance','hypnosis','metronome','molotov','pipebomb','swarm','shockdrone','injunction'].includes(p.gad[0].id) || specialtyOnly && (i || !['performance','hypnosis','metronome','molotov','pipebomb'].includes(g.id))) return;
         const key = i === 0 ? 'g1' : 'g2';
         const nearMe = foes.filter((e) => hyp(e.x - p.x, e.y - p.y) < 110 + e.r).length;
         const far = foes.slice().sort((a, b) => hyp(a.x - p.x, a.y - p.y) - hyp(b.x - p.x, b.y - p.y))[0];
@@ -177,7 +177,11 @@
           if(at && !(g.id==='shockdrone' && s.shockDrone)){inp[key]=true;inp.ax=at.x;inp.ay=at.y;inp.fire=false;}
         }else if(g.id==='medbeacon'){if(p.hp<p.maxHp*.85||foes.length>=2){inp[key]=true;inp.ax=p.x;inp.ay=p.y;}}
         else if(g.id==='escortWrit'||g.id==='hiveguard'){inp[key]=foes.some(e=>hyp(e.x-p.x,e.y-p.y)<(g.id==='escortWrit'?470:220));}
-        else if(g.id==='execute'||g.id==='rush'||g.id==='quickstep'){if(nearMe||g.id==='quickstep' && p.ammo<p.mag*.4){inp[key]=true;inp.melee=false;}}
+        else if(g.id==='execute' && !g.armed && !inp.melee && s.alert){
+          const at=A.launcherImpact(s,far.x,far.y);
+          if(!at.unsafe && hyp(far.x-at.x,far.y-at.y)<at.r+far.r){inp[key]=true;inp.ax=far.x;inp.ay=far.y;}
+        }
+        else if(g.id==='rush'||g.id==='quickstep'){if(nearMe||g.id==='quickstep' && p.ammo<p.mag*.4){inp[key]=true;inp.melee=false;}}
         else if(g.id==='veil'){if(!p.cloak || p.cloak<=0)inp[key]=true;}
         else if (g.id === 'hammer' || g.id === 'sledge') { if (nearMe) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; } }
         else if (g.id === 'eagle' && s.recon) {
@@ -191,7 +195,7 @@
           if (c.e && hyp(c.e.x - p.x, c.e.y - p.y) > 120) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
         } else if (g.id === 'escort' || g.id === 'expert' || g.id === 'brawl') { if (s.alert || foes.some((e) => e.state === 'combat')) inp[key] = true; }
         else if (g.id === 'strike') {
-          const def = S3.data.gadgets[g.id], c = cluster(def.r, def.range);
+          const def = S3.data.gadgets[g.id], c = cluster(def.r*s.st.aoeMul, def.range);
           if (c.e) { inp[key] = true; inp.ax = c.e.x; inp.ay = c.e.y; }
         } else if (g.id === 'eightball') {
           if (hyp(far.x - p.x, far.y - p.y) < S3.data.gadgets[g.id].r) { inp[key] = true; inp.ax = far.x; inp.ay = far.y; }
@@ -204,6 +208,10 @@
       });
     }
 
+    function readAim(){
+      b.aimT-=sim.DT;
+      if(b.aimT<=0){b.aimT=.25;b.aimErr=(rng.next()-.5)*.14;}
+    }
     function act(s) {
       const p = s.p;
       const inp = { mx: 0, my: 0, ax: p.x, ay: p.y - 100, fire: false, focus: false, dash: false, hack: false, melee: false, g1: false, g2: false, reload: false, swap: -1 };
@@ -227,8 +235,7 @@
       const foes = s.en.filter((e) => !e.dead && e.ally <= 0 && e.spawnT <= 0);
       b.strafeT -= sim.DT;
       if (b.strafeT <= 0) { b.strafeT = 0.8 + rng.next() * 1.2; b.strafe = -b.strafe; }
-      b.aimT -= sim.DT;
-      if (b.aimT <= 0) { b.aimT = 0.25; b.aimErr = (rng.next() - 0.5) * 0.14; }
+      readAim();
 
       // 目標：有射擊線的最近敵人；沒有就最近的。被盾擋住正面的排後面。
       let tgt = null, bd = 1e9, los = false;
@@ -292,7 +299,78 @@
       }
       return inp;
     }
-    return { act, state: b };
+    // The wing uses the test pilot's navigation, threat reading and gear planner, not its route/menu authority.
+    function wing(s){
+      const p=s.p,lead=s.team[s.control].body,g=s.order,dist=(a,b)=>hyp(a.x-b.x,a.y-b.y);
+      const inp={mx:0,my:0,ax:lead.x,ay:lead.y,reload:p.ammo<p.mag*.5};
+      const hostile=s.en.filter(e=>!e.dead && e.ally<=0 && e.spawnT<=0),reserved=e=>S3.fireteam.reserved(s,e);
+      const safe=hostile.filter(e=>!reserved(e)),rescue=s.team.filter(m=>m.down && m.rescue>0).sort((a,b)=>dist(a.body,p)-dist(b.body,p))[0];
+      const goal=rescue?rescue.body:S3.fireteam.post(s,s.active),leash=rescue?41:24;
+      if(dist(p,goal)>leash)[inp.mx,inp.my]=toward(s,goal.x,goal.y);
+      else if(!rescue && g.kind!=='hold'){
+        // Leave the leader's approach and line of fire clear.
+        const near=s.team.find(m=>!m.down && m.body!==p && dist(m.body,p)<38);
+        if(near){inp.mx=(p.x-near.body.x)/28;inp.my=(p.y-near.body.y)/28;}
+      }
+      const speed=hyp(inp.mx,inp.my);
+      if(speed && !rescue){
+        const nx=inp.mx/speed,ny=inp.my/speed;
+        for(const m of s.team)if(!m.down && m.body!==p){
+          const dx=m.body.x-p.x,dy=m.body.y-p.y,ahead=nx*dx+ny*dy,across=nx*dy-ny*dx;
+          if(ahead>0 && ahead<76 && Math.abs(across)<44){
+            const side=Math.abs(across)>3?-Math.sign(across):s.active%2?1:-1,steer=1.6*(1-ahead/90);
+            inp.mx-=ny*side*steer;inp.my+=nx*side*steer;
+          }
+        }
+      }
+      const dangerNow=danger(s);
+      if(dangerNow.any && !s.cleared){inp.mx+=dangerNow.x;inp.my+=dangerNow.y;inp.dash=dangerNow.urgent;}
+      if(s.cleared || (!s.alert && !s.openCombat) || !safe.length)return inp;
+      const target=g.target && safe.includes(g.target)?g.target:safe.slice().sort((a,b)=>dist(a,p)-dist(b,p))[0];
+      if(!target)return inp;
+      const los=A.clear(s,p.x,p.y,target.x,target.y,true),range=dist(target,p);
+      readAim();
+      const aim=Math.atan2(target.y-p.y,target.x-p.x)+b.aimErr*Math.min(1,range/300);
+      inp.ax=p.x+Math.cos(aim)*range;inp.ay=p.y+Math.sin(aim)*range;
+      // Covering fire in bursts. A deliberate focus order commits both wings to sustained fire.
+      const covering=(s.t+s.active*.47)%1.6<.85;
+      inp.fire=!rescue && !dangerNow.urgent && (g.kind==='focus'||covering) && los && range<s.weapon.range*.92 && !A.shielded(target,p.x,p.y);
+      const td=sim.takedownTarget(s);
+      inp.melee=!rescue && td && !reserved(td) && (td===target || dist(td,lead)>185);
+      if(inp.melee)inp.fire=false;
+      if(!inp.melee && !rescue && (s.tick+s.active*4)%12===0){
+        // Slot two is the player's shared gear. Never let it replace a wing's aim or movement.
+        gadgetPlan(s,safe,inp,false,true);
+        const medic=p.gad[0];
+        if(medic?.id==='medbeacon' && medic.cd<=0){
+          const patient=s.team.filter(m=>!m.down && dist(m.body,p)<S3.data.gadgets.medbeacon.range && m.hp<m.maxHp*.8).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];
+          if(patient){inp.g1=true;inp.fire=false;inp.ax=patient.body.x;inp.ay=patient.body.y;}
+        }
+        for(let slot=0;slot<2;slot++){const key=slot?'g2':'g1',gear=p.gad[slot];if(!inp[key]||!gear)continue;
+          const id=gear.id,def=S3.data.gadgets[id],area=!!def.r||['eagle','cargo','sergei','spider','brawl','expert','escort','shockdrone','mine','execute'].includes(id);
+          const allyArea=area && !['medbeacon','injunction','escortWrit','hiveguard','veil','hypnosis','metronome','performance'].includes(id);
+          const limit=def.range??Infinity,len=dist({x:inp.ax,y:inp.ay},p)||1,k=Math.min(1,limit/len);
+          const at=id==='execute'?A.launcherImpact(s,inp.ax,inp.ay):{x:p.x+(inp.ax-p.x)*k,y:p.y+(inp.ay-p.y)*k};
+          const r=60+((def.r||100)+(['molotov','pipebomb'].includes(id)?45*(s.fl.fragments||0):0))*
+            (['execute','strike','molotov','pipebomb'].includes(id)?s.st.aoeMul:1);
+          if(slot || allyArea && (s.team.some(m=>!m.down && dist(m.body,at)<r) || hostile.some(e=>reserved(e) && dist(e,at)<r)))inp[key]=false;
+        }
+        if(!inp.g1 && !inp.g2 && los && !reserved(target)){
+          const h=sim.pickHack(s,target.x,target.y);
+          if(h?.ok && h.enemy===target && h.act!=='detonate' && !(h.act==='stun' && (target.stun>.3 || target.beeOpen>s.t || target.trance>0))){inp.hack=true;inp.ax=target.x;inp.ay=target.y;inp.fire=false;}
+        }
+      }
+      const armed=p.gad.find(g=>g.armed);
+      if(armed && inp.fire){
+        const impact=A.launcherImpact(s,inp.ax,inp.ay),r=impact.r+60;
+        if(!los || impact.unsafe || dist(target,impact)>impact.r+target.r || hostile.some(e=>reserved(e) && dist(e,impact)<r)){
+          inp.fire=false;inp[p.gad[0]===armed?'g1':'g2']=true; // Unload: the wing can cover this lane with its rifle instead.
+        }
+      }
+      if(inp.fire && hostile.some(e=>reserved(e) && A.segDist(e.x,e.y,p.x,p.y,inp.ax,inp.ay)<e.r+22))inp.fire=false;
+      return inp;
+    }
+    return { act, wing, state: b };
   }
 
   // ===== 路上的決定：選門、選獎勵、逛黑市 =====
@@ -365,7 +443,7 @@
     const m = { echoes: 0, perks: o.perks || {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [] };
     const people=o.crew || S3.run.crewFor(seed);
     if(o.omni)m.roster=people.map(p=>({p,status:'ready',runs:0}));
-    const run=o.omni ? S3.omni.create(seed,people,m) : S3.run.start(seed,people,m);
+    const run=o.omni ? S3.omni.create(seed,people,m) : S3.run.start(seed,people,m,o.deployment);
     if (o.held && !o.omni) run.held = o.held;
     const windows=[];
     const limit = o.limit || 60 * 150, rooms = [];

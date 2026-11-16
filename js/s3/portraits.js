@@ -8,11 +8,11 @@
     if(!streetLooks.has(p.signal))streetLooks.set(p.signal,{...base,...S3.ops.lookOf(p),mood:p.signal==='leopard'?'neutral':'smirk',beardKind:null,specs:p.signal==='lynx',iris:'#77644c',earring:false,freckles:false});
     return streetLooks.get(p.signal);
   }
-  function partsOf(p, L = E.faces.look(p)) {
+  function partsOf(p, L = S3.ops?.colleagueOf(p)?.look || E.faces.look(p)) {
     L=portraitLook(p,L);
-    const o = L.o;
+    const o = L.o, age=S3.ops?.ageOf(p) ?? p.age;
     return {
-      face: 'face-' + (p.age < 35 ? 'y' : p.age < 55 ? 'm' : 'o') + '-' + moods[L.mood],
+      face: 'face-' + (age < 35 ? 'y' : age < 55 ? 'm' : 'o') + '-' + moods[L.mood],
       hair: L.style === 'bald' ? null : 'hair-' + L.style,
       beard: L.beardKind ? 'beard-' + L.beardKind : null,
       outfit: 'outfit-' + o.top, hat: o.hat ? 'hat-' + o.hat : null,
@@ -41,7 +41,7 @@
     (!loaded || loaded.get(id).every(img => img.complete && img.naturalWidth)));
   const group = (transform, g) => g ? `<g transform="${transform}">${g}</g>` : '';
   const vector = (id, g) => `<g data-vector-part="${id}">${g}</g>`;
-  const solidCaps = new Set(['hardhat','firehelmet','bikehelmet','cap','flatcap','beanie']);
+  const solidCaps = new Set(['hardhat','firehelmet','bikehelmet','cap','flatcap','beanie','beekeeper','courtWig']);
   // Normalized portrait units. Higher collars stay higher; a deep V shows a little more neck.
   function neckFit(chin, collar) {
     const raw = collar - chin, gap = Math.max(4.75, Math.min(7.75, 4.75 + (raw - 8) * .22));
@@ -117,6 +117,12 @@
     return ink.framed(scene.replace(/@p/g, id), tier, opt, id + '-clip');
   }
   function face(p,options){
+    const peer=S3.ops.colleagueOf(p);
+    if(peer){
+      const fallback=E.faces.of(p.age===peer.age?p:{...p,age:peer.age},options,peer.look), path=S3.pictures[peer.portrait];
+      // A missing or still-loading print leaves this person's own face visible underneath.
+      return path ? `<span class="cast-print${options?.round?' round':''}" style="--cast-print:url('${S3.assets.img(path).src}')">${fallback}</span>` : fallback;
+    }
     if(!p.elite || p.id!=='elite-'+p.elite)return E.faces.of(p,options);
     const path=S3.pictures[S3.ops.profiles[p.elite].portrait], im=path && S3.assets.img(path);
     return im?.complete && im.naturalWidth ? `<img src="${S3.assets.url(path)}" alt="">` : E.art.avatar('agent');

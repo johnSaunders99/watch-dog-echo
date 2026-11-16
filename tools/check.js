@@ -1,5 +1,6 @@
 // 自動測試：不需要瀏覽器，也不需要安裝任何套件。
 //   node tools/check.js                  跑全部檢查
+//   node tools/check.js --s3             只跑《零時差》，含裝備、漏洞與速查手冊
 //   node tools/check.js --show zh-Hant   另外印出某一條第一季路線的完整文字
 //   node tools/check.js --samples 3      另外印出每個行政區 3 個隨機路人的三語檔案，給人看文字品質
 // 第三季的測試在 tools/check-s3.js，這裡會一起跑。
@@ -41,6 +42,17 @@ function sandbox(list) {
   return { E: ctx.ECHO, tables, ctx };
 }
 
+let problems = 0;
+const fail = (msg) => { problems++; console.log('FAIL', msg); };
+const section = (title) => console.log(`\n## ${title}`);
+const checkS3 = () => require('./check-s3.js')({ sandbox, fail, section, storage, root });
+if (argv.includes('--s3')) {
+  checkS3();
+  console.log(problems ? problems + ' problem(s)' : 'All S3 checks passed');
+  process.exitCode = problems ? 1 : 0;
+  return;
+}
+
 // 第一季：照 index.html 的順序載入（介面相關的檔案除外）。
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]).filter((f) => !/ui\/|main\.js/.test(f));
@@ -52,9 +64,6 @@ const S1 = sandbox(scripts);
 const S2 = sandbox(S2_SCRIPTS);
 let E = S1.E; // 第一季的段落用第一季的沙盒；第二季的段落開始前換成 S2
 
-let problems = 0;
-const fail = (msg) => { problems++; console.log('FAIL', msg); };
-const section = (title) => console.log(`\n## ${title}`);
 const render = (entries) => entries.filter((e) => e.c !== 'pause' && e.k).map((e) => E.i18n.t(e.k, e.v));
 const unresolved = (text) => text.includes('⟦') || /\{\w+\}/.test(text);
 // 目標清單（建議指令上面的「目標」）：打每一條路線時，每一步的目標和「怎麼做」都要翻得出來，而且一定有一項還沒完成。
@@ -2186,7 +2195,7 @@ section('今晚的機會');
 }
 
 // ===== 7f. 第三季《零時差》：測試寫在 tools/check-s3.js =====
-require('./check-s3.js')({ sandbox, fail, section, storage, root });
+checkS3();
 
 // ===== 8. 存檔 =====
 section('存檔');

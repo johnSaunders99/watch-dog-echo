@@ -54,6 +54,19 @@ PANELS = [
     {'file': 'elite-2.png', 'grid': (2, 2), 'square': True,
      'names': ['pt-elite-hypnotist', 'pt-elite-anarchist', 'pt-elite-paramedic', 'pt-elite-barrister']},
 ]
+# 新同職人選每職一張，依交圖進度分批加入；A–D 固定對應名冊，不得壓過舊聯絡人。
+RECRUIT_PANELS = [
+    # 深藍檔案照的底色也很暗；只裁近黑分隔線，不能把髮頂和留白當成黑邊。
+    {'file': 'recruit-portraits/recruits-' + job + '.png', 'grid': (2, 2), 'square': True, 'line_luma': 8,
+     'names': ['pt-recruit-' + job + '-' + slot for slot in 'abcd']}
+    for job in ('hitman', 'spy', 'beekeeper', 'drone', 'hooligan', 'statue', 'hypnotist', 'anarchist', 'paramedic', 'barrister')
+]
+# Retired people keep their original print in existing saves. The other cells are not game assets.
+ALUMNI_PANELS = [
+    {'file': 'recruit-portraits/archive/first-print/recruits-' + job + '.png', 'grid': (2, 2), 'square': True, 'line_luma': 8,
+     'names': ['pt-alumni-' + job + '-' + s if s in slots else None for s in 'abcd']}
+    for job, slots in [('hitman', 'a'), ('spy', 'c'), ('drone', 'c'), ('hooligan', 'bc'), ('paramedic', 'c')]
+]
 
 # 主角的紙娃娃（切法見 dolls()）：身體 4×2，全部光頭、朝右、兩手在胸前，衣服畫成洋紅（#FF00FF）、皮膚畫成青色（#00FFFF），
 # 遊戲照頭像替衣服和皮膚上色，頭髮和帽子用程式畫；手上物件各表依自己的 grid 照一般道具切。
@@ -322,21 +335,21 @@ def gutters(gray, axis, parts):
     return cuts + [n]
 
 
-def trim(gray):
+def trim(gray, line_luma=26.0):
     """一格圖四邊的黑線有幾個像素（最多切掉 4%）：整列都很暗的就算黑線。回傳 (上, 下, 左, 右)。"""
     def run(profile):
         n = 0
-        while n < len(profile) * 0.04 and profile[n] < 26.0:
+        while n < len(profile) * 0.04 and profile[n] < line_luma:
             n += 1
         return n + 2 if n else 0
     rows, cols = gray.mean(axis=1), gray.mean(axis=0)
     return run(rows), run(rows[::-1]), run(cols), run(cols[::-1])
 
 
-def panels():
+def panels(sheets=PANELS):
     """把格子圖（事件、頭像）一格一格切開，各存成 JPEG。回傳 { 名稱: 路徑 }。"""
     out = {}
-    for sheet in PANELS:
+    for sheet in sheets:
         path = os.path.join(SRC, sheet['file'])
         if not os.path.exists(path):
             print('skip (no source):', sheet['file'])
@@ -349,7 +362,7 @@ def panels():
         for name, (x0, y0, x1, y1) in zip(sheet['names'], boxes):
             if not name:
                 continue
-            t, b, l, r = trim(gray[y0:y1, x0:x1])
+            t, b, l, r = trim(gray[y0:y1, x0:x1], sheet.get('line_luma', 26.0))
             crop = im.crop((x0 + l, y0 + t, x1 - r, y1 - b))
             if sheet.get('square'):
                 # 頭像：取正中間的正方形。
@@ -360,6 +373,17 @@ def panels():
             crop.save(dest, quality=86, optimize=True, progressive=True)
             out[name] = 'assets/s3/' + name + '.jpg'
             print('%s: %dx%d, %d KB' % (name, crop.width, crop.height, os.path.getsize(dest) // 1024))
+    return out
+
+
+def recruit_portraits():
+    sheets = RECRUIT_PANELS + ALUMNI_PANELS
+    out = panels(sheets)
+    # 舊圖集若已移出收件夾，先前已交付的肖像仍然有效；沒來過的格子不要登記。
+    for sheet in sheets:
+        for name in sheet['names']:
+            if name and name not in out and os.path.isfile(os.path.join(OUT, name + '.jpg')):
+                out[name] = 'assets/s3/' + name + '.jpg'
     return out
 
 
@@ -399,6 +423,7 @@ def main():
         atlases[DOLLS['atlas']] = made
     pics = pictures()
     pics.update(panels())
+    pics.update(recruit_portraits())
     js = ('// 第三季的圖片清單。atlas：俯視圖的圖集，每張小圖的位置（x, y, w, h）、旋轉中心（ax, ay）和身體半徑（r），單位是像素。\n'
           '// pictures：插圖（首領、事件、標題）的路徑。\n'
           '// 由 tools/art-slice.py 產生，不要手改；圖是請圖像模型畫的原創素材，沒有用到任何遊戲的圖。\n'

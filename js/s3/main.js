@@ -36,9 +36,9 @@
   function preload() {
     for (const a of Object.values(S3.atlas || {})) loadImage(a.src, true);
     loadImage(pictures.title, true);
-    for (const [k, v] of Object.entries(pictures)) if (k.startsWith('pt-')) loadImage(v, true);
+    for (const [k, v] of Object.entries(pictures)) if (k.startsWith('pt-') && !k.startsWith('pt-recruit-')) loadImage(v, true);
     S3.portraits.prepare(S3.assets.img);
-    for (const v of Object.values(pictures)) loadImage(v, false);
+    for (const [k, v] of Object.entries(pictures)) if (!k.startsWith('pt-recruit-')) loadImage(v, false);
   }
   const imagesReady = () => images.done >= images.need;
   // 畫面（js/s3/render.js）用同一批圖。
@@ -46,6 +46,7 @@
 
   let meta = R.meta();
   let seed = params.get('seed') || fresh();
+  let deployment='relay';
   let picks = [];          // 今晚的小隊：名冊裡的第幾個人
   let hubLine = null, lobbyNote = null;
   let run = null, s = null, bot = null;
@@ -94,7 +95,7 @@
   const pid = (p) => p.district + ':' + p.id + ':' + p.occupation;
   const roman=n=>['','I','II','III'][n]||String(n);
   const kitName=p=>p.template?t('s3.tpl.'+p.template+'.n'):'';
-  const passive=m=>t(m.p.template?'s3.tpl.'+m.p.template+'.d':'s3.job.'+m.job);
+  const passive=m=>m.p.template?[t('s3.common.'+m.p.elite),t('s3.tpl.'+m.p.template+'.d')].join(' '):t('s3.job.'+m.job);
   const kitLine=p=>{const k=S3.ops.templateOf(p);return k?[kitName(p),t('s3.wp.'+k.weapon+'.n'),gadName(k.gadget)].join(' · '):'';};
   const exName = (id) => t('s3.ex.' + id + '.n');
   const gadName = (id) => t('s3.gad.' + id + '.n');
@@ -110,35 +111,32 @@
   }
   const portrait = S3.portraits.speaker;
 
-  // 隊上誰有這件裝備：{ i 第幾個隊員（共用的那一格是 -1）, g 裝備 }；沒有人有就是 null。
-  function gadgetOwner(id) {
-    const i = run.squad.findIndex((m) => m.gadget.id === id);
-    if (i >= 0) return { i, g: run.squad[i].gadget };
-    return run.gear && run.gear.id === id ? { i: -1, g: run.gear } : null;
-  }
   // 拿這件新裝備會不會擠掉共用格裡原本的東西。
-  const replacesGear = (id) => !!run.gear && !gadgetOwner(id);
+  const replacesGear = (id) => !!run.gear && !R.gadgetOwner(run,id);
 
-  const exploitDesc=id=>t(run?.omni && id==='surety'?'s3.omni.surety':'s3.ex.'+id+'.d');
+  const exploitDesc=(id,rank)=>run?.omni && id==='surety'?t('s3.omni.surety'):S3.exploitText(id,rank);
   function exploitCard(id, o = {}) {
     const def = R.exploitDef(id), have = (run && run.build.exploits[id]) || 0, max=O.cap(run,def);
     const bonus=run?.omni && have>=def.max ? t('s3.omni.effect.'+def.tag)+' · '+t(have>=max?'s3.omni.spill':'s3.omni.extended') : '';
     return `<button type="button" class="s3-card rar-${def.rar}${o.sold ? ' sold' : ''}" data-act="${o.act || 'pick'}" data-id="${o.i !== undefined ? o.i : id}" ${o.disabled ? 'disabled' : ''}>
       <span class="card-top"><span class="tag tag-${def.tag}">${def.owner?esc(L(S3.ops.profiles[def.owner].name)):esc(t('s3.tag.' + def.tag))}</span><span class="rar">${esc(def.owner?t('s3.field.private'):t('s3.rar.' + def.rar))}</span></span>
       <b>${esc(exName(id))}${def.owner?' · '+roman(Math.min(max,o.rank||have+1)):''}</b>
-      <span class="card-d">${esc(exploitDesc(id))}</span>
+      <span class="card-d">${esc(exploitDesc(id,o.rank || (o.sold?have:have+1)))}</span>
       <span class="card-foot">${bonus?'<strong class="banked">'+esc(bonus)+'</strong> · ':''}${max > 1 ? esc(t('s3.card.stack', { n: have, max })) : have ? esc(t('s3.card.owned')) : ''}${o.price !== undefined ? `<span class="price">${o.mastered ? esc(t('s3.perk.max')) : o.sold ? esc(t('s3.shop.sold')) : '◆ ' + o.price}</span>` : ''}</span>
     </button>`;
   }
   function gadgetCard(id, o = {}) {
-    const own = gadgetOwner(id);
+    const own = R.gadgetOwner(run,id);
+    const rank=own?Math.min(3,own.g.lv+1):1, cd=Number(D.gearCooldown(id,rank).toFixed(1));
+    const impact=!o.sold && own && own.g.lv<rank && D.gadgets[id].perRank ?
+      t(id==='rush'?'s3.gad.contactBonus':'s3.gad.baseImpact',{a:D.baseImpact(id,own.g.lv),b:D.baseImpact(id,rank)}) : '';
     const whose = own ? (own.i >= 0 ? t('s3.gad.own', { name: nameOf(run.squad[own.i].p) }) : t('s3.squad.shared')) : run.gear ? t('s3.gad.swapOut', { name: gadName(run.gear.id) }) : t('s3.squad.shared');
     return `<button type="button" class="s3-card gadget${o.sold ? ' sold' : ''}" data-act="${o.act || 'pick'}" data-id="${o.i !== undefined ? o.i : id}" ${o.disabled ? 'disabled' : ''}>
-      <span class="card-top"><span class="tag tag-gadget">${esc(t('s3.tag.gadget'))}</span><span class="rar">${own ? esc(t('s3.gad.up', { n: Math.min(3, own.g.lv + 1) })) : esc(t('s3.gad.new'))}</span></span>
+      <span class="card-top"><span class="tag tag-gadget">${esc(t('s3.tag.gadget'))}</span><span class="rar">${o.sold ? '' : esc(own ? t('s3.gad.up',{n:rank}) : t('s3.gad.new'))}</span></span>
       <b>${esc(gadName(id))}</b>
       <span class="card-d">${esc(t('s3.gad.' + id + '.d'))}</span>
-      <span class="card-note">${esc(whose)}</span>
-      <span class="card-foot">${esc(t('s3.gad.cd', { n: D.gadgets[id].cd }))}${o.price !== undefined ? `<span class="price">${o.sold ? esc(t('s3.shop.sold')) : '◆ ' + o.price}</span>` : ''}</span>
+      ${o.sold ? '' : `<span class="card-note">${esc(whose)}${impact ? '<br>'+esc(impact) : ''}</span>`}
+      <span class="card-foot">${o.sold ? '' : esc(t('s3.gad.cd', { n: cd }))}${o.price !== undefined ? `<span class="price">${o.sold ? esc(t('s3.shop.sold')) : '◆ ' + o.price}</span>` : ''}</span>
     </button>`;
   }
   // 小隊現在的樣子：每個人的體力、武器、自己的裝備，加上共用的裝備和全隊的漏洞。
@@ -158,7 +156,7 @@
     }).join('');
     const ex = Object.entries(b.exploits).map(([id,n])=>{
       const def=R.exploitDef(id), spill=5*(run.omni?.overflow[id]||0);
-      return `<span class="chip tag-${def.tag}" title="${esc(exploitDesc(id))}">${esc(exName(id))}${def.owner?' '+roman(n)+' · '+esc(L(S3.ops.profiles[def.owner].name)):n>1?' ×'+n:''}${spill?' · '+esc(t('s3.omni.effect.'+def.tag))+' +'+spill+'%':''}</span>`;
+      return `<span class="chip tag-${def.tag}" title="${esc(exploitDesc(id,n))}">${esc(exName(id))}${def.owner?' '+roman(n)+' · '+esc(L(S3.ops.profiles[def.owner].name)):n>1?' ×'+n:''}${spill?' · '+esc(t('s3.omni.effect.'+def.tag))+' +'+spill+'%':''}</span>`;
     }).join('');
     const gear = run.gear ? `<span class="chip tag-gadget" title="${esc(t('s3.gad.' + run.gear.id + '.d'))}"><kbd>E</kbd> ${esc(gadName(run.gear.id))} ${esc(t('s3.gad.lv', { n: run.gear.lv }))}</span>` : `<span class="dim">${esc(t('s3.squad.none'))}</span>`;
     const st = R.statsOf(run, act).st;
@@ -171,7 +169,7 @@
   }
 
   // ===== 對話框 =====
-  let modalHandler = null;
+  let modalHandler = null, modalBackground = null;
   function modal(html, handler, cls = '') {
     const el = $('s3-modal');
     el.className = 's3-modal ' + cls;
@@ -186,7 +184,11 @@
       if (card && !card.disabled) card.click();
     };
   }
-  function closeModal() { $('s3-modal').hidden = true; $('s3-title').inert = false; modalHandler = null; onModalKey = null; }
+  function closeModal() {
+    $('s3-modal').hidden = true;
+    if (modalBackground) { modalBackground.inert = false; modalBackground = null; }
+    modalHandler = null; onModalKey = null;
+  }
   $('s3-modal').addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled || !modalHandler) return;
@@ -204,10 +206,11 @@
   }
   // 第一次遇到某件事才講一次的提示。
   function tip(id) {
-    if (meta.seen[id] || AUTO) return;
-    meta.seen[id] = 1;
+    if (id === 'swap' && s?.fireteam) id = 'fieldSwap';
+    if(meta.seen[id] || AUTO)return;
+    meta.seen[id]=1;
     R.saveMeta(meta);
-    toast(t('s3.tip.' + id), 'tip');
+    toast(t('s3.tip.'+id),'tip');
   }
 
   // ===== 劇情對話：一句一句播，點一下或按空白鍵換下一句，Esc 整段跳過 =====
@@ -312,6 +315,7 @@
   function applyLang() {
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('.lang-switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === E.i18n.lang)));
+    $('s3-loadout-link').href='s3-loadouts.html?lang='+E.i18n.lang;
     document.title = E.i18n.lang === 'en' ? 'ZERO DAY' : t('s3.ui.title') + ' ZERO DAY';
     $('s3-sound').textContent = sfx.muted ? '🔇' : '🔊';
     for (const k of Object.keys(hudCache)) delete hudCache[k];
@@ -363,7 +367,7 @@
     const imprints = (p.imprints || []).map((id) => `<li class="imprint">${esc(t('s3.mark.' + id))}</li>`).join('');
     return `<article class="crew-card cat-${m.cat}${p.rare ? ' rare' : ''}${o.cls ? ' ' + o.cls : ''}" ${o.attr || ''}>
       <div class="crew-head"><div class="crew-face">${face(p)}</div>
-        <div class="crew-id"><h3>${esc(nameOf(p))}${p.signal?` <small class="street-signal" title="${esc(t('s3.field.signal'))}">✦</small>`:''}</h3><p>${esc(t('s3.card.job', { age: p.age, job: jobOf(p) }))}</p>
+        <div class="crew-id"><h3>${esc(nameOf(p))}${p.signal?` <small class="street-signal" title="${esc(t('s3.field.signal'))}">✦</small>`:''}</h3><p>${esc(t('s3.card.job', { age: S3.ops.ageOf(p), job: jobOf(p) }))}</p>
         <p class="crew-stats"><span>${esc(t('s3.hud.hp'))} <b>${st.maxHp}</b></span><span>${esc(t('s3.hud.bw'))} <b>${st.bwMax}</b></span></p></div>
         ${o.badge ? `<span class="crew-badge">${esc(o.badge)}</span>` : ''}</div>
       ${R.isInvitation(p) ? `<p class="operative-bio">${esc(L(S3.ops.profiles[p.elite].bio))}</p>` : ''}
@@ -385,6 +389,7 @@
     lobbyNote = vets ? { vets } : came.length && meta.runs ? { came } : null;
     if (!params.get('seed')) seed = fresh();
     const ready = meta.roster.map((x, i) => i).filter((i) => meta.roster[i].status === 'ready');
+    deployment=meta.deployment==='field'?'field':'relay';
     const lastSquad = meta.squad || [];
     picks = ready.filter((i) => lastSquad.includes(pid(meta.roster[i].p))).slice(0, R.SQUAD);
     for (const i of ready) if (picks.length < R.SQUAD && !picks.includes(i)) picks.push(i);
@@ -410,6 +415,8 @@
     return lines.map((x) => `<p class="notice">${esc(x)}</p>`).join('');
   }
   function renderLobby() {
+    const teamText=k=>esc(t('s3.team.'+k));
+    $('s3-deployment').innerHTML='<div><h3>'+teamText('deploy')+'</h3><p>'+teamText(deployment+'Text')+'</p></div><div class="deploy-buttons" role="group" aria-label="'+teamText('deploy')+'">'+['relay','field'].map(k=>'<button type="button" data-deploy="'+k+'" aria-pressed="'+(deployment===k)+'">'+teamText(k)+'</button>').join('')+'</div>';
     const max = R.rosterMax(meta), readyN = meta.roster.filter((x) => x.status === 'ready').length;
     $('s3-hub').innerHTML = `<span class="hub-face">${portrait(hubLine.l.who)}</span><span class="hub-body"><b>${esc(t('s3.who.' + hubLine.l.who))}</b><span>${esc(t(lineKey(hubLine.l), hubLine.vars))}</span></span>`;
     stationStrip();
@@ -424,11 +431,17 @@
     $('s3-roster').innerHTML = `<h3>${esc(t('s3.roster.title'))}<small>${esc(t('s3.roster.count', { n: meta.roster.length, max }))}</small></h3>
       ${noteHtml()}<div class="crew">${cards}</div>`;
     const full = meta.roster.length >= max;
-    const vols = R.volunteers(meta).map((p, i) => personCard(p, {
-      cls: R.isInvitation(p) ? 'vol invited' : 'vol', badge: R.isInvitation(p) ? t('s3.ops.invited') : '',
-      foot: `<div class="crew-foot"><span></span><button type="button" data-vol="${i}" ${full || (!R.isInvitation(p) && meta.echoes < R.RECRUIT_COST) ? 'disabled' : ''}>${esc(full ? t('s3.vol.full') : R.isInvitation(p) ? t('s3.ops.free') : t('s3.vol.join', { n: R.RECRUIT_COST }))}</button></div>`,
-    })).join('');
-    $('s3-vols').innerHTML = `<h3>${esc(t('s3.vol.title'))}<small>${esc(t('s3.ui.echoes', { n: meta.echoes }))}</small></h3><p class="dim">${esc(t('s3.vol.hint', { n: R.RECRUIT_COST }))}</p><div class="crew">${vols}</div>`;
+    const volunteers = R.volunteers(meta);
+    const inviteHint = volunteers.some(R.isInvitation) ? `<p class="dim">${esc(t('s3.vol.hint'))}</p>` : '';
+    const vols = volunteers.map((p, i) => {
+      const invited = R.isInvitation(p), newKit = p.alumnus && !R.hasCollectedKit(meta, p);
+      return personCard(p, {
+        cls: invited ? 'vol invited' : newKit ? 'vol new-kit' : 'vol',
+        badge: invited ? t('s3.ops.invited') : p.alumnus ? t(newKit ? 's3.field.newKit' : 's3.field.alumni') : '',
+        foot: `<div class="crew-foot"><span></span><button type="button" data-vol="${i}" ${full || (!invited && meta.echoes < R.RECRUIT_COST) ? 'disabled' : ''}>${esc(full ? t('s3.vol.full') : invited ? t('s3.ops.free') : t('s3.vol.join', { n: R.RECRUIT_COST }))}</button></div>`,
+      });
+    }).join('');
+    $('s3-vols').innerHTML = `<h3>${esc(t('s3.vol.title'))}<small>${esc(t('s3.ui.echoes', { n: meta.echoes }))}</small></h3>${inviteHint}<div class="crew">${vols}</div>`;
     const book = $('s3-contacts'), u = meta.unlocks, names = (a) => a.map(esc).join(' · ');
     const jobs = u.jobs.filter((id) => S3.ops.profiles[id]), events = u.events.filter((id) => (R.eventDef(id) || {}).premium);
     book.querySelector('summary').textContent = t('s3.ops.book', { jobs: jobs.length, events: events.length });
@@ -460,6 +473,8 @@
   $('s3-lobby').addEventListener('click', (e) => {
     const dis = e.target.closest('[data-dismiss]'), vol = e.target.closest('[data-vol]'), perk = e.target.closest('[data-perk]'), card = e.target.closest('[data-roster]');
     sfx.unlock();
+    const deploy=e.target.closest('[data-deploy]');
+    if(deploy){deployment=deploy.dataset.deploy;play('click');renderLobby();$('s3-deployment').querySelector('[aria-pressed="true"]').focus({preventScroll:true});return;}
     if (dis) {
       const i = Number(dis.dataset.dismiss);
       if (R.dismiss(meta, i)) { play('click'); picks = picks.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)); renderLobby(); }
@@ -500,15 +515,16 @@
   function stationBrief() {
     const crew=picks.map(i=>meta.roster[i].p);
     if(crew.length!==R.SQUAD || !O.unlocked(meta))return;
-    modal(`<div class="omni-photo"${stationArtStyle()}><span class="omni-kicker">OMNI / ${esc(t('s3.omni.station'))} · ${esc(t('s3.omni.briefing'))}</span></div>
-      <div class="station-text"><h2>${esc(t('s3.omni.call'))}</h2><p>${esc(t('s3.omni.lead'))}</p>
+    const back = () => { closeModal(); $('omni-brief').focus(); };
+    decisionModal(`<div class="omni-photo"${stationArtStyle()}><span class="omni-kicker">OMNI / ${esc(t('s3.omni.station'))} · ${esc(t('s3.omni.briefing'))}</span></div>
+      <div class="station-text"><h2 id="station-heading">${esc(t('s3.omni.call'))}</h2><p>${esc(t('s3.omni.lead'))}</p>
       <div class="call-signs">${crew.map(p=>`<span>${face(p,{round:true})}<b>${esc(nameOf(p))}</b></span>`).join('')}</div>
+      <p>${esc(t('s3.omni.departure', { n: O.BATCH }))}</p>
       <div class="s3-actions"><button type="button" class="ghost" data-act="back">${esc(t('s3.ui.back'))}</button><button type="button" class="omni-primary" data-act="link">${esc(t('s3.omni.cross'))} →</button></div></div>`,act=>{
-      closeModal();if(act==='back')return;
+      if(act==='back'){back();return;}closeModal();
       const ready=O.connect(seed,crew,meta);if(!ready){resume();return;}
       run=ready;run.phase='link';meta.squad=crew.map(pid);heardSpill=0;saveRun();showGame();stationLink();
-    },'station-modal');
-    $('s3-modal').querySelector('[data-act=link]').focus();
+    },'station-modal','back',back,'s3-lobby');
   }
   function stationLink(){
     S3.playMinaReveal(()=>talk([{once:'omni_brief',lines:[{who:'mina',k:'s3.omni.brief'},{who:'echo',k:'s3.omni.echo'}]},
@@ -558,22 +574,26 @@
   }
   function beginRun(people) {
     people = people || picks.map((i) => meta.roster[i].p);
+    if(AUTO && params.get('deployment')==='field')deployment='field';
+    meta.deployment=deployment;
     meta.squad = people.map(pid);
     R.saveMeta(meta);
-    run = R.start(seed, people, meta);
+    run = R.start(seed, people, meta, deployment);
     saveRun();
     showGame();
     const go = () => showRoute(true);
-    if (!meta.seen.controls && !AUTO) { meta.seen.controls = 1; R.saveMeta(meta); showControls(go); } else go();
+    const controlsKey = deployment === 'field' ? 'fieldControls' : 'controls';
+    if (!meta.seen[controlsKey] && !AUTO) { meta.seen[controlsKey] = 1; R.saveMeta(meta); showControls(go); } else go();
   }
-  // 開局的兩層選單都只讀。確認重開時先讓焦點停在「返回」，不能誤按 Enter 刪檔。
-  function campaignModal(html, handler, cls, first, back) {
+  // 決定前可用 Escape 返回；重開與接入的確認都不預選有後果的按鈕。
+  function decisionModal(html, handler, cls, first, back, background = 's3-title') {
     modal(html, handler, cls);
-    $('s3-title').inert = true;
+    modalBackground = $(background);
+    modalBackground.inert = true;
     const box = $('s3-modal').firstElementChild;
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-modal', 'true');
-    box.setAttribute('aria-labelledby', 'campaign-heading');
+    box.setAttribute('aria-labelledby', box.querySelector('h2').id);
     const numbers = onModalKey;
     onModalKey = (e) => {
       if (e.code === 'Escape' && back) { e.preventDefault(); back(); }
@@ -593,9 +613,10 @@
     const option = (act, n, name, desc, off) => `<button type="button" class="s3-card source-option" data-act="${act}" ${off ? 'disabled' : ''}>
       <kbd aria-hidden="true">${n}</kbd><span><b>${esc(t(name))}</b><span class="source-detail">${esc(desc)}</span></span></button>`;
     const back = () => { closeModal(); $('s3-start').focus(); };
-    campaignModal(`<h2 id="campaign-heading">${esc(t('s3.new.title'))}</h2><div class="source-options">
+    decisionModal(`<h2 id="campaign-heading">${esc(t('s3.new.title'))}</h2><div class="source-options">
       ${option('random', 1, 's3.new.random', t('s3.new.randomDesc'))}
       ${option('inherit', 2, 's3.new.inherit', detail, src.reason)}</div>
+      ${meta.campaign === 'wiped' && O.unlocked(meta) ? `<p class="dim">${esc(t('s3.new.keepOmni'))}</p>` : ''}
       <div class="s3-actions"><button type="button" class="ghost" data-act="back">${esc(t('s3.ui.back'))}</button></div>`, (act) => {
       if (act === 'back') back();
       else if (hasProgress()) confirmRestart(act);
@@ -604,8 +625,8 @@
   }
   function confirmRestart(source) {
     const method = t(source === 'random' ? 's3.new.random' : 's3.new.inherit');
-    campaignModal(`<h2 id="campaign-heading">${esc(t('s3.new.confirmTitle'))}</h2>
-      <p>${esc(t('s3.new.loss'))}</p><p class="dim">${esc(t('s3.new.keep'))}</p>
+    decisionModal(`<h2 id="campaign-heading">${esc(t('s3.new.confirmTitle'))}</h2>
+      <p>${esc(t('s3.new.loss'))}</p><p class="dim">${esc(t(O.unlocked(meta) ? 's3.new.keepOmni' : 's3.new.keep'))}</p>
       <div class="s3-actions"><button type="button" class="ghost" data-act="back">${esc(t('s3.ui.back'))}</button>
       <button type="button" class="primary" data-act="restart">${esc(t('s3.new.confirm', { method }))}</button></div>`,
       (act) => { if (act === 'restart') openCampaign(source); else chooseGame(); }, 'campaign', 'back', chooseGame);
@@ -637,8 +658,10 @@
     else showRoute(true);
   }
   function controlsHtml() {
-    const rows = ['move', 'aim', 'fire', 'hack', 'dash', 'focus', 'melee', 'swap', 'gadget', 'reload', 'pause'];
-    return `<div class="controls">${rows.map((k) => `<div><kbd>${esc(t('s3.ctl.' + k + '.k'))}</kbd><span>${esc(t('s3.ctl.' + k))}</span></div>`).join('')}</div>`;
+    const field = run?.deployment === 'field' && !run.omni;
+    const rows = ['move', 'aim', 'fire', 'hack', 'dash', 'focus', 'melee', ...(field ? ['take', 'order'] : ['swap']), 'gadget', 'reload', 'pause'];
+    return `<div class="controls">${rows.map((k) => `<div><kbd>${esc(t('s3.ctl.' + (k === 'take' ? 'swap' : k) + '.k'))}</kbd><span>${esc(t('s3.ctl.' + k))}</span></div>`).join('')}</div>`
+      + (field ? `<p class="field-help">${esc(t('s3.team.aidText'))}</p>` : '');
   }
   function showControls(next) {
     modal(`<h2>${esc(t('s3.ctlbox.title'))}</h2>${controlsHtml()}<div class="s3-actions"><button type="button" class="primary" data-act="go">${esc(t('s3.ctlbox.go'))}</button></div>`, () => { closeModal(); next(); }, 'wide');
@@ -710,6 +733,7 @@
       if (tm.down || tm.build.person !== m.p) { sim.setMember(s, i, R.buildOf(run, i), m.hp); return; }
       tm.maxHp = R.maxHp(run, i);
       tm.hp = Math.min(tm.maxHp, m.hp);
+      if(tm.body)tm.body.maxHp=tm.maxHp;
       if (i === s.active) { s.p.maxHp = tm.maxHp; s.p.hp = tm.hp; }
     });
     for (const k of Object.keys(hudCache)) delete hudCache[k];
@@ -913,11 +937,11 @@
   function guideHtml() {
     const foes = Object.keys(D.enemies).filter((k) => D.enemies[k].from <= (run ? run.roomNo + 1 : 99));
     const row = (k, pre) => `<div><b>${esc(t(pre + k + '.n'))}</b><span>${esc(t(pre + k + '.d'))}</span></div>`;
-    const jobs=Object.entries(S3.ops.templates).map(([id,kits])=>`<details class="guide field-job"><summary>${esc(L(S3.ops.profiles[id].name))}</summary><div class="guide-grid">
+    const jobs=Object.entries(S3.ops.templates).map(([id,kits])=>`<details class="guide field-job"><summary>${esc(L(S3.ops.profiles[id].name))}</summary><p>${esc(t('s3.common.'+id))}</p><div class="guide-grid">
       ${kits.map(k=>`<div><b>${esc(t('s3.tpl.'+k.id+'.n'))} · ${esc(t('s3.wp.'+k.weapon+'.n'))}</b><span><strong>${esc(gadName(k.gadget))}</strong> · ${esc(t('s3.gad.'+k.gadget+'.d'))}</span><span><strong>${esc(t('s3.card.perk'))}</strong> · ${esc(t('s3.tpl.'+k.id+'.d'))}</span></div>`).join('')}
       </div><h4>${esc(t('s3.field.private'))}</h4><div class="guide-grid">
-      ${S3.ops.xp.filter(x=>x.owner===id).map(x=>`<div><b>${esc(exName(x.id))} · I–${roman(x.max)}</b><span>${esc(t('s3.ex.'+x.id+'.d'))}</span></div>`).join('')}</div></details>`).join('');
-    return `${O.unlocked(meta)?`<details class="guide"><summary>OMNI / ${esc(t('s3.omni.guide'))}</summary><p>${esc(t('s3.omni.guideD'))}</p><p>${esc(t('s3.omni.power'))}</p><p>${esc(t('s3.omni.guideRisk'))}</p></details>`:''}<details class="guide"><summary>${esc(t('s3.field.book'))}</summary><p>${esc(t('s3.field.intro'))}</p>${jobs}</details>
+      ${S3.ops.xp.filter(x=>x.owner===id).map(x=>`<div><b>${esc(exName(x.id))} · I–${roman(x.max)}</b><span>${esc(exploitDesc(x.id))}</span></div>`).join('')}</div></details>`).join('');
+    return `<p><a class="loadout-link" target="_blank" rel="noopener" href="s3-loadouts.html?lang=${E.i18n.lang}">${esc(t('s3.loadout.open'))} ↗</a></p>${O.unlocked(meta)?`<details class="guide"><summary>OMNI / ${esc(t('s3.omni.guide'))}</summary><p>${esc(t('s3.omni.guideD'))}</p><p>${esc(t('s3.omni.power'))}</p><p>${esc(t('s3.omni.guideRisk'))}</p></details>`:''}<details class="guide"><summary>${esc(t('s3.field.book'))}</summary><p>${esc(t('s3.field.intro'))}</p>${jobs}</details>
       <details class="guide"><summary>${esc(t('s3.pause.weapons'))}</summary><div class="guide-grid">${Object.keys(D.weapons).map(k => row(k, 's3.wp.')).join('')}</div></details>
       <details class="guide"><summary>${esc(t('s3.pause.guide'))}</summary><p>${esc(t('s3.guide.route'))}</p><div class="guide-grid">${foes.map((k) => row(k, 's3.en.')).join('')}</div>
       <div class="guide-grid">${['junction', 'vent', 'barrel', 'car', 'bollard', 'camera', 'speaker'].map((k) => row(k, 's3.prop.')).join('')}</div></details>`;
@@ -951,7 +975,7 @@
   function showWipe() {
     run = null; s = null; mode = 'menu';
     $('s3-game').hidden = true;
-    campaignModal(`<div class="wipe-scene"><div class="wipe-copy">
+    decisionModal(`<div class="wipe-scene"><div class="wipe-copy">
       <p class="wipe-label">${esc(t('s3.wipe.label'))}</p><h2 id="campaign-heading">${esc(t('s3.wipe.title'))}</h2>
       <p>${esc(t('s3.wipe.1'))}</p><p>${esc(t('s3.wipe.2'))}</p><p>${esc(t('s3.wipe.3'))}</p>
       <button type="button" class="primary" data-act="new">${esc(t('s3.ui.newGame'))}</button>
@@ -966,6 +990,7 @@
   }
   function showEnd(won, quit, ending) {
     if(run.omni){const out=O.finish(run,meta);if(out){R.saveMeta(out.meta);stationEnd(out);}return;}
+    const stationWasOpen = O.unlocked(meta);
     const lastName = run.squad[run.active] ? nameOf(run.squad[run.active].p) : '';
     // 機器人模式不動存檔。
     const res = AUTO ? { earned: 0, meta, captured: run.squad.filter((m) => m.down).map((m) => m.p), freed: 0 } : R.finish(run, won, meta, ending);
@@ -988,8 +1013,8 @@
       mode = 'menu';
       modal(`<h2 class="${won ? 'win' : 'lose'}">${esc(title)}</h2>
         <p>${esc(text)}</p>${people ? `<p class="${won ? 'good' : 'warn'}">${esc(people)}</p>` : ''}
-        ${unlocks}<div class="stats">${stat('rooms', st.rooms)}${stat('kills', st.kills)}${stat('hacks', st.hacks)}${stat('takedowns', st.takedowns)}${stat('silent', st.silent)}${stat('bosses', st.bosses)}${stat('rescued', st.rescued)}${stat('captured', res.captured.length)}</div>
-        <p class="echo-gain">${esc(t('s3.dead.echoes', { n: res.earned, total: meta.echoes }))}</p>${won ? `<p class="dim">${esc(t('s3.end.note'))}</p>` : ''}
+        ${unlocks}${!stationWasOpen && O.unlocked(meta) ? `<p class="good">${esc(t('s3.omni.unlocked'))}</p>` : ''}<div class="stats">${stat('rooms', st.rooms)}${stat('kills', st.kills)}${stat('hacks', st.hacks)}${stat('takedowns', st.takedowns)}${stat('silent', st.silent)}${stat('bosses', st.bosses)}${stat('rescued', st.rescued)}${stat('captured', res.captured.length)}</div>
+        <p class="echo-gain">${esc(t('s3.dead.echoes', { n: res.earned, total: meta.echoes }))}</p>${won && meta.wins === 1 ? `<p class="dim">${esc(t('s3.end.note'))}</p>` : ''}
         <div class="s3-actions"><button type="button" class="ghost" data-act="title">${esc(t('s3.dead.title.btn'))}</button><button type="button" class="primary" data-act="again">${esc(t('s3.dead.again'))}</button></div>`, (act) => {
         closeModal();
         s = null; run = null;
@@ -1032,13 +1057,24 @@
       set('sq-' + i, 'sq' + (on ? ' on' : '') + (down ? ' down' : '') + (!on && !down && s.swapCd > 0 ? ' wait' : '') + (!down && hp < max * 0.3 ? ' low' : ''), 'className');
       set('sq-' + i + '-hp', Math.max(0, (hp / max) * 100).toFixed(0) + '%', 'width');
     });
+    const tm=s.team[s.active],state=[];
+    if(s.fireteam)state.push('G · '+t('s3.team.'+s.order.kind));
+    const veil=s.zones.find(z=>z.k==='swarm' && z.follow && Math.hypot(p.x-z.x,p.y-z.y)<=z.r);
+    if(veil)state.push(t('s3.team.intercepts',{n:veil.blocks}));
+    if(tm.blocks && tm.blocksUntil>s.t)state.push(t('s3.team.guard')+' ×'+tm.blocks);
+    if(tm.breachUntil>s.t)state.push(t('s3.team.entry'));
+    if(tm.closeUntil>s.t)state.push(t('s3.team.close'));
+    if(tm.beatUntil>s.t)state.push(t('s3.team.beatShot'));
+    if(tm.fl.combatExec)state.push(tm.execCd>0?'F · '+t('s3.team.execCD')+' '+Math.ceil(tm.execCd)+'s':'F · '+t('s3.team.ready'));
+    if(s.fireteam)for(const [i,m] of s.team.entries())if(m.down && m.rescue>0)state.push((i+1)+' · '+t('s3.team.aid')+' '+Math.ceil(m.rescue)+'s');
+    set('h-orders',state.join('　/　'));
     set('h-data', '◆ ' + (run.data + (live ? s.gain : 0)));
     set('h-ammo', p.reload > 0 ? t('s3.hud.reload') : p.ammo + ' / ' + p.mag);
     set('h-weapon', t('s3.wp.' + s.build.weapon + '.n'));
     set('h-dash', Array.from({ length: st.dashCharges }, (_, i) => `<i class="${i < p.dashN ? 'on' : ''}"></i>`).join(''), 'innerHTML');
     set('h-gad', p.gad.map((g, i) => {
-      const cd = D.gadgets[g.id].cd * (1 - 0.2 * (g.lv - 1)), recon = g.id === 'eagle' && s.recon;
-      const fieldState=g.id==='shockdrone' && s.shockDrone?.owner===s.active ? (s.shockDrone.manual?'remote':'patrol')
+      const cd = D.gearCooldown(g.id,g.lv), recon = g.id === 'eagle' && s.recon;
+      const fieldState=g.armed?'armed':g.id==='shockdrone' && s.shockDrone?.owner===s.active ? (s.shockDrone.manual?'remote':'patrol')
         :g.id==='performance' && s.show?(s.show.ready?'stageReady':'stage'):s.suggestion?.ready && s.suggestion.id===g.id && s.suggestion.owner===s.active && s.en.some(e=>e.trance>0 && e.tranceCast===s.suggestion)?'order':null;
       const name = fieldState?t('s3.field.'+fieldState):recon ? t(recon.orbit ? 's3.gad.detonate' : 's3.gad.flying') : gadName(g.id);
       const timer = g.id==='performance' && s.show?Math.ceil(s.show.t):fieldState==='patrol'||fieldState==='remote'?Math.ceil(s.shockDrone.t):recon && recon.orbit ? Math.ceil(recon.t) : Math.ceil(g.cd);
@@ -1088,8 +1124,8 @@
     else {
       inp = {
         mx: (keys.right ? 1 : 0) - (keys.left ? 1 : 0), my: (keys.down ? 1 : 0) - (keys.up ? 1 : 0), ax: mouse.x, ay: mouse.y,
-        fire: !!keys.fire, focus: !!keys.focus, dash: !!edge.dash, hack: !!edge.hack, melee: !!edge.melee, g1: !!edge.g1, g2: !!edge.g2, g1Hold: !!keys.g1, g2Hold: !!keys.g2, reload: !!edge.reload,
-        swap: typeof edge.swap === 'number' ? edge.swap : -1,
+        fire: !!(keys.fire || edge.fire), focus: !!keys.focus, dash: !!edge.dash, hack: !!edge.hack, melee: !!edge.melee, g1: !!edge.g1, g2: !!edge.g2, g1Hold: !!keys.g1, g2Hold: !!keys.g2, reload: !!edge.reload,
+        command:!!edge.command, swap: typeof edge.swap === 'number' ? edge.swap : -1,
       };
     }
     for (const k of Object.keys(edge)) edge[k] = false;
@@ -1112,7 +1148,9 @@
       else if (ev.k === 'clear') freeze = Math.max(freeze, 0.22);
       else if (ev.k === 'hijack') comm('hijack');
       else if (ev.k === 'getaway') comm('getaway', {}, true);
-      else if (ev.k === 'swap') { lowSaid = false; if (!ev.forced) toast(t('s3.toast.swap', { name: nameOf(run.squad[ev.i].p) })); }
+      else if (ev.k === 'swap') { lowSaid = false; if (!ev.forced) toast(t(s.fireteam?'s3.team.take':'s3.toast.swap', { name: nameOf(run.squad[ev.i].p) })); }
+      else if(s.fireteam && ev.k==='down'){if(!s.over)toast(t('s3.team.fallen',{name:nameOf(run.squad[ev.i].p)}),'warn');}
+      else if(s.fireteam && ev.k==='fieldHeld')toast(t('s3.toast.down',{name:nameOf(run.squad[ev.i].p)}),'warn');
       else if (ev.k === 'down' && !run.omni) {
         // 有人倒下、被帶走：停一下，讓玩家看清楚換了誰上來。
         const name = nameOf(run.squad[ev.i].p);
@@ -1174,6 +1212,7 @@
     else if (e.code === 'Space') { if (!e.repeat) edge.dash = true; e.preventDefault(); }
     else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.focus = true;
     else if (digit) { if (!e.repeat) edge.swap = Number(digit[2]) - 1; }
+    else if(e.code==='KeyG' && s?.fireteam){if(!e.repeat)edge.command=true;}
     else if (e.code === 'KeyF') { if (!e.repeat) edge.melee = true; }
     else if (e.code === 'KeyQ') { keys.g1=true; if (!e.repeat) edge.g1 = true; }
     else if (e.code === 'KeyE') { keys.g2=true; if (!e.repeat) edge.g2 = true; }
@@ -1194,7 +1233,7 @@
     if (mode !== 'play') return;
     const w = V.toWorld(e.clientX, e.clientY);
     mouse.x = w.x; mouse.y = w.y;
-    if (e.button === 0) keys.fire = true;
+    if(e.button===0){keys.fire=true;edge.fire=true;}
     else if (e.button === 2) edge.hack = true;
     e.preventDefault();
   });

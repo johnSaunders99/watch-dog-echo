@@ -153,12 +153,16 @@
     X('adrenal', 'c', 'body', 2, { dashCd: 0.8 }),
     X('doubledash', 'u', 'body', 1, { dashCharges: 1 }),
     X('afterimage', 'u', 'body', 1, null, { decoy: 1 }),
-    X('plating', 'u', 'body', 2, { dmgTaken: 0.88 }),
+    X('plating', 'u', 'body', 3, { dmgTaken: 0.866 }),
+    X('breachPlate','c','body',2,null,{breachPlate:1}),
+    X('closeGuard','c','body',2,null,{closeGuard:1}),
+    X('impactDrive','c','body',2,null,{impactDrive:1}),
+    X('threadNeedle','u','body',2,null,{threadNeedle:1}),
     X('scavenger', 'c', 'body', 2, null, { lifesteal: 1 }),
     X('secondwind', 'r', 'body', 1, null, { revive: 1 }),
     X('deepfocus', 'u', 'body', 2, { focusMax: 1.4, focusRegen: 1.3 }),
     X('reflex', 'u', 'body', 1, null, { focusDmg: 1 }),
-    X('medic', 'c', 'body', 2, null, { roomHeal: 1 }),
+    X('medic', 'c', 'body', 2, null, { roomHeal: 1, fieldMedicine: 1 }),
   ];
   // 抽漏洞時各稀有度的權重：一般房間、精英房間、首領、黑市。
   const rarityWeight = {
@@ -173,33 +177,35 @@
   // cd 冷卻秒數。同一件再拿一次會升級（最多 3 級）：冷卻 −20%，效果變強。
   const gadgets = {
     escort: { cd: 16, dur: 7, dmg: 6, rate: 4, sight: 400 },
-    kamikaze: { cd: 14, range: 520, r: 170, stun: 2.4, dmg: 15, flight: 0.5 },
-    cargo: { cd: 12, range: 560, r: 95, dmg: 60, fuse: 0.7, crate: 10 },
+    kamikaze: { cd: 14, range: 520, r: 170, stun: 2.4, dmg: 30, perRank: 12, flight: 0.5 },
+    cargo: { cd: 12, range: 560, r: 95, dmg: 75, perRank: 20, fuse: 0.7, crate: 10 },
     // cameo：只能從客串事件取得；戰利品和黑市只能升級已經持有的裝備。
-    eagle: { cameo: true, cd: 16, range: 520, flight: 0.5, dur: 7, scan: 250, noise: 340, beat: 1.6, r: 170, dmg: 35, emp: 4, stun: 1.5 },
+    eagle: { cameo: true, cd: 16, range: 520, flight: 0.5, dur: 7, scan: 250, noise: 340, beat: 1.6, r: 170, dmg: 35, perRank:10, emp: 4, stun: 1.5 },
     blackout: { cameo: true, cd: 28, dur: 5 },
-    sergei: { cameo: true, cd: 12, range: 560, r: 95, dmg: 70, fuse: 0.7, crate: 10, jamRange: 260, targets: 5, dur: 6 },
-    hammer: { cameo: true, cd: 6, r: 115, arc: 1.35, dmg: 65, knock: 300, stun: 1.1 },
-    sledge: { cd: 6, r: 95, arc: 1.05, dmg: 45, knock: 210, stun: 0.7 },  // 工地的大鐵鎚（身體類的人自己帶的）
+    sergei: { cameo: true, cd: 12, range: 560, r: 95, dmg: 70, perRank: 20, fuse: 0.7, crate: 10, jamRange: 260, targets: 5, dur: 6 },
+    hammer: { cameo: true, cd: 6, r: 115, arc: 1.35, dmg: 65, perRank:15, knock: 300, stun: 1.1 },
+    sledge: { cd: 6, r: 95, arc: 1.05, dmg: 45, perRank:15, knock: 210, stun: 0.7 },  // 工地的大鐵鎚（身體類的人自己帶的）
     mask: { cd: 18, dur: 4, mult: 3 },                                    // 第二張臉：隱形
     spider: { cd: 20, dur: 11, dmg: 7, rate: 5, sight: 420 },             // 蜘蛛機器人：自動砲塔
     lure: { cd: 10, range: 520, dur: 4.5, r: 330 },                       // 誘餌喇叭
-    mine: { cd: 8, r: 120, stun: 2, dmg: 25, max: 3 },                    // 電擊地雷
-    strike: { signature: true, cd: 21, range: 620, r: 120, dmg: 60, flight: 0.55, gap: 0.65 },
+    mine: { cd: 8, r: 120, stun: 2, dmg: 25, perRank:10, max: 3 },        // 電擊地雷
+    strike: { signature: true, cd: 21, range: 620, r: 120, dmg: 90, perRank: 24, flight: 0.55, gap: 0.65 },
     expert: { signature: true, cd: 23, dur: 16, dmg: 12, rate: 5, sight: 520, pierce: 1 },
     brawl: { signature: true, cd: 23, dur: 10, dmg: 22, gap: 0.8 },
     swarm: { signature: true, cd: 16, range: 520, r: 148, dur: 6, dmg: 14 },
     hypnosis: { signature: true, cd: 12, r: 350, arc: 1.15, dur: 8 },
-    execute: { signature:true, cd:4, r:117 }, quickstep:{signature:true, cd:4},
+    execute: { signature:true, cd:8, range:550, r:110, dmg:140, perRank:35 }, quickstep:{signature:true, cd:4},
     veil:{signature:true, cd:21, dur:8}, shockdrone:{signature:true, cd:21, dur:11, range:580, r:182, dmg:18, gap:.90},
-    rush:{signature:true, cd:8}, hiveguard:{signature:true, cd:18, dur:7, r:115, dmg:15},
+    rush:{signature:true, cd:8, dmg:24, perRank:8}, hiveguard:{signature:true, cd:18, dur:7, r:115, dmg:15},
     performance:{signature:true, cd:10, dur:9, r:400, windup:.85, flash:150, trap:2.5, linger:2.5, stun:3.5, frontRow:220, closeFlash:2, refund:4}, metronome:{signature:true, cd:13, dur:6, r:380, arc:.88},
     molotov:{signature:true, cd:8, range:530, r:145, dmg:68, burn:25, dur:5, flight:.32},
     pipebomb:{signature:true, cd:10, range:560, r:178, dmg:115, burn:15, dur:3, flight:.45, breacher:2.5},
     medbeacon:{signature:true, cd:21, dur:8, range:420, r:115, heal:6},
     injunction:{signature:true, cd:14, dur:9, range:530, r:205, evidenceMul:1.8}, escortWrit:{signature:true, cd:15, dur:9, r:173},
-    eightball: { cameo: true, cd: 7, r: 145, dmg: 85, stun: 2 },
+    eightball: { cameo: true, cd: 7, r: 145, dmg: 85, perRank:15, stun: 2 },
   };
+  const gearCooldown=(id,lv)=>gadgets[id].cd*(1-.2*(lv-1));
+  const baseImpact=(id,lv)=>gadgets[id].dmg+gadgets[id].perRank*(lv-1);
   // 職業分類的起始裝備和起始漏洞（各從裡面隨機一個）。
   const kits = {
     hacker: { gadget: ['escort', 'kamikaze'], exploit: ['chain', 'fiber', 'antenna', 'ransom'] },
@@ -332,6 +338,6 @@
 
   S3.data = {
     weapons, weaponByCategory, weaponByJob, baseStats, addStats, traitFx, flawFx, quirkFx, jobFx, imprints, endingContacts,
-    exploits, rarityWeight, price, gadgets, kits, gadgetByJob, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
+    exploits, rarityWeight, price, gadgets, gearCooldown, baseImpact, scrapImpact:65, kits, gadgetByJob, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
   };
 })(window.ECHO = window.ECHO || {});

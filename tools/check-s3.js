@@ -141,8 +141,11 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     add('s3.flaw.', Object.keys(D.flawFx));
     add('s3.quirk.', Object.keys(D.quirkFx));
     add('s3.ctl.', ['move', 'aim', 'fire', 'hack', 'dash', 'focus', 'melee', 'swap', 'gadget', 'reload', 'pause'], ['', '.k']);
-    add('s3.tip.', ['stealth', 'doors', 'hack', 'takedown', 'spotted', 'swap', 'trap']);
+    add('s3.ctl.', ['take', 'order', 'order.k']);
+    add('s3.tip.', ['stealth', 'doors', 'hack', 'takedown', 'spotted', 'swap', 'fieldSwap', 'trap']);
     add('s3.stat.', ['rooms', 'kills', 'hacks', 'takedowns', 'silent', 'bosses', 'rescued', 'captured']);
+    add('s3.team.',['intercepts','take','fallen','deploy','relay','field','relayText','fieldText','aidText','follow','hold','focus','aid','guard','entry','close','ready','beatShot','execCD']);
+    add('s3.common.',Object.keys(S3.ops.profiles));want.add('s3.field.armed');
     add('s3.job.', Object.keys(D.jobFx));
     add('s3.mark.', Object.keys(D.imprints));
     // 劇本：每一句台詞（含依前兩季結局換掉的那幾句）、說話的人、結局、無線電、安全屋的閒聊。
@@ -244,6 +247,35 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     for (const id of Object.keys(D.bosses)) if (!(S3.pictures || {})['boss-' + id]) fail(`s3 art: boss ${id} has no illustration`);
     const P = E.s2.people;
     const exIds = new Set(D.exploits.map((x) => x.id));
+    // Load the actual standalone manual, not a duplicate list of the game's scripts.
+    const bookHtml=fs.readFileSync(path.join(root,'s3-loadouts.html'),'utf8'), book=sandbox([...bookHtml.matchAll(/<script src="([^"]+)"/g)].map(m=>m[1]).filter(f=>!f.endsWith('loadout-guide.js')));
+    const idx=book.E.s3.loadoutIndex,rows=Object.keys(idx.rows);
+    if(rows.length!==exIds.size || rows.some(id=>!exIds.has(id)))fail('s3 loadout index: missing or stale exploit');
+    const links=(xp,action)=>idx.rows[xp].routes.some(line=>line.targets.some(k=>idx.related(k,action)));
+    for(const action of [...Object.keys(D.weapons),'execute','strike','barrel','pipebomb','escort']){
+      const round=!!D.weapons[action],firearm=round||action==='execute';
+      for(const xp of ['hollow','glasscannon','hoard','reflex','reprieve','silencer'])if(links(xp,action)!==firearm)fail('s3 personal gunfire: '+xp+' / '+action);
+      for(const xp of ['rapid','extmag','pierce','ricochet','shockrounds','crit','incendiary'])if(links(xp,action)!==round)fail('s3 bullet only: '+xp+' / '+action);
+    }
+    for(const [xp,yes,no] of [['hollow','execute','strike'],['crit','rifle','execute'],['salvage','execute','lure'],['salvage','strike','mask'],['impactDrive','sledge','brawl'],['medic','medbeacon','bail'],['threadNeedle','rush','injunction'],['hiveDose','hiveguard','burning'],['incendiary','shotgun','molotov'],['triage','medbeacon','medpack']]){
+      if(!links(xp,yes)||links(xp,no))fail('s3 loadout links: '+xp+' / '+yes+' / '+no);
+    }
+    for(const lang of LANGS){
+      book.E.i18n.set(lang);const valid=k=>!!k && !k.includes('⟦');
+      const describe=book.E.s3.exploitText;
+      for(const x of D.exploits)for(let rank=1;rank<=x.max;rank++){
+        const copy=describe(x.id,rank);
+        if(!valid(copy)||/\[\[|\]\]|\uFFFD|undefined/.test(copy))fail('s3 ranked card text: '+lang+' '+x.id+' '+rank);
+      }
+      if(!describe('reprieve').includes('3%')||!describe('reprieve').includes('5%')||describe('reprieve',1).includes('5%')||!describe('reprieve',2).includes('5%')||describe('reprieve',2).includes('3%')||describe('reprieve',8)!==describe('reprieve',2))fail('s3 Berserk: guide / offer / overflow rank '+lang);
+      if(!describe('medic',2).includes('12')||!describe('medic',2).includes('40%')||describe('medic',2).includes('20%'))fail('s3 medical card: both quantities must use offered rank '+lang);
+      for(const id of [...Object.keys(D.weapons),...Object.keys(D.gadgets),...Object.keys(idx.terms)])if(!valid(idx.label(id)))fail('s3 loadout index: '+lang+' '+id);
+      for(const [id,row] of Object.entries(idx.rows)){
+        if(!valid(book.E.i18n.t('s3.ex.'+id+'.d')) || !row.routes.length)fail('s3 loadout index: '+id);
+        for(const {targets} of row.routes)for(const k of targets)if(!valid(idx.label(k)))fail('s3 loadout target: '+id+'/'+k);
+      }
+      for(const t of Object.values(idx.terms))for(const id of t.children)if(!valid(idx.label(id)))fail('s3 loadout group: '+id);
+    }
     if (exIds.size !== D.exploits.length) fail('s3 data: duplicate exploit id');
     for (const x of D.exploits) {
       if (!'cur'.includes(x.rar) || !(x.max >= 1)) fail(`s3 data: exploit ${x.id} has a bad rarity or max`);
@@ -733,6 +765,15 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       R.addGadget(r, other);
       if (r.gear.lv !== 2) fail('s3 run: the shared gadget should level up');
     }
+    {
+      const peers=S3.ops.colleagues.spy.map(d=>S3.ops.colleague(d)).filter(p=>p.template==='spotter');
+      const r=R.start('two-spotters',[...peers,crew[0]],newMeta());r.squad[0].gadget.lv=3;
+      r.rerolls=40;r.pending={kind:'gadget',picks:[]};
+      while(!r.pending.picks.includes('strike') && r.rerolls)R.reroll(r);
+      if(!r.pending.picks.includes('strike') || R.gadgetOwner(r,'strike').i!==1)fail('s3 gadget: a capped mortar hid the other spotter');
+      R.take(r,'strike');
+      if(r.squad[0].gadget.lv!==3 || r.squad[1].gadget.lv!==2 || r.gear)fail('s3 gadget: upgrading a second mortar replaced a different slot');
+    }
     // 有人倒下：下一間還是打得下去，全倒才結束。
     {
       const r = R.start('down', crew, newMeta());
@@ -936,6 +977,8 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     if (R.inheritance().reason !== 'missing' || R.newGame('inherit', 'none') || storage.size) fail('s3 campaign: missing save was accepted or modified');
     from('dawn', members);
     const prevSource = storage.get(CURFEW);
+    const curfewOnly = R.newGame('inherit', 'curfew-only').meta;
+    if (S3.omni.connect('too-early', squad(curfewOnly), curfewOnly)) fail('s3 campaign: a Curfew victory alone opened OMNI');
     // 含同名候選人的種子：直接比《宵禁》真正的開場名單，而不只比職業分類。
     const N = sandbox(['js/engine/rng.js', 'js/engine/people.js', 'content-s2/people.js', 'js/engine/roster.js', 'js/engine/night.js']).E.night;
     for (const seed of ['zero-day', 'camden-ci-30', 'whitehall']) {
@@ -1139,17 +1182,41 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
         !['tc', 'sc', 'en'].every((k) => d.bio[k] && d.name[k] && E.people.name(p)[k]) ||
         !D.weapons[R.memberOf(p).weapon] || !D.gadgets[R.memberOf(p).gadget.id] || !S3.pictures[d.portrait]) fail('s3 fixed operative: ' + id);
     }
-    const keys=new Set();for(const id of ids){
-      const kits=S3.ops.templates[id], xp=S3.ops.xp.filter(x=>x.owner===id),variants=new Set(), rolls=new Set();
+    const keys=new Set(),castIds=new Set(),names={tc:new Set(),sc:new Set(),en:new Set()};
+    for(const id of ids){
+      const kits=S3.ops.templates[id], xp=S3.ops.xp.filter(x=>x.owner===id);
       if(kits.length<2||kits.length>3||xp.length!==2||xp.some(x=>![2,3].includes(x.max)))fail('s3 kit count/ranks: '+id);
-      for(const k of kits){if(keys.has(k.id)||!D.weapons[k.weapon]||!D.gadgets[k.gadget]?.signature||!Object.keys({...k.mods,...k.flags}).length)fail('s3 kit contract: '+k.id);keys.add(k.id);}
-      for(let i=0;i<30;i++){const p=S3.ops.person(id,'invite-'+i),k=S3.ops.templateOf(p),m=R.memberOf(p);
-        if(!equal(p,S3.ops.person(id,'invite-'+i))||p.traits.length!==2||p.quirks.length!==2||typeof E.people.quirksOf(p)[0]?.name.en!=='string'||m.weapon!==k.weapon||m.gadget.id!==k.gadget)fail('s3 kit/personal roll: '+id);
-        variants.add(k.id);rolls.add(p.traits.join()+p.quirks.join());}
-      if(variants.size!==kits.length||rolls.size<3)fail('s3 invites lack variations: '+id);
+      for(const k of kits){if(keys.has(k.id)||!D.weapons[k.weapon]||!D.gadgets[k.gadget]?.signature||(!Object.keys({...k.mods,...k.flags}).length && kits.every(t=>t.gadget===k.gadget)))fail('s3 kit contract: '+k.id);keys.add(k.id);}
+      const lead=S3.ops.person(id,'first'),defs=S3.ops.colleagues[id], people=defs.map(d=>S3.ops.colleague(d));
+      if(!equal(lead,S3.ops.person(id,'another-save')) || defs.map(d=>d.slot).join('')!=='abcd' ||
+        kits.some(k=>people.filter(p=>p.template===k.id).length!==2 || people.filter(p=>p.template===k.id && !p.flaw).length!==1) ||
+        new Set(people.map(p=>p.traits.join()+'|'+p.quirks.join())).size!==4)fail('s3 fixed cast/kit distribution: '+id);
+      for(const p of [lead,...people]){
+        const k=S3.ops.templateOf(p), m=R.memberOf(p), q=E.people.quirksOf(p);
+        if(castIds.has(p.id) || !k || m.weapon!==k.weapon || m.gadget.id!==k.gadget || new Set(p.traits).size!==2 || new Set(p.quirks).size!==2 ||
+          !E.people.traitsOf(p).every(Boolean) || !E.people.flawOf(p) || !q.every(Boolean) || q[0]?.rival===q[1]?.id)fail('s3 cast data: '+p.id);
+        castIds.add(p.id);
+        for(const [lang,seen] of Object.entries(names)){
+          const n=E.people.name(p)[lang];if(!n || seen.has(n))fail('s3 cast name: '+p.id+'/'+lang);seen.add(n);
+        }
+      }
+      for(const def of defs){
+        const p=S3.ops.colleague(def);p.traits.pop();p.quirks.pop();p.fixedName.en='changed';
+        const saved=JSON.parse(JSON.stringify(S3.ops.colleague(def))), parts=S3.portraits.partsOf(saved);
+        const key=S3.ops.profiles[id].portrait.replace('pt-elite-','pt-recruit-')+'-'+def.slot;
+        if(saved.traits.length!==2 || saved.quirks.length!==2 || saved.fixedName.en==='changed' || S3.ops.colleagueOf(saved)!==def ||
+          def.portrait!==key || S3.ops.lookOf(saved)!==def.look || parts.skin!==def.look.skin || parts.hair!=='hair-'+def.look.style ||
+          parts.cloth!==def.look.o.col || S3.pictures[key]!=='assets/s3/'+key+'.jpg' || !fs.existsSync(path.join(root,S3.pictures[key])))fail('s3 published cast/portrait slot: '+def.id);
+      }
       const picture=S3.pictures[S3.ops.profiles[id].portrait];
       if(!picture||!fs.existsSync(path.join(root,picture)))fail('s3 missing portrait: '+id);
     }
+    for(const [job,rows] of Object.entries(S3.casting.retired))for(const row of rows){
+      const old=S3.ops.colleagueOf({id:'peer-'+job+'-'+row.slot}), pathOld=S3.pictures[old?.portrait];
+      if(!old?.retired || castIds.has(old.id) || S3.ops.colleagues[job].includes(old) || !pathOld || !fs.existsSync(path.join(root,pathOld)))fail('s3 retired identity/print: '+job+' '+row.slot);
+    }
+    const ada={...S3.ops.colleague(S3.ops.colleagues.beekeeper[0]),age:27};
+    if(S3.ops.ageOf(ada)!==68 || !S3.portraits.partsOf(ada).face.startsWith('face-o-') || ada.age!==27)fail('s3 printed age vs original save seed');
     const support=S3.atlas.support, data=fs.readFileSync(path.join(root,support.src));
     for(const id of ['medbeacon','shockdrone','shockdrone-zap']){const v=support.items[id];
       if(!v || v.x+v.w>data.readUInt32BE(16) || v.y+v.h>data.readUInt32BE(20) || v.r<=0)fail('s3 support atlas: '+id);}
@@ -1159,12 +1226,17 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       const pen=new Proxy({createRadialGradient:()=>({addColorStop(){}}),measureText:()=>({width:20})},{
         get:(o,k)=>k in o?o[k]:()=>{},set:(o,k,v)=>{if(k==='fillStyle')paints.add(v);o[k]=v;return true;}});
       const cv={style:{},closest:()=>({getBoundingClientRect:()=>({width:960,height:540})}),getContext:()=>pen};
-      test.ctx.document.createElement=()=>cv;S.assets={img:()=>({complete:true,naturalWidth:0,addEventListener(){}}),url:p=>p};
+      test.ctx.document.createElement=()=>cv;S.assets={img:p=>({src:p,complete:true,naturalWidth:0,addEventListener(){}}),url:p=>p};
       S.render.init(cv);
       const f=S.sim.createRoom(arena({enemies:[{kind:'guard',x:800,y:600}]}),build());
       f.installations.push({kind:'ward',x:700,y:600,r:115});f.shockDrone={x:800,y:570,ang:0,flash:.1};
       S.render.draw(f,{});if(!paints.has('#e6fff4') || !paints.has('#929fa6'))fail('s3 support objects disappear without atlas');
       for(const id of ['hypnotist','anarchist','paramedic','barrister'])if(!S.portraits.face(S.ops.person(id)).includes('<svg'))fail('s3 failed elite portrait has no fallback: '+id);
+      const peers=S.ops.colleagues.hitman, p=S.ops.colleague(peers[0]), other=S.ops.colleague(peers[1]), key=peers[0].portrait;
+      delete S.pictures[key];
+      if(!S.portraits.face(p).includes(peers[0].look.skin) || !S.portraits.face(other).includes(peers[1].look.skin))fail('s3 missing print must keep own face');
+      S.pictures[key]='assets/s3/test-cast-a.jpg';
+      if(!S.portraits.face(p,{round:true}).includes(S.pictures[key]) || S.portraits.face(other).includes(S.pictures[key]))fail('s3 print registered to the wrong person');
     }
     for(const source of ['elite-2','drones-2'])if(fs.existsSync(path.join(root,'assets/s3',source+'.jpg')))fail('unintended unsliced panel: '+source);
     {
@@ -1185,7 +1257,12 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       const past={seed:'old-London',ended:'dawn',roster:{members:[{person:pilot,status:'active'}]}};
       const pastKey='watchdogs-echo.s2.proto',before=JSON.stringify({v:6,data:past});storage.set(pastKey,before);
       const imported=R.inheritance({...newMeta(),roster:[]});const cur=imported.ready?.[0];
-      if(!cur || cur.elite!=='drone_expert' ||cur.id!==pilot.id || storage.get(pastKey)!==before || S3.ops.street('today',pilot).elite!=='drone_expert')fail('s3 pilot inheritance or street promotion');
+      if(!cur || cur.elite!=='drone_expert' ||cur.id!==pilot.id || !equal(cur.quirks,pilot.quirks) || storage.get(pastKey)!==before)fail('s3 pilot inheritance');
+      const pilots=new Set();
+      for(let i=0;i<80;i++){const p=S3.ops.street('street-'+i,pilot),def=S3.ops.colleagueOf(p);
+        if(def?.job!=='drone_expert' || !equal(p,S3.ops.colleague(def)) || p.alumnus)fail('s3 fresh pilot identity');
+        pilots.add(p.id);}
+      if(pilots.size!==4)fail('s3 fresh pilots must come from the same four named people');
       console.log('street signals: '+n+'/10240 eligible pedestrians; three ordinary professions; stable colours, faces and positive traits');
     }
     {
@@ -1224,7 +1301,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     m.vol++; m.echoes = 0; R.saveMeta(m); m = R.meta();
     if (R.recruit(m, 0) || R.volunteers(m)[0].elite !== id) fail('s3 contacts: lost a full-roster invitation');
     R.dismiss(m, m.roster.length - 1);
-    if (!R.recruit(m, 0) || m.echoes !== 0 || m.invitations.includes(id) || R.volunteers(m).some((p) => p.elite === id)) fail('s3 contacts: free recruitment or repeat invitation');
+    if (!R.recruit(m, 0) || m.echoes !== 0 || m.invitations.includes(id) || R.volunteers(m).some((p) => R.isInvitation(p) && p.elite === id)) fail('s3 contacts: free recruitment or repeat invitation');
     const operative = m.roster.find((x) => x.p.elite === id);
     const captured = R.start('captured-contact', [operative.p, ...crew(m).slice(0, 2)], m);
     captured.squad[0].down = true;
@@ -1233,7 +1310,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     const freed = R.rescue(rescue, m);
     if (!freed.known || !freed.joined || freed.p.elite !== id || rescue.squad[1].p.id !== operative.p.id || operative.status !== 'ready') fail('s3 contacts: rescue changed fixed identity');
     R.dismiss(m, m.roster.indexOf(operative));
-    if (R.volunteers(m).some((p) => p.elite === id)) fail('s3 contacts: dismissal reissued the invitation');
+    if (R.volunteers(m).some((p) => R.isInvitation(p) && p.elite === id)) fail('s3 contacts: dismissal reissued the invitation');
     m.roster = m.roster.slice(0, 3);
     const wipe = R.start('closed-book', crew(m), m); wipe.squad.forEach((x) => { x.down = true; });
     const wiped = R.finish(wipe, false, m);
@@ -1293,7 +1370,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     const crew = R.crewFor('field-partners');
     const field = (id, enemies, gear, kit, xp={}, props=[]) => {
       const p=S3.ops.person(id,'field',kit || (id==='drone_expert'?'gunship':S3.ops.templates[id][0].id));
-      // Isolate kit effects from unrelated personal rolls.
+      // Isolate kit effects from the contact's personal traits and habits.
       p.traits=[];p.quirks=[];
       const r = R.start('field-test', [p, ...crew.slice(0, 2)], newMeta());
       Object.assign(r.build.exploits,xp);
@@ -1352,14 +1429,14 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     cast(s, 800, 375); const mark = s.zones[0];
     if (mark.k !== 'strike' || at.hp !== 400 || mark.x !== 800 || mark.y !== 375) fail('s3 spy: mortar did not mark the aimed point');
     const hits = go(s, 140, pad({ ax: 1060, ay: 375 })).filter((k) => k === 'boom').length;
-    if (hits !== 3 || !near(at.hp, 400 - 3 * D.props.barrel.dmg) || away.hp !== away.maxHp || s.zones.length) fail('s3 spy: three separate barrel-strength impacts on the original mark');
+    if (hits !== 3 || !near(at.hp, 400 - 3 * 90) || away.hp !== away.maxHp || s.zones.length) fail('s3 spy: three separate 90-damage impacts on the original mark');
 
     s = field('drone_expert', [foe('turret', 770, 550), foe('turret', 758, 450)]); s.p.cloak = 30;
     const [front, back] = s.en; front.stun = back.stun = 25; front.hp = back.hp = 400;
     cast(s, 770, 550); const pet = s.pets[0], shot = s.bul.find((b) => b.tracer);
-    if (pet.kind !== 'expert' || !near(pet.t, 16) || !shot || shot.pierce !== 1 || shot.dmg !== 12 || pet.rate !== 5) fail('s3 expert: heavy escort loadout');
+    if (pet.kind !== 'expert' || !near(pet.t, 16) || !shot || shot.pierce !== 1 || !near(shot.dmg,12*1.12) || pet.rate !== 5) fail('s3 expert: heavy escort loadout');
     pet.cd = 25; go(s, 33);
-    if (front.hp !== 388 || back.hp !== 388) fail('s3 expert: first projectile did not pierce two targets');
+    if (!near(front.hp,400-12*1.12) || !near(back.hp,400-12*1.12)) fail('s3 expert: first projectile did not pierce two targets');
     sim.swapTo(s, 1); go(s, 75, pad({ mx: 1 }));
     if (pet.x < 1000 || Math.hypot(s.p.x - pet.x, s.p.y - pet.y) > 65) fail('s3 expert: drone did not follow the new operative');
     go(s, 856); if (s.pets.length) fail('s3 expert: battery did not expire');
@@ -1399,12 +1476,12 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     if(s.en[0].trance>0)fail('s3 hypnosis: boss not exempt');
 
     s = field('spy', [foe('shield', 800, 675), foe('heavy', 800, 827), foe('turret', 950, 775)], 'eightball');
-    const [shield, behind, wall] = s.en; shield.ang = DOWN; s.solid[A.idx(17, 15)] = 1;
+    const [shield, behind, wall] = s.en, ballHit=85+6*s.build.skills.physical; shield.ang = DOWN; s.solid[A.idx(17, 15)] = 1;
     cast(s, 800, 675, true);
-    if (shield.hp !== shield.maxHp - 85 || behind.hp !== behind.maxHp - 85 || wall.hp !== wall.maxHp || !near(shield.stun, 2) ||
+    if (shield.hp !== shield.maxHp - ballHit || behind.hp !== behind.maxHp - ballHit || wall.hp !== wall.maxHp || !near(shield.stun, 2) ||
       !near(shield.noShield, 3) || s.p.gad[1].cd !== 7) fail('s3 eightball: circle, shield, wall or cooldown');
     sim.swapTo(s, 1); cast(s, 800, 675, true);
-    if (shield.hp !== shield.maxHp - 85 || s.p.gad[1].cd < 6.9) fail('s3 eightball: swapping bypassed the shared cooldown');
+    if (shield.hp !== shield.maxHp - ballHit || s.p.gad[1].cd < 6.9) fail('s3 eightball: swapping bypassed the shared cooldown');
     // Specialists in a controlled arena: exercise inputs, not just registered passives.
     const ck=(ok,msg)=>{if(!ok)fail('s3 field: '+msg);};
     const anchor=()=>foe('turret',1350,250), guard=()=>foe('guard',800,610);
@@ -1442,7 +1519,7 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     ck(machine.ally>0 && machine.scrapCharge===135,'charge armed by actual hijack');machine.ally=.001;sim.step(s,pad());ck(machine.dead && witness2.hp<before-30,'scrap explosion on expiry');
 
     s=field('paramedic',[anchor()],null,'station',{triage:1,wideWard:1});s.p.hp=45;cast(s,s.p.x,s.p.y);
-    const ward=s.installations[0];ck(ward?.r===150 && ward.heal===9,'ward upgrades');go(s,60);ck(near(s.p.hp,54,.22),'heal inside beacon');
+    const ward=s.installations[0];ck(ward?.r===150 && ward.heal===11,'ward upgrades');go(s,60);ck(near(s.p.hp,56,.25),'heal inside beacon');
     const pellet=(x,y,vx,side)=>({x,y,vx,vy:0,r:3,dmg:14,side,life:2,bounce:0,pierce:0});
     s.p.inv=0;s.p.guard=0;const outer=pellet(s.p.x-ward.r-4,s.p.y,1500,'e'), insideShot=pellet(s.p.x-20,s.p.y,900,'e'),outbound=pellet(s.p.x+ward.r-4,s.p.y,1500,'p');
     s.bul.push(outer,insideShot,outbound);const hp0=s.p.hp;sim.step(s,pad());ck(!s.bul.includes(outer) && s.bul.includes(outbound) && s.p.hp<hp0-12,'shield admits outgoing and hostile shots already inside');
@@ -1521,14 +1598,18 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       const m=newMeta(),r=R.start('quotas',[S3.ops.person('hitman'),S3.ops.person('barrister'),crew[0]],m);
       r.build.exploits={reprieve:2,sidesteps:3,surety:1};
       const fight=()=>{r.node={type:'fight',reward:'data'};return sim.createRoom(arena({enemies:[anchor()]}),R.simBuild(r),R.carry(r));};
-      s=fight();ck(s.st.dashCharges===4 && !s.team[1].fl.reprieve,'charges restricted to class');
-      const lethal=()=>{s.p.inv=s.p.guard=0;A.hitPlayer(s,500);};
-      lethal();ck(s.p.hp===1 && s.p.inv>1,'first reprieve');R.finishRoom(r,s,m);s=fight();lethal();ck(s.p.hp===1 && s.team[0].reprievesUsed===2,'quota persists between rooms');
-      lethal();ck(s.team[0].down,'third lethal hit arrests');R.finishRoom(r,s,m);
+      s=fight();ck(s.st.dashCharges===4 && !s.team[1].fl.bloodReturn,'charges restricted to class');
+      s.p.hp=10;A.hurt(s,s.en[0],20,{by:'gun',quiet:true});ck(near(s.p.hp,11),'rank II returns actual gun damage');
+      s.p.inv=s.p.guard=0;A.hitPlayer(s,500);ck(s.team[0].down,'berserk has no lethal rescue');R.finishRoom(r,s,m);
       ck(!r.squad[0].down && r.squad[0].hp===Math.round(R.maxHp(r,0)*.75) && r.stats.captured===1,'senior bail at 75 percent');
       m.roster.push({p:crew[1],status:'held'});s=fight();R.finishRoom(r,s,m);ck(m.roster[0].status==='held','only one release per sector');
-      r.node={type:'boss'};R.advance(r);s=fight();ck(s.team[0].reprievesUsed===0,'quota resets next sector');R.finishRoom(r,s,m);ck(m.roster[0].status==='ready','new sector releases safehouse detainee');
+      r.node={type:'boss'};R.advance(r);s=fight();R.finishRoom(r,s,m);ck(m.roster[0].status==='ready','new sector releases safehouse detainee');
     }
+    require('./check-s3-combat').kits({field,foe,anchor,pad,go,cast,sim,A});
+    require('./check-s3-loadouts')({S3,sim,A,build,arena,foe,anchor,pad,go,field,cast});
+    require('./check-s3-combat').ordnance({S3,sim,A,build,arena,foe,pad,go});
+    require('./check-s3-combat').recruitDefense({S3,E,R,sim,A,field,foe,anchor,pad,go,build,room,crew,newMeta});
+    require('./check-s3-combat').fireteam({S3,R,sim,A,arena,foe,anchor,pad,go,crew,newMeta});
     console.log('dash and execution; silent extended takedown and three marked impacts; two-target escort; three civilian punches; hive sight, aim and damage; cone, stillness and recovery; shared eight-ball');
   }
 
@@ -1537,9 +1618,19 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
   {
     const O=S3.omni, ck=(v,s)=>{if(!v)fail('s3 OMNI: '+s);}, crew=m=>m.roster.filter(x=>x.status==='ready').slice(0,3).map(x=>x.p);
     const active=()=>{storage.clear();const m=R.newGame('random','station-fixture').meta;m.endings={open:1};m.wins=1;return m;};
-    let m=active(), people=crew(m);
     for(const id of ['return','burn','open','teach'])ck(O.unlocked({endings:{[id]:1}}),'normal ending '+id);
     ck(!O.unlocked({endings:{wipe:1}}) && !O.unlocked({endings:{}}),'a wipe alone cannot open the station');
+    storage.clear();
+    const first=R.newGame('random','first-roster').meta;
+    ck(!O.connect('locked',crew(first),first),'a fresh roster cannot enter without a career ending');
+    R.finish(R.start('campaign',crew(first),first),true,first,'burn');
+    const career=R.meta(), oldTrip=O.connect('old-trip',crew(career),career);
+    oldTrip.roomNo=11;O.snapshot(oldTrip,career);R.saveMeta(career);
+    R.newGame('random','second-roster');
+    const restart=R.meta();
+    ck(restart.wins===0 && !restart.omniRun && !restart.unlocks.jobs.length && restart.omniRecord.best===11 &&
+      O.connect('new-trip',crew(restart),restart)?.roomNo===0,'manual restart keeps career access and depth, not the pending trip');
+    let m=active(), people=crew(m);
     m.roster[0].status='station';ck(!O.connect('x',people,m),'station crew cannot deploy');m.roster[0].status='held';
     ck(!O.connect('x',people,m),'ordinary prisoners cannot deploy');m.roster[0].status='ready';
     ck(!O.connect('x',[people[0],people[0],people[1]],m),'three separate people required');

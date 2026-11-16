@@ -1,5 +1,5 @@
 // 第三季一整趟的流程：從名冊挑三個人組成小隊 → 一間一間打 → 每間打完拿獎勵、選下一扇門 → 首領 → 下一個區段。
-// 小隊一次只有一個人在場上，倒下的人會被獅心防務抓走，關進基石的拘留室；之後的夜晚可以把人救出來。
+// 輪換隊員倒下、或同場隊員錯過救援，就會被獅心防務抓走，關進基石的拘留室；之後的夜晚可以把人救出來。
 // 一趟的狀態（run）和名冊（meta）都是純資料，可以直接存檔。這裡不碰畫面：介面（js/s3/main.js）和機器人（js/s3/bot.js）都呼叫同一組函式。
 (function (E) {
   const S3 = (E.s3 = E.s3 || {});
@@ -17,7 +17,7 @@
     if (inRun || m.gadget) m.gadget={id:kit.gadget,lv:m.gadget?.lv || 1};
     if(inRun){m.cat=occ.category;m.job=occ.perk;}
   }
-  const invitePerson=(m,id)=>m.offers?.[id] || S3.ops.person(id,m.seed || 'legacy-invite');
+  const invitePerson=(m,id)=>m.offers?.[id] || S3.ops.person(id);
   const isInvitation=p=>!!p.elite && p.id==='elite-'+p.elite;
   // 舊隊員自己的 Q 換成一般裝備；已經放在共用 E 的裝備是玩家的，不轉換。
   function migrateMember(m) {
@@ -183,14 +183,14 @@
     return { meta: m, vets };
   }
   // 找 n 個路人，盡量是名冊裡還沒有的職業分類。tag 讓不同用途抽到不同的人。
-  function findPeople(seed, tag, n, taken) {
+  function findPeople(seed, tag, n, taken = [], reserved = []) {
     const districts = Object.keys(E.s2.people.districts);
     const r = E.rng.derive(seed, 's3', tag);
-    const out = [], have = (taken || []).map((p) => occOf(p).category);
+    const out = [], have = taken.map((p) => occOf(p).category);
     for (let i = 0; out.length < n && i < 80; i++) {
       const p = S3.ops.street(seed+':'+tag,E.people.generate(seed + ':s3:' + tag, r.pick(districts), i));
       const cat = occOf(p).category;
-      if (out.some(q=>same(q,p)) || (taken || []).some((q) => same(q, p))) continue;
+      if (out.some(q=>same(q,p)) || taken.some(q=>same(q,p)) || reserved.some(q=>same(q,p))) continue;
       if ((have.includes(cat) || out.some((o) => occOf(o).category === cat)) && i < 40) continue;
       out.push(p);
     }
@@ -198,6 +198,19 @@
   }
   // 沒有連著名冊的單趟（機器人、測試）用的三人小隊。
   const crewFor = (seed) => findPeople(seed, 'crew', SQUAD);
+  // A named peer can return after being sent home. Their marks and service record belong to them, not the bunk.
+  function returning(m,p){
+    const old=m.formerPeers?.[p.id];
+    if(!old)return p;
+    const person={...old.p};
+    if(p.alumnus)person.alumnus=true;else delete person.alumnus;
+    return person;
+  }
+  function enlist(m,p){
+    const old=m.formerPeers?.[p.id], entry={...old,p:returning(m,p),status:'ready',runs:old?.runs||0};
+    if(old)delete m.formerPeers[p.id];
+    m.roster.push(entry);return entry;
+  }
   // 未結束的名冊至少要有三個人能出發；沒有名冊的舊存檔採用《宵禁》的四人開局。
   function ensureRoster(m) {
     if (m.campaign === 'wiped') return [];
@@ -208,22 +221,48 @@
     if (ready >= SQUAD) return [];
     const fresh = findPeople(m.seed, 'join' + m.vol, SQUAD - ready, m.roster.map((x) => x.p));
     m.vol++;
-    for (const p of fresh) m.roster.push({ p, status: 'ready', runs: 0 });
-    return fresh;
+    return fresh.map(p=>enlist(m,p).p);
   }
   // 一般志願者每晚更換，尚未接受的邀約則保留（包括名冊已滿時）。
-  const volunteers = (m) => (m.invitations || []).filter((id) => S3.ops.profiles[id]).map(id=>invitePerson(m,id)).concat(findPeople(m.seed || 'meta', 'vol' + m.vol, 2, m.roster.map((x) => x.p)));
+  function collected(m){
+    const known={...m.collectedKits};
+    for(const x of m.roster||[]){const p=x.p;if(p?.elite && p.template)known[p.elite]=[...new Set([...(known[p.elite]||[]),p.template])];}
+    return known;
+  }
+  const hasCollectedKit = (m,p) => !!collected(m)[p.elite]?.includes(p.template);
+  // Pure previews: one additional paid contact per rotation. The original invitation owns its free slot.
+  function alumnus(m){
+    const jobs=(m.unlocks?.jobs||[]).filter(j=>S3.ops.colleagues[j] && !(m.invitations||[]).includes(j));
+    if(!jobs.length)return null;
+    const present=new Set(m.roster.map(x=>x.p.id)), names=new Set(m.roster.map(x=>E.people.name(x.p).en));
+    // Retired actors belong to saves that actually hired them, never to the new cast list.
+    const returningCast=Object.values(m.formerPeers||{}).map(entry=>S3.ops.colleagueOf(entry.p)).filter(d=>d?.retired && jobs.includes(d.job));
+    const free=jobs.flatMap(j=>S3.ops.colleagues[j]).concat(returningCast).filter(d=>!present.has(d.id) && !names.has(d.fixedName.en));
+    if(!free.length)return null;
+    const known=collected(m), missing=free.filter(d=>!known[d.job]?.includes(d.kit));
+    const pool=missing.length?missing:free, history=new Set(m.alumniNames||[]);
+    // Rotate the entire eligible list: a former teammate can come back without first hiring every stranger.
+    const order=E.rng.derive(m.seed||'meta','cast-call').shuffle(pool);
+    order.sort((a,b)=>Number(history.has(a.fixedName.en))-Number(history.has(b.fixedName.en)));
+    return S3.ops.colleague(order[(m.vol||0)%order.length],true);
+  }
+  function volunteers(m){
+    const contacts=(m.invitations||[]).filter(id=>S3.ops.profiles[id]).map(id=>invitePerson(m,id)), peer=alumnus(m);
+    if(peer)contacts.push(peer);
+    return contacts.concat(findPeople(m.seed||'meta','vol'+m.vol,2,m.roster.map(x=>x.p),contacts)).map(p=>returning(m,p));
+  }
   function recruit(m, i) {
     const p = volunteers(m)[i];
-    if (!p || m.roster.length >= rosterMax(m)) return false;
+    if (!p || m.roster.length >= rosterMax(m) || m.roster.some(x=>same(x.p,p))) return false;
     if (isInvitation(p)) {
-      if (m.roster.some((x) => same(x.p,p))) return false;
       m.invitations.splice(m.invitations.indexOf(p.elite), 1); if(m.offers)delete m.offers[p.elite];
     } else {
       if (m.echoes < RECRUIT_COST) return false;
       m.echoes -= RECRUIT_COST;
     }
-    m.roster.push({ p, status: 'ready', runs: 0 });
+    enlist(m,p);
+    m.collectedKits=collected(m);
+    if(S3.ops.colleagueOf(p) && !(m.alumniNames||=[]).includes(p.fixedName.en))m.alumniNames.push(p.fixedName.en);
     m.vol++;
     saveMeta(m);
     return true;
@@ -231,6 +270,9 @@
   function dismiss(m, i) {
     const x = m.roster[i];
     if (!x || x.status !== 'ready' || m.roster.filter((y) => y.status === 'ready').length <= SQUAD) return false;
+    m.collectedKits=collected(m);
+    if(x.p.elite){const n=E.people.name(x.p).en;if(!(m.alumniNames||=[]).includes(n))m.alumniNames.push(n);}
+    if(S3.ops.colleagueOf(x.p))(m.formerPeers||={})[x.p.id]=x;
     m.roster.splice(i, 1);
     saveMeta(m);
     return true;
@@ -252,11 +294,11 @@
     const m = run.squad[i], p = m.p;
     return {
       person: p, cat: m.cat, job: m.job, weapon: m.weapon, skills: p.skills, traits: p.traits, flaw: p.flaw, quirks: p.quirks,
-      ...(run.omni ? {overflow:run.omni.overflow} : {}), exploits: run.build.exploits, extra: run.build.extra, escaped: m.escaped, reprievesUsed:m.reprievesUsed||0,
+      ...(run.omni ? {overflow:run.omni.overflow} : {}), exploits: run.build.exploits, extra: run.build.extra, escaped: m.escaped,
       gadgets: [m.gadget].concat(run.gear ? [run.gear] : []),
     };
   }
-  const simBuild = (run) => ({ squad: run.squad.map((m, i) => buildOf(run, i)), active: run.active });
+  const simBuild = (run) => ({ deployment:run.omni?'relay':run.deployment, squad: run.squad.map((m, i) => buildOf(run, i)), active: run.active });
   const statsOf = (run, i) => S3.sim.stats(buildOf(run, i));
   const maxHp = (run, i = run.active) => statsOf(run, i).st.maxHp;
   const alive = (run) => run.squad.map((m, i) => i).filter((i) => !run.squad[i].down);
@@ -265,10 +307,10 @@
   const carry = (run) => ({ hp: run.squad.map((m) => (m.down ? 0 : m.hp)), data: run.data, revived: run.revived });
 
   // 開始一趟。people：三個路人。m：永久進度（有名冊的話，被關的人數會影響路線）。
-  function start(seed, people, m) {
+  function start(seed, people, m, deployment) {
     m = m || meta();
     const run = {
-      v: SAVE_VERSION, seed, sector: 0, depth: 0, roomNo: 0, data: 25 * perkLv(m, 'stash'), rerolls: perkLv(m, 'reroll'),
+      v: SAVE_VERSION, ...(deployment==='field'?{deployment}:{}), seed, sector: 0, depth: 0, roomNo: 0, data: 25 * perkLv(m, 'stash'), rerolls: perkLv(m, 'reroll'),
       squad: people.slice(0, SQUAD).map((p) => {
         const entry = (m.roster || []).find((x) => same(x.p, p));
         return memberOf(p, entry && entry.gadget);
@@ -417,7 +459,7 @@
     S3.sim.teamState(s).forEach((t, i) => {
       const mem = run.squad[i];
       if (t.down && !mem.down) { if(run.omni)S3.omni.capture(run,meta,i);else st.captured++; }
-      mem.down = t.down; mem.hp = t.hp; mem.escaped = t.escaped; mem.reprievesUsed=t.reprievesUsed||0;
+      mem.down = t.down; mem.hp = t.hp; mem.escaped = t.escaped;
     });
     if (s.over === 'dead' || !alive(run).length) { run.phase = 'dead'; return null; }
     run.active = run.squad[s.active].down ? alive(run)[0] : s.active;
@@ -472,9 +514,15 @@
     return out;
   }
   // 裝備：每個隊員有自己的一件（Q），全隊另外共用一件撿來的（E）。
-  const gadgetOwner = (run, id) => run.squad.find((m) => m.gadget.id === id) || (run.gear && run.gear.id === id ? { gadget: run.gear } : null);
+  // Keep formation order, but a maxed copy must not hide another teammate's upgrade.
+  function gadgetOwner(run,id){
+    const slots=run.squad.map((m,i)=>({i,g:m.gadget}));
+    if(run.gear)slots.push({i:-1,g:run.gear});
+    const owned=slots.filter(o=>o.g.id===id);
+    return owned.find(o=>o.g.lv<3)||owned[0]||null;
+  }
   function draftGadgets(run, r, n) {
-    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id), g = D().gadgets[id]; return o ? o.gadget.lv < 3 : !g.cameo && !g.signature; });
+    const pool = Object.keys(D().gadgets).filter((id) => { const o = gadgetOwner(run, id), g = D().gadgets[id]; return o ? o.g.lv < 3 : !g.cameo && !g.signature; });
     return r.shuffle(pool).slice(0, n);
   }
   function applyCopy(run,def) {
@@ -492,7 +540,7 @@
   // 拿一件裝備：隊上已經有同一件（誰的都算）就升級；不然放進共用的那一格（原本有東西就換掉）。
   function addGadget(run, id) {
     const o = gadgetOwner(run, id);
-    if (o) o.gadget.lv = Math.min(3, o.gadget.lv + 1);
+    if (o) o.g.lv = Math.min(3, o.g.lv + 1);
     else run.gear = { id, lv: 1 };
   }
 
@@ -528,11 +576,11 @@
     if (!rw || rw.kind !== 'rescue') return null;
     if(run.omni)return S3.omni.rescue(run,m,()=>findPeople(run.seed,'station'+run.roomNo,1,run.squad.map(x=>x.p).concat((m?.roster||[]).map(x=>x.p)))[0]);
     const held = m ? m.roster.find((x) => x.status === 'held') : null;
-    let p, known = false, full = false;
+    let p, entry=held, known = false, full = false;
     if (held) { held.status = 'ready'; p = held.p; known = true; run.held = Math.max(0, run.held - 1); }
     else {
       p = findPeople(run.seed, 'cell' + run.roomNo, 1, run.squad.map((x) => x.p).concat(m ? m.roster.map((x) => x.p) : []))[0];
-      if (m) { if (m.roster.length < rosterMax(m)) m.roster.push({ p, status: 'ready', runs: 0 }); else full = true; }
+      if (m) { if (m.roster.length < rosterMax(m)) {entry=enlist(m,p);p=entry.p;} else full = true; }
     }
     if (m) { m.rescued = (m.rescued || 0) + 1; saveMeta(m); }
     run.stats.rescued++;
@@ -540,7 +588,7 @@
     let joined = false;
     if (slot >= 0 && !full) {
       run.lost.push(run.squad[slot].p); // 被換下來的人還是被抓走了，結算時要記進名冊
-      run.squad[slot] = memberOf(p, held && held.gadget);
+      run.squad[slot] = memberOf(p, entry && entry.gadget);
       run.squad[slot].hp = Math.round(maxHp(run, slot) * 0.6);
       joined = true;
     } else if (full) run.data += 40;
@@ -560,7 +608,6 @@
     if (wasBoss) {
       if (run.sector >= D().sectors.length - 1) { run.phase = 'won'; return 'won'; }
       run.sector++;
-      run.squad.forEach(m=>{m.reprievesUsed=0;});
       run.depth = 0;
       if (run.kit) heal(run, 15);
     } else run.depth++;
@@ -718,7 +765,7 @@
     const r = E.rng.derive(m.seed, run.seed, 'victory', m.wins);
     const jobs = Object.keys(S3.ops.profiles).filter((id) => !u.jobs.includes(id));
     const job = jobs.length ? r.pick(jobs) : null, events = [];
-    if (job) { (m.offers || (m.offers={}))[job]=S3.ops.person(job,[m.seed,run.seed,m.wins].join(':')); u.jobs.push(job); (m.invitations || (m.invitations = [])).push(job); }
+    if (job) { (m.offers || (m.offers={}))[job]=S3.ops.person(job); u.jobs.push(job); (m.invitations || (m.invitations = [])).push(job); }
     const contact = D().endingContacts[ending];
     if (contact && !u.events.includes(contact)) { u.events.push(contact); events.push(contact); }
     const extra = Object.values(D().endingContacts).filter((id) => !u.events.includes(id));
@@ -760,10 +807,10 @@
   }
 
   S3.run = {
-    same, afterLoss, SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax, invitePerson,isInvitation,
-    meta, saveMeta, perkLv, buyPerk, inheritance, inherit, newGame, ensureRoster, volunteers, recruit, dismiss, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
+    same, afterLoss, SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax, invitePerson,isInvitation,hasCollectedKit,
+    meta, saveMeta, perkLv, buyPerk, inheritance, inherit, newGame, ensureRoster, volunteers, recruit, dismiss, enlist, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
     start, route, enter, spec, carry, finishRoom, take, reroll, rescue, advance, bail, heal,
-    buy, restock, safe, choose, canChoose, finish, addExploit, addGadget, maxHp, exploitDef, eventDef, hurtSomeone, isRoom,
+    buy, restock, safe, choose, canChoose, finish, addExploit, addGadget, gadgetOwner, maxHp, exploitDef, eventDef, hurtSomeone, isRoom,
     save(run) { RUN.write(run); },
     load() { return RUN.read(); },
     clear() { RUN.clear(); },

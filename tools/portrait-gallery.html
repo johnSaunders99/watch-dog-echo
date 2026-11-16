@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>倫敦街頭人像誌</title>
+<link rel="stylesheet" href="../css/s3.css">
 <style>
   *{box-sizing:border-box} body{margin:0;background:#11161c;color:#eeeae0;font:15px/1.45 system-ui,"Microsoft JhengHei",sans-serif}
   main{max-width:1660px;margin:auto;padding:32px clamp(18px,3vw,52px) 22px} header{display:flex;align-items:end;justify-content:space-between;gap:18px;padding-bottom:20px;border-bottom:2px solid #d9ded8}
@@ -14,20 +15,25 @@
   .chips{display:flex;justify-content:center;gap:3px}.chips i{width:13px;height:5px;box-shadow:inset 0 0 0 1px #ffffff26}
   figcaption{margin-top:7px;display:flex;gap:8px;align-items:baseline}.num{color:#89b8b7;font-size:11px}.name{font-weight:650;font-size:16px;line-height:1.3;overflow-wrap:anywhere}.job{margin-top:2px;font-size:13px;color:#b7c5c8}
   footer{display:flex;justify-content:space-between;gap:12px;padding-top:14px;color:#98b2b4}
+  #grid.cast{grid-template-columns:repeat(auto-fit,minmax(186px,1fr));max-width:1080px}
+  .cast .pair{grid-template-columns:1fr 88px}.cast .samples{display:flex;align-items:center;gap:9px}
+  .heading{display:flex;align-items:center;gap:16px}.founder{margin:0;border-right:1px solid #45575d;padding-right:16px;flex:none}
+  .founder img{width:76px;height:76px;display:block;border-radius:4px}.founder figcaption{display:block;margin-top:4px;color:#b8cfca;font-size:12px;text-align:center}
   @media(max-width:1140px){#grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:720px){#grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}header{align-items:start;flex-direction:column}nav{text-align:left}footer{display:block}}
 </style>
 </head>
-<body><main><header><div><div class="tag">DEDSEC LONDON &nbsp;/&nbsp; FIELD ARCHIVE</div><h1></h1><p id="caption"></p></div>
-<nav><div class="seed"></div><button type="button"></button> <select aria-label="Language"><option value="tc">繁體中文</option><option value="sc">简体中文</option><option value="en">English</option></select></nav></header>
+<body><main><header><div class="heading"><figure class="founder" hidden><img alt=""><figcaption></figcaption></figure><div><div class="tag">DEDSEC LONDON &nbsp;/&nbsp; FIELD ARCHIVE</div><h1></h1><p id="caption"></p></div></div>
+<nav><div class="seed"></div><select id="cast"></select> <button type="button"></button> <select id="lang" aria-label="Language"><option value="tc">繁體中文</option><option value="sc">简体中文</option><option value="en">English</option></select></nav></header>
 <section id="grid" aria-live="polite"></section><footer><span id="legend"></span><span>LDN &nbsp;/&nbsp; 01—24</span></footer></main>
 <script src="../js/engine/rng.js"></script><script src="../js/engine/save.js"></script><script src="../js/engine/people.js"></script>
-<script src="../content-s2/people.js"></script><script src="../content-s3/data.js"></script><script src="../content-s3/operatives.js"></script>
+<script src="../content-s2/people.js"></script><script src="../content-s3/data.js"></script><script src="../content-s3/cast.js"></script><script src="../content-s3/operatives.js"></script>
 <script src="../content-s3/atlas.js"></script><script src="../content-s3/portrait-parts.js"></script>
 <script src="../js/ui/faces.js"></script><script src="../js/s3/portraits.js"></script><script src="../js/s3/sim.js"></script><script src="../js/s3/run.js"></script><script src="../js/s3/render.js"></script>
 <script>
 (async function (E) {
   const S = E.s3, $ = s => document.querySelector(s), q = new URLSearchParams(location.search);
   const seed = q.get('seed') || 'LDN-111', lang = ['tc','sc','en'].includes(q.get('lang')) ? q.get('lang') : 'tc';
+  const job=q.get('cast'), cast=Array.isArray(S.ops.colleagues[job])?S.ops.colleagues[job]:null;
   const words = {
     tc:['倫敦街頭人像誌','左側是檔案照，右側是同一人上場時的裝束與武器。','換一組','色票依序為膚色、髮色、上衣；有帽子時另列帽色。','歲','紙娃娃圖集未載入'],
     sc:['伦敦街头人像志','左侧是档案照，右侧是同一人上场时的装束与武器。','换一组','色块依次为肤色、发色、上衣；有帽子时另列帽色。','岁','纸娃娃图集未载入'],
@@ -35,10 +41,24 @@
   }[lang];
   document.documentElement.lang = {tc:'zh-Hant',sc:'zh-Hans',en:'en'}[lang];
   $('h1').textContent = document.title = words[0]; $('#caption').textContent = words[1]; $('button').textContent = words[2];
-  $('#legend').textContent = words[3]; $('.seed').textContent = 'SEED / ' + seed; $('select').value = lang;
-  const change = (k,v) => { q.set(k,v); location.search = q; };
+  $('#legend').textContent = words[3]; $('.seed').textContent = cast ? 'CAST / A—D' : 'SEED / ' + seed; $('#lang').value = lang;
+  const change = (k,v) => { if(v)q.set(k,v);else q.delete(k);location.search = q; };
   $('button').onclick = () => change('seed', Math.random().toString(36).slice(2,8).toUpperCase());
-  $('select').onchange = e => change('lang',e.target.value);
+  $('#lang').onchange = e => change('lang',e.target.value);
+  const street={tc:'一般路人',sc:'普通路人',en:'Street recruits'}[lang];
+  $('#cast').setAttribute('aria-label',{tc:'職業',sc:'职业',en:'Profession'}[lang]);
+  $('#cast').add(new Option(street,''));
+  for(const id of Object.keys(S.ops.colleagues))$('#cast').add(new Option(S.ops.profiles[id].name[lang],id));
+  $('#cast').value=cast?job:'';$('#cast').onchange=e=>change('cast',e.target.value);
+  if(cast){
+    $('button').hidden=true;$('#grid').className='cast';$('footer span:last-child').textContent='LDN / A—D';
+    const lead=S.ops.profiles[job], ref=$('.founder');
+    ref.querySelector('img').src='../'+S.pictures[lead.portrait];
+    ref.querySelector('img').alt=lead.fixedName[lang];
+    ref.querySelector('figcaption').textContent={tc:'原聯絡人',sc:'原联系人',en:'First contact'}[lang];
+    ref.hidden=false;$('h1').textContent=document.title=lead.name[lang];
+    $('#caption').textContent={tc:'招募卡 76 px／小隊欄 30 px，右側是同一人上場的裝束。',sc:'招募卡 76 px／小队栏 30 px，右侧是同一人上场的装束。',en:'Recruit card at 76 px, squad portrait at 30 px, then the same person in the field.'}[lang];
+  }
   const files = new Map(), url = p => '../' + p;
   S.assets = { url, img(p) {
     if (!files.has(p)) { const im = new Image(); im.src = url(p); files.set(p, im); }
@@ -47,14 +67,17 @@
   S.portraits.prepare(S.assets.img); S.assets.img(S.atlas.doll.src);
   await Promise.all([...files.values()].map(im => im.decode().catch(() => {})));
   const districts = Object.keys(E.s2.people.districts), batch = document.createDocumentFragment();
-  for (let i=0;i<24;i++) {
-    const p = E.people.generate(seed,districts[i % districts.length],i), L = E.faces.look(p), mem = S.run.memberOf(p);
+  const people=cast?cast.map(d=>S.ops.colleague(d)):Array.from({length:24},(_,i)=>E.people.generate(seed,districts[i % districts.length],i));
+  for (const [i,p] of people.entries()) {
+    const L = cast?S.ops.lookOf(p):E.faces.look(p), mem = S.run.memberOf(p);
     const el = document.createElement('figure'); el.className = 'entry';
-    el.innerHTML = '<div class="pair"><div class="portrait">' + E.faces.of(p) + '</div><div class="field"><canvas width="200" height="200"></canvas><div class="chips"></div></div></div>'
+    const photos=cast?'<div class="samples"><div class="crew-face">'+S.portraits.face(p)+'</div><div class="slot-face">'+S.portraits.face(p,{round:true})+'</div></div>':
+      '<div class="portrait">'+E.faces.of(p)+'</div>';
+    el.innerHTML = '<div class="pair">' + photos + '<div class="field"><canvas width="200" height="200"></canvas><div class="chips"></div></div></div>'
       + '<figcaption><span class="num"></span><div><div class="name"></div><div class="job"></div></div></figcaption>';
-    el.querySelector('.num').textContent = String(i+1).padStart(2,'0');
+    el.querySelector('.num').textContent = cast?cast[i].slot.toUpperCase():String(i+1).padStart(2,'0');
     el.querySelector('.name').textContent = E.people.name(p)[lang];
-    el.querySelector('.job').textContent = L.job.name[lang] + ' · ' + p.age + ' ' + words[4];
+    el.querySelector('.job').textContent = L.job.name[lang] + ' · ' + S.ops.ageOf(p) + ' ' + words[4];
     for (const c of [L.skin, L.hairC, L.o.col, L.o.hat && (L.o.hatCol || L.o.col)].filter(Boolean)) {
       const sw = document.createElement('i'); sw.style.background = c; el.querySelector('.chips').append(sw);
     }

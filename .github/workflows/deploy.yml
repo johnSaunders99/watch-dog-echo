@@ -42,8 +42,8 @@ jobs:
       - name: Stamp asset versions
         run: |
           v="${GITHUB_SHA::8}"
-          sed -i -E "s#(src|href)=\"((js|content|content-s2|content-s3|css)/[^\"?]+\.(js|css))\"#\1=\"\2?v=$v\"#g" index.html s2.html s3.html
-          grep -c "?v=$v" index.html s2.html s3.html
+          sed -i -E "s#(src|href)=\"((js|content|content-s2|content-s3|css)/[^\"?]+\.(js|css))\"#\1=\"\2?v=$v\"#g" index.html s2.html s3.html s3-loadouts.html
+          grep -c "?v=$v" index.html s2.html s3.html s3-loadouts.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
