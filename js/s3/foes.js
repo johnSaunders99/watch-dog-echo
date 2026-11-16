@@ -10,8 +10,8 @@
     if (e.bees > 0) ang += (s.rng.next() - 0.5) * 0.95;
     s.bul.push(Object.assign({
       x: e.x + Math.cos(ang) * (e.r + 4), y: e.y + Math.sin(ang) * (e.r + 4), vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
-      r: 5, side: 'e', dmg: dmg * s.dmgScale, life: 3.2, pierce: 0, bounce: 0,
-    }, e.confused > 0 ? { side: 'p', by: 'ally', shooter: e.id } : null, o));
+      r: 5, side: 'e', heavy:!!e.boss, dmg: dmg * s.dmgScale * (e.boss || e.confused>0 ? 1 : .8), life: 3.2, pierce: 0, bounce: 0,
+    }, e.confused > 0 ? { side: 'p', by: 'ally', shooter: e.id, owner:e.confuser } : null, o));
     s.ev.push({ k: 'eshot', x: e.x, y: e.y, ang, kind: e.kind });
   }
   function summon(s, kinds) {
@@ -163,7 +163,7 @@
     const tg = target(s, e, dt);
     if (!tg) { e.atk = null; return; }
     const p = tg.foe || s.p;
-    const strike = (dmg, push) => tg.foe ? A.hurt(s, p, dmg, { by: 'ally', quiet: true }) : A.hitPlayer(s, dmg, push);
+    const strike = (dmg, push) => tg.foe ? A.hurt(s, p, dmg, { by: 'ally', owner:e.confuser,quiet: true }) : A.hitPlayer(s, dmg, {...push,direct:true});
     const d = hyp(tg.x - e.x, tg.y - e.y), want = Math.atan2(tg.y - e.y, tg.x - e.x);
     const quick = e.elite === 'swift' ? 0.75 : 1, dmg = e.def.dmg * s.dmgScale, a = e.atk;
     e.cd -= dt;
@@ -230,7 +230,12 @@
           const wall=A.rayEnd(s,e.x,e.y,a.ang,1500,true);
           const end=(!tg.foe && S3.field.intercept(s,e.x,e.y,wall.x,wall.y)) || wall;
           s.ev.push({ k: 'snipe', x: e.x, y: e.y, x2: end.x, y2: end.y });
-          if (A.segDist(p.x, p.y, e.x, e.y, end.x, end.y) < p.r + 3) strike(dmg, { kx: Math.cos(a.ang) * 200, ky: Math.sin(a.ang) * 200 });
+          const impulse={kx:Math.cos(a.ang)*200,ky:Math.sin(a.ang)*200,direct:true};
+          if(s.fireteam && !tg.foe){
+            const first=s.team.filter(m=>!m.down && A.segDist(m.body.x,m.body.y,e.x,e.y,end.x,end.y)<m.body.r+3)
+              .sort((m,n)=>hyp(m.body.x-e.x,m.body.y-e.y)-hyp(n.body.x-e.x,n.body.y-e.y))[0];
+            if(first)S3.fireteam.as(s,s.team.indexOf(first),()=>A.hitPlayer(s,dmg,impulse));
+          }else if(A.segDist(p.x,p.y,e.x,e.y,end.x,end.y)<p.r+3)strike(dmg,impulse);
           e.atk = null;
           e.cd = 2.3 * quick;
           e.strafe = -e.strafe;
@@ -245,7 +250,7 @@
         if (a) {
           a.t -= dt;
           if (a.t > 0) return;
-          s.zones.push({ k: 'tele', x: a.x, y: a.y, r: 95, t: 1.05, t0: 1.05, dmg, side: tg.foe ? 'crossfire' : 'e', fx: e.x, fy: e.y });
+          s.zones.push({ k: 'tele', x: a.x, y: a.y, r: 95, t: 1.05, t0: 1.05, dmg, owner:tg.foe?e.confuser:undefined,side: tg.foe ? 'crossfire' : 'e', fx: e.x, fy: e.y });
           s.ev.push({ k: 'lob', x: e.x, y: e.y, x2: a.x, y2: a.y });
           e.atk = null;
           e.cd = 3 * quick;
@@ -304,7 +309,7 @@
     if (!e.def.static && bd > 240) A.moveToward(s, e, best.x, best.y, e.speed, dt);
     if (e.cd <= 0 && Math.abs(A.angDiff(want, e.ang)) < 0.25) {
       e.cd = 0.4;
-      s.bul.push({ x: e.x + Math.cos(e.ang) * e.r, y: e.y + Math.sin(e.ang) * e.r, vx: Math.cos(e.ang) * 560, vy: Math.sin(e.ang) * 560, r: 4, side: 'p', by: 'ally', dmg: e.def.dmg * 2.2 * s.st.hijackMul * s.spec.scale, life: 1.5, pierce: 0, bounce: 0 });
+      s.bul.push({ x: e.x + Math.cos(e.ang) * e.r, y: e.y + Math.sin(e.ang) * e.r, vx: Math.cos(e.ang) * 560, vy: Math.sin(e.ang) * 560, r: 4, side: 'p', by: 'ally', owner:e.operator,dmg: e.def.dmg * 2.2 * s.team[e.operator??s.active].st.hijackMul * s.spec.scale, life: 1.5, pierce: 0, bounce: 0 });
       s.ev.push({ k: 'pshot', id: 'ally', x: e.x, y: e.y, ang: e.ang });
     }
   }
@@ -319,7 +324,7 @@
   // 掃過去的雷射。回傳這一步有沒有打到玩家。
   function beam(s, e, ang, dmg) {
     const p = s.p, end = A.rayEnd(s, e.x, e.y, ang, 2000, false);
-    if (A.segDist(p.x, p.y, e.x, e.y, end.x, end.y) < p.r + 6) A.hitPlayer(s, dmg);
+    S3.fireteam.live(s,p=>{if(A.segDist(p.x,p.y,e.x,e.y,end.x,end.y)<p.r+6)A.hitPlayer(s,dmg);});
     return end;
   }
   const BOSS = {
@@ -342,7 +347,9 @@
           const ox = e.x, oy = e.y, len = 820 * dt;
           A.moveCircle(s, e, Math.cos(a.ang) * len, Math.sin(a.ang) * len);
           const moved = hyp(e.x - ox, e.y - oy);
-          if (!a.hitP && hyp(p.x - e.x, p.y - e.y) < e.r + p.r + 4) { a.hitP = true; A.hitPlayer(s, 22 * s.dmgScale, { kx: Math.cos(a.ang) * 500, ky: Math.sin(a.ang) * 500 }); }
+          S3.fireteam.live(s,(body,i)=>{if(hyp(body.x-e.x,body.y-e.y)>=e.r+body.r+4)return;
+            const key=s.fireteam?body:'relay';if(a.hit.has(key))return;a.hit.add(key);
+            A.hitPlayer(s,22*s.dmgScale,{direct:true,kx:Math.cos(a.ang)*500,ky:Math.sin(a.ang)*500});});
           for (const o of s.en) if (o !== e && !o.dead && !a.hit.has(o) && hyp(o.x - e.x, o.y - e.y) < e.r + o.r) { a.hit.add(o); A.hurt(s, o, 30, { by: 'env' }); }
           if (moved < len * 0.5 || a.t <= 0) {
             e.atk = null;
@@ -373,7 +380,7 @@
         if (a.k === 'slam') {
           if (a.t > 0) return;
           s.ev.push({ k: 'boom', x: e.x, y: e.y, r: 125 });
-          if (hyp(p.x - e.x, p.y - e.y) < 125) A.hitPlayer(s, 18 * s.dmgScale, { kx: Math.cos(want) * 420, ky: Math.sin(want) * 420 });
+          S3.fireteam.live(s,p=>{if(hyp(p.x-e.x,p.y-e.y)<125)A.hitPlayer(s,18*s.dmgScale,{kx:Math.cos(want)*420,ky:Math.sin(want)*420});});
           e.atk = null;
           e.cd = 0.9;
           return;
@@ -502,7 +509,7 @@
     if (e.burn > 0) {
       e.burn -= dt;
       e.burnT -= dt;
-      if (e.burnT <= 0) { e.burnT = 0.5; A.hurt(s, e, 2.5 * s.st.burnMul, { by: 'env', quiet: true }); if (e.dead) return; }
+      if (e.burnT <= 0) { const owner=e.burnOwner??s.active;e.burnT = 0.5; A.hurt(s, e, 2.5 * s.team[owner].st.burnMul, { by: 'env', owner,quiet: true }); if (e.dead) return; }
     }
     if (e.mark > 0) e.mark -= dt;
     if (e.bees > 0) e.bees -= dt;
@@ -517,8 +524,9 @@
       e.ally -= dt;
       if (e.ally <= 0) {
         // 燒掉的時候炸一下旁邊的敵人。
-        A.blast(s, e.x, e.y, 80, 20, { by: 'ally' });
-        A.kill(s, e, { by: 'ally' });
+        const owner=e.operator??s.active, st=s.team[owner].st;
+        A.blast(s, e.x, e.y, 80*st.aoeMul, 20*s.spec.scale*st.aoeDmg, { by: 'ally',owner,ignore:e });
+        A.kill(s, e, { by: 'ally',owner });
         return;
       }
       allyThink(s, e, dt);

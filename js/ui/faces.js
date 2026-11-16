@@ -100,9 +100,9 @@
       case 'bagstrap': return `<path d="M28 74 L72 100" stroke="#ffd23f" stroke-width="5"/><path d="M28 74 L72 100" stroke="${OUT}" stroke-width="0.8" opacity="0.5"/>`;
       case 'whistle': return `<path d="M43 72 Q50 86 57 72" stroke="#f4f1ea" stroke-width="1" fill="none"/><rect x="47" y="83" width="6" height="4" rx="1.5" fill="#c8cfdf" stroke="${OUT}" stroke-width="0.6"/>`;
       case 'press': return `<rect x="58" y="83" width="18" height="9" rx="1" fill="#f4f1ea" stroke="${OUT}" stroke-width="0.8"/><text x="67" y="89.6" font-size="5.5" font-weight="700" font-family="monospace" text-anchor="middle" fill="${OUT}">PRESS</text>`;
-      case 'bowtie': return `<path d="M44 72 L50 75 L44 78 Z M56 72 L50 75 L56 78 Z" fill="#c0392b" stroke="${OUT}" stroke-width="0.6"/>`;
+      case 'bowtie': return `<path d="M44 72 L50 75 L44 78 Z M56 72 L50 75 L56 78 Z" fill="${o.tie || '#c0392b'}" stroke="${OUT}" stroke-width="0.6"/>`;
       case 'guitar': return `<path d="M10 100 L31 62" stroke="#7a4a22" stroke-width="5" stroke-linecap="round"/><path d="M10 100 L31 62" stroke="#c89a5a" stroke-width="1"/><rect x="27" y="54" width="9" height="8" rx="1" fill="#3a2414" transform="rotate(-28 31 58)"/>`;
-      case 'scarf': return `<path d="M35 71 Q50 81 65 71" stroke="#ffd23f" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M58 76 L62 96" stroke="#ffd23f" stroke-width="6" stroke-linecap="round"/><path d="M58 76 L62 96" stroke="#c89a1a" stroke-width="1" stroke-dasharray="2 2"/>`;
+      case 'scarf': return `<path d="M35 71 Q50 81 65 71" stroke="${o.scarf || '#ffd23f'}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M58 76 L62 96" stroke="${o.scarf || '#ffd23f'}" stroke-width="6" stroke-linecap="round"/><path d="M58 76 L62 96" stroke="${o.stripe || '#c89a1a'}" stroke-width="${o.stripe ? 5 : 1}" stroke-dasharray="2 2"/>`;
       case 'stetho': return `<path d="M40 72 Q37 88 47 90 Q57 92 60 72" stroke="#cfd6e0" stroke-width="2" fill="none"/><circle cx="47" cy="90" r="3" fill="#cfd6e0" stroke="${OUT}" stroke-width="0.8"/>`;
       case 'keys': return `<circle cx="66" cy="88" r="4" fill="none" stroke="#e8b54a" stroke-width="2"/><path d="M66 92 v7 M66 96 h3 M63 91 l-4 6" stroke="#e8b54a" stroke-width="2"/>`;
       case 'pigeon': return `<g transform="translate(77 69)"><ellipse rx="10" ry="6.5" fill="#9aa3b5" stroke="${OUT}" stroke-width="1"/><path d="M-9 -1 l-6 -2 l2 4 Z" fill="#7a8396"/><circle cx="7" cy="-7" r="4.5" fill="#9aa3b5" stroke="${OUT}" stroke-width="1"/><path d="M5 -4 q2 2 5 0" stroke="#5cb88a" stroke-width="1.5" fill="none"/><circle cx="8" cy="-8" r="0.9" fill="${OUT}"/><path d="M11.5 -7 l3 1 l-3 1 Z" fill="#ffb347"/></g>`;
@@ -163,6 +163,9 @@
       case 'headset': return `<path d="M30 44 Q29 16 50 16 Q71 16 70 44" stroke="${OUT}" stroke-width="5.5" fill="none"/><path d="M30 44 Q29 16 50 16 Q71 16 70 44" stroke="${c}" stroke-width="3" fill="none"/><rect x="26" y="38" width="9" height="14" rx="3.5" fill="${c}" stroke="${OUT}" stroke-width="1.3"/><rect x="65" y="38" width="9" height="14" rx="3.5" fill="${c}" stroke="${OUT}" stroke-width="1.3"/><path d="M31 50 Q34 58 44 57" stroke="${OUT}" stroke-width="2" fill="none"/><circle cx="44.5" cy="57" r="2" fill="${c}" stroke="${OUT}" stroke-width="0.8"/>`;
       case 'hood': return `<path d="M27 64 Q22 12 50 11 Q78 12 73 64 Q69 32 50 30 Q31 32 27 64 Z" fill="${o.col}" stroke="${OUT}" stroke-width="1.5"/><path d="M30 60 Q28 34 50 32 Q72 34 70 60" stroke="${tone(o.col, -0.35)}" stroke-width="2" fill="none"/>`;
       case 'visor': return `<rect x="32" y="37" width="36" height="10" rx="4.5" fill="${c}" opacity="0.85" stroke="${OUT}" stroke-width="1.3"/><path d="M36 40 h10" stroke="#fff" stroke-width="1.4" opacity="0.7"/>`;
+      case 'beekeeper': return `<path d="M25 32L29 59Q50 71 71 59L75 32Z" fill="#35464a" fill-opacity=".09" stroke="#546263" stroke-width="1.3"/><path d="M30 39L70 39M29 47H71M30 55H70M34 34L37 60M64 34L62 60" fill="none" stroke="#879493" stroke-opacity=".65" stroke-width=".52"/><path d="M31 30Q32 15 40 14H60Q68 15 69 30Z" fill="${c}" stroke="${OUT}" stroke-width="1.3"/><ellipse cx="50" cy="31" rx="28" ry="4" fill="${c}" stroke="${OUT}" stroke-width="1.3"/>`;
+      case 'courtWig': return `<path d="M29 41Q25 16 43 15Q51 10 58 15Q75 17 71 41L64 38Q63 26 53 25L49 29L46 25Q36 27 36 39Z" fill="${c}" stroke="${d}" stroke-width="1.2"/>` +
+        [29,71].map(x=>[34,40,46].map((y,i)=>`<ellipse cx="${x+(x<50?-1:1)*i*.4}" cy="${y}" rx="5.7" ry="4.2" fill="${c}" stroke="${d}" stroke-width=".9"/>`).join('')).join('');
       default: return '';
     }
   }
@@ -255,8 +258,8 @@
     return L;
   }
 
-  function of(p, opt = {}) {
-    const L = look(p), tier = E.people.tierOf(p);
+  function of(p, opt = {}, L = look(p)) {
+    const tier = E.people.tierOf(p);
     if (illustrator) {
       const svg = illustrator(p, L, ink, tier, opt);
       if (svg) return svg;

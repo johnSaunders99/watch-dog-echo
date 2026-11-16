@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>漏洞與裝備速查 · ZERO DAY</title>
+  <link rel="stylesheet" href="css/terminal.css">
+  <link rel="stylesheet" href="css/s3-loadouts.css">
+</head>
+<body>
+  <main class="manual">
+    <header class="mast"><a id="game" href="s3.html">← ZERO DAY</a><nav aria-label="Language"><button data-lang="zh-Hant">繁中</button><button data-lang="zh-Hans">简中</button><button data-lang="en">EN</button></nav></header>
+    <section class="intro">
+      <div><h1 id="title"></h1><p id="intro"></p></div>
+      <div class="totals"><div><strong id="shared-count"></strong><span id="shared-label"></span></div><div><strong id="private-count"></strong><span id="private-label"></span></div></div>
+    </section>
+    <section class="tools">
+      <div class="inputs"><label><span id="q-label"></span><input id="query" type="search" autocomplete="off"></label><label><span id="action-label"></span><select id="action"></select></label><label><span id="owner-label"></span><select id="owner"></select></label></div>
+      <div class="facets" id="facets" role="group"></div>
+    </section>
+    <section id="gear" class="gear" hidden></section>
+    <div class="readout"><span id="count" role="status"></span><button id="clear" hidden></button></div>
+    <div id="entries"></div>
+    <details class="rules"><summary id="rules-title"></summary><p id="rules-text"></p><p id="omni-text"></p></details>
+  </main>
+  <script src="js/engine/i18n.js"></script>
+  <script src="content-s3/data.js"></script>
+  <script src="content-s3/cast.js"></script>
+  <script src="content-s3/operatives.js"></script>
+  <script src="content-s3/locales.js"></script>
+  <script src="content-s3/guide-locales.js"></script>
+  <script src="content-s3/squad-locales.js"></script>
+  <script src="content-s3/contacts-locales.js"></script>
+  <script src="content-s3/loadout-index.js"></script>
+  <script src="js/s3/loadout-guide.js"></script>
+</body>
+</html>

@@ -41,11 +41,13 @@
         <p class="dim" data-i18n="s3.ui.lobby.hint"></p>
       </div>
       <div class="lobby-tools">
+        <a class="loadout-link" id="s3-loadout-link" href="s3-loadouts.html" target="_blank" rel="noopener" data-i18n="s3.loadout.open"></a>
         <button type="button" id="s3-lobby-back" class="ghost" data-i18n="s3.ui.back"></button>
       </div>
     </header>
     <div id="s3-hub" class="hub"></div>
     <div id="omni-station" hidden></div>
+    <section id="s3-deployment" class="deployment lobby-block"></section>
     <div id="s3-roster" class="lobby-block"></div>
     <div id="s3-vols" class="lobby-block"></div>
     <details id="s3-contacts" class="lobby-block"><summary></summary><p></p></details>
@@ -70,6 +72,7 @@
               </div>
             </div>
             <div id="h-squad" class="squad"></div>
+            <div id="h-orders"></div>
           </div>
           <div class="hud-tc">
             <div id="h-boss" class="boss"><span id="h-boss-n"></span><div class="bar"><i id="h-boss-hp"></i></div></div>
@@ -114,6 +117,7 @@
   <script src="js/engine/people.js"></script>
   <script src="content-s2/people.js"></script>
   <script src="content-s3/data.js"></script>
+  <script src="content-s3/cast.js"></script>
   <script src="content-s3/operatives.js"></script>
   <script src="content-s3/story.js"></script>
   <script src="content-s3/locales.js"></script>
@@ -126,6 +130,7 @@
   <script src="content-s3/portrait-parts.js"></script>
   <script src="js/s3/gen.js"></script>
   <script src="js/s3/sim.js"></script>
+  <script src="js/s3/fireteam.js"></script>
   <script src="js/s3/field-skills.js"></script>
   <script src="js/s3/foes.js"></script>
   <script src="js/s3/run.js"></script>

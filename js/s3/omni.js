@@ -54,7 +54,7 @@
     if(held){held.status='ready';p=held.p;run.held=Math.max(0,run.held-1);}
     else {
       p=volunteer();
-      if(m && p){if(m.roster.length<R.rosterMax(m))m.roster.push({p,status:'ready',runs:0});else full=true;}
+      if(m && p){if(m.roster.length<R.rosterMax(m))p=R.enlist(m,p).p;else full=true;}
       if(full)run.data+=40;
     }
     run.stats.rescued++;run.pending=null;run.phase='doors';
@@ -64,7 +64,7 @@
   function advance(run) {
     run.omni.cleared=run.roomNo;
     if(run.roomNo%SPAN===0){
-      run.cells={};run.shops={};run.squad.forEach(x=>x.reprievesUsed=0);
+      run.cells={};run.shops={};
       if(run.kit)R.heal(run,15);
     }
     Object.assign(run,position(run.roomNo));

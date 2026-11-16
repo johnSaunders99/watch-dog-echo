@@ -627,7 +627,8 @@
     ctx.save();
     if (e.def.jam && !ally && e.stun <= 0 && e.jamOff <= 0 && e.confused <= 0) { ctx.strokeStyle = 'rgba(154,240,208,0.35)'; ctx.lineWidth = 2; ctx.setLineDash([8, 10]); ctx.lineDashOffset = -clock * 30; circle(x, y, e.def.jam); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = 'rgba(154,240,208,0.04)'; ctx.fill(); }
     if (e.elite) { ctx.strokeStyle = { armored: '#cfd6e4', firewall: C.green, volatile: C.warn, swift: C.echo }[e.elite]; ctx.lineWidth = 3; circle(x, y, r + 7); ctx.stroke(); }
-    if (e.mark > 0) { ctx.strokeStyle = C.cyan; ctx.lineWidth = 2; ctx.setLineDash([4, 5]); circle(x, y, r + 12); ctx.stroke(); ctx.setLineDash([]); }
+    if(e.beeOpen>s.t){ctx.fillStyle='#ffe39b';ctx.font='bold 15px monospace';ctx.fillText('✦ F',x-13,y-r-13);}
+    if (e.mark > 0) { ctx.strokeStyle=e.royalUntil>s.t?'#ffd163':C.cyan;ctx.lineWidth=e.royalUntil>s.t?3.5:2; ctx.setLineDash([4, 5]); circle(x, y, r + 12); ctx.stroke(); ctx.setLineDash([]); }
     const art = e.boss === 'keystone' ? null : e.boss || e.kind;
     const size = r * (BODY[art] || 1.3);
     if (art && e.def.fly && sheets.actors && sheets.actors.items[art]) { ctx.fillStyle = 'rgba(0,0,0,0.28)'; circle(x + 8, y + 22, r * 1.2); ctx.fill(); }
@@ -685,6 +686,14 @@
       if (e.kind === 'heavy' && e.grenade) { circle(-r * 0.3, r * 0.75, 4); ctx.fillStyle = '#9fbf4a'; ctx.fill(); }
     }
     ctx.restore();
+    if(e.beeOpen>s.t){
+      // A raised sleeve crosses the face; the wrist flinches while the opening is live.
+      ctx.save();ctx.translate(x,y);ctx.rotate(e.ang);ctx.lineCap='round';
+      const wrist=r*.45+1.6*Math.sin(clock*21+e.id);
+      ctx.beginPath();ctx.moveTo(-r*.15,-r*.78);ctx.lineTo(r*.72,-r*.56);ctx.lineTo(wrist,r*.22);
+      ctx.lineWidth=6;ctx.strokeStyle='#20232b';ctx.stroke();ctx.lineWidth=3.5;ctx.strokeStyle='#9d9fa7';ctx.stroke();
+      circle(wrist,r*.22,2.8);ctx.fillStyle='#ebbe8f';ctx.fill();ctx.restore();
+    }
     if (fl > 0) { ctx.globalAlpha = Math.min(1, fl * 6); circle(x, y, r + 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = 1; }
     // 狀態：電暈、起火、被引開、發現中、正在叫人
     if (e.stun > 0) { ctx.strokeStyle = C.cyan; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { const a = clock * 7 + (i * TAU) / 3; jagged(x + Math.cos(a) * (r + 4), y + Math.sin(a) * (r + 4), x + Math.cos(a + 0.9) * (r + 9), y + Math.sin(a + 0.9) * (r + 9), 3, 6); ctx.stroke(); } }
@@ -712,14 +721,21 @@
     if (ui.takedown === e) { ctx.strokeStyle = C.pink; ctx.lineWidth = 3; ctx.setLineDash([5, 5]); circle(x, y, r + 18); ctx.stroke(); ctx.setLineDash([]); }
   }
 
-  function drawPlayer(s) {
-    const p = s.p;
+  function drawPlayer(s,m,i) {
+    const p=m?.body||s.p,build=m?.build||s.build,ally=s.fireteam && i!==s.control;
     if (s.over === 'dead') return;
+    if(m?.down && !m.rescue)return;
+    if(s.fireteam){
+      ctx.save();ctx.font='bold 15px monospace';ctx.textAlign='center';
+      const label=m.down?'+ '+Math.ceil(m.rescue)+'s':String(i+1),w=ctx.measureText(label).width+12;
+      ctx.fillStyle='#10171e';ctx.fillRect(p.x-w/2,p.y-43,w,18);ctx.fillStyle=m.down?'#ffd38c':ally?'#9ae4d8':'#ff95c2';ctx.fillText(label,p.x,p.y-29);ctx.restore();
+      if(m.down){ctx.strokeStyle='#ffce86';ctx.lineWidth=3;circle(p.x,p.y,15);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-7,p.y);ctx.lineTo(p.x+7,p.y);ctx.moveTo(p.x,p.y-7);ctx.lineTo(p.x,p.y+7);ctx.stroke();return;}
+    }
     const alpha = p.cloak > 0 ? 0.35 : p.inv > 0 && p.hurtT <= 0 && Math.sin(clock * 50) > 0 && p.dashT <= 0 && s.rt > 1 ? 0.6 : 1;
     if (p.guard > 0) { ctx.strokeStyle = 'rgba(236,232,225,0.6)'; ctx.lineWidth = 2; circle(p.x, p.y, p.r + 9); ctx.stroke(); }
     // 腳下一圈粉紅色：在一堆人裡一眼找得到自己。
-    ctx.strokeStyle = 'rgba(255,46,136,0.75)'; ctx.lineWidth = 2.5; circle(p.x, p.y, p.r * 1.75); ctx.stroke();
-    if (drawDoll(ctx, p, alpha, s.build) || sprite('actors', s.build.cat, p.x, p.y, p.ang, p.r * 1.3, alpha)) {
+    ctx.strokeStyle = ally?'#71d9ca':'rgba(255,46,136,0.75)'; ctx.lineWidth = 2.5; circle(p.x, p.y, p.r * 1.75); ctx.stroke();
+    if (drawDoll(ctx, p, alpha, build) || sprite('actors', build.cat, p.x, p.y, p.ang, p.r * 1.3, alpha)) {
       if (p.hurtT > 0) { ctx.globalAlpha = 0.6; circle(p.x, p.y, p.r * 1.4); ctx.fillStyle = '#fff'; ctx.fill(); ctx.globalAlpha = 1; }
     } else {
       person(p.x, p.y, p.r, p.ang, { body: p.hurtT > 0 ? '#fff' : C.pink, head: '#1c2028' }, p.r + 6, alpha);
@@ -727,7 +743,7 @@
       ctx.fillStyle = C.cyan; ctx.fillRect(p.r * 0.25, -4, 4, 8);
       ctx.restore();
     }
-    if (p.reload > 0) { ctx.strokeStyle = C.white; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 12, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - p.reload / (s.weapon.reload * s.st.reloadMul))); ctx.stroke(); }
+    if (p.reload > 0) { ctx.strokeStyle = C.white; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 12, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - p.reload / ((m?.weapon||s.weapon).reload * (m?.st||s.st).reloadMul))); ctx.stroke(); }
   }
 
   // ===== 範圍效果、掉落物 =====
@@ -756,6 +772,7 @@
       if (z.t <= S3.data.gadgets.strike.flight) inAir(z.x - 125 * k, z.y - 165 * k, 'missile', 0.92, 21, 1, 8);
     } else if (z.k === 'swarm') {
       ctx.fillStyle = 'rgba(246,179,50,.07)'; ctx.strokeStyle = 'rgba(255,195,62,.8)'; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); circle(z.x, z.y, z.r); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      if(z.follow){for(let i=0;i<3;i++){ctx.fillStyle=i<z.blocks?'#ffe08c':'#4b4435';ctx.beginPath();ctx.arc(z.x+(i-1)*13,z.y-29,4,0,TAU);ctx.fill();}}
       for (let i = 0; i < 28; i++) {
         const a = i * 2.4 + clock * (i % 2 ? 1.8 : -1.2), rad = z.r * (0.2 + 0.75 * (i % 9) / 9);
         const x = z.x + Math.cos(a) * rad, y = z.y + Math.sin(a) * rad + 3 * Math.sin(clock * 11 + i);
@@ -764,7 +781,7 @@
       }
     } else if (z.k === 'kamikaze') {
       const k = 1 - z.t / z.t0, px = z.fx + (z.x - z.fx) * k, py = z.fy + (z.y - z.fy) * k;
-      ctx.strokeStyle = 'rgba(108,214,226,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); circle(z.x, z.y, z.r); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(108,214,226,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); circle(z.x, z.y, S3.sim.api.shockRadius(s,z.r,z.owner)); ctx.stroke(); ctx.setLineDash([]);
       inAir(px, py, 'kamikaze', Math.atan2(z.y - z.fy, z.x - z.fx), 19);
     }
   }
@@ -773,10 +790,10 @@
     const rim=(z,c,fill,dash)=>{
       circle(z.x,z.y,z.r);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=c;ctx.lineWidth=2.5;
       ctx.setLineDash(dash);ctx.lineDashOffset=-clock*12;ctx.stroke();ctx.setLineDash([]);};
-    if(s.show){
-      const z=s.show;rim(z,z.ready?'#ffe4a1':'#cfab68','rgba(240,194,110,.05)',z.ready?[12,5]:[3,11]);
+    for(const z of (s.fireteam?s.team.map(m=>m.show):[s.show]).filter(Boolean)){
+      rim(z,z.ready?'#ffe4a1':'#cfab68','rgba(240,194,110,.05)',z.ready?[12,5]:[3,11]);
       const progress=Math.min(1,z.charge/S3.data.gadgets.performance.windup);
-      ctx.beginPath();ctx.arc(s.p.x,s.p.y,27,-Math.PI/2,TAU*progress-Math.PI/2);ctx.lineWidth=4;ctx.stroke();
+      ctx.beginPath();ctx.arc(z.x,z.y,27,-Math.PI/2,TAU*progress-Math.PI/2);ctx.lineWidth=4;ctx.stroke();
     }
     for(const z of s.installations){
       const ward=z.kind==='ward';rim(z,ward?'#78e4cb':'#c9a5ed',ward?'rgba(74,222,190,.10)':'rgba(174,124,218,.09)',ward?[]:[16,7,3,7]);
@@ -949,6 +966,7 @@
       case 'melee': case 'swing': rings.push({ x: ev.x, y: ev.y, r: ev.k === 'melee' ? 62 : 84, col: ev.k === 'melee' ? C.white : C.warn, life: 0.16, max: 0.16, w: 6, arc: ev.ang }); break;
       case 'drop': flyers.push({ id: ev.id, x: ev.x, y: ev.y, ang: ev.ang, vx: Math.cos(ev.ang) * 170, vy: Math.sin(ev.ang) * 170, life: 0.7, max: 0.7 }); break;
       case 'smash': swings.push({ x: ev.x, y: ev.y, ang: ev.ang, arc: ev.arc || 1.25, id: ev.id, life: 0.24, max: 0.24 }); rings.push({ x: ev.x, y: ev.y, r: ev.r, col: ev.id === 'hammer' ? SMASH_GLOW : C.warn, life: 0.25, max: 0.25, w: 12, arc: ev.ang, wide: 1.25 }); shake = Math.max(shake, 10); break;
+      case 'focusSlip': texts.push({x:ev.x,y:ev.y-20,vy:-40,life:.55,max:.55,str:'+'+ev.n,col:C.echo,size:15});break;
       case 'pickup': if (ev.what !== 'cache' && ev.n) texts.push({ x: ev.x, y: ev.y - 14, vy: -40, life: 0.5, max: 0.5, str: '+' + ev.n, col: ev.what === 'med' ? C.green : C.cyan, size: 14 }); break;
       case 'crash': ring(ev.x, ev.y, 100, C.white, 0.35, 8); burst(ev.x, ev.y, 18, '#cfd6e4', 300, 6, 0.5); shake = Math.max(shake, 14); break;
       case 'raise': case 'breach': case 'hijack': ring(ev.x, ev.y, 60, ev.k === 'hijack' ? C.pink : C.green, 0.35, 5); break;
@@ -1004,12 +1022,16 @@
     }
     for (const e of s.en) drawTelegraph(s, e);
     for (const e of s.en) if (!e.def.fly) drawEnemy(s, e, ui);
-    drawPlayer(s);
+    if(s.fireteam){
+      const g=s.order.kind==='hold'?s.order:s.order.target;
+      if(g){ctx.save();ctx.strokeStyle=s.order.target?'#ffbc79':'#85e0d1';ctx.setLineDash([6,5]);ctx.lineWidth=3;circle(g.x,g.y,29);ctx.stroke();ctx.restore();}
+      s.team.forEach((m,i)=>drawPlayer(s,m,i));
+    }else drawPlayer(s);
     for (const e of s.en) if (e.def.fly) drawEnemy(s, e, ui);
     for (const pet of s.pets) if (pet.kind === 'escort' || pet.kind === 'expert') inAir(pet.x, pet.y, pet.kind, pet.ang, pet.kind === 'expert' ? 26 : 18, 1, 16);
     for (const z of s.zones) if (['steam', 'kamikaze', 'strike', 'swarm'].includes(z.k)) drawZone(s, z);
     for (const e of s.en) if (e.trance > 0) { ctx.strokeStyle = '#fadc86'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(e.x, e.y - e.r - 7, 10 + 2 * Math.sin(clock * 4), 3, 0, 0, TAU); ctx.stroke(); }
-    if(s.shockDrone){const d=s.shockDrone;
+    for(const d of (s.fireteam?s.team.map(m=>m.shockDrone):[s.shockDrone]).filter(Boolean)){
       if(d.manual){ctx.save();ctx.strokeStyle='#80dcd8';ctx.setLineDash([3,9]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(d.x,d.y-17);ctx.stroke();ctx.restore();}
       inAir(d.x,d.y,d.flash>0?'shockdrone-zap':'shockdrone',d.ang,23,1,17);}
     if (s.recon) drawRecon(s.recon);
@@ -1075,6 +1097,15 @@
     // 準星
     if (ui.mouse && !s.over) {
       const m = ui.mouse;
+      if(p.gad.some(g=>g.id==='execute' && g.armed)){
+        const at=S3.sim.api.launcherImpact(s,m.x,m.y);
+        ctx.save();ctx.strokeStyle=at.unsafe?C.bad:C.warn;ctx.fillStyle=at.unsafe?'rgba(255,93,108,.13)':'rgba(255,181,71,.06)';
+        ctx.lineWidth=2;ctx.setLineDash([7,6]);circle(at.x,at.y,at.r);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+        // The mark stays on the actual obstruction or range limit, even when the cursor is beyond it.
+        circle(at.x,at.y,5);ctx.stroke();
+        if(at.unsafe){ctx.beginPath();ctx.moveTo(at.x-8,at.y-8);ctx.lineTo(at.x+8,at.y+8);ctx.moveTo(at.x+8,at.y-8);ctx.lineTo(at.x-8,at.y+8);ctx.stroke();}
+        ctx.restore();
+      }
       ctx.strokeStyle = ui.hack ? (ui.hack.ok ? C.cyan : C.bad) : C.white; ctx.lineWidth = 2;
       circle(m.x, m.y, 9); ctx.stroke();
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { ctx.beginPath(); ctx.moveTo(m.x + dx * 13, m.y + dy * 13); ctx.lineTo(m.x + dx * 19, m.y + dy * 19); ctx.stroke(); }
