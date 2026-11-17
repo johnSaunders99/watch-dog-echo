@@ -1,0 +1,7211 @@
+{
+  "design": "first-clear-v1",
+  "hz": 60,
+  "n": 32,
+  "summary": [
+    {
+      "job": "ordinary",
+      "mode": "relay",
+      "kit": null,
+      "n": 32,
+      "wins": 20,
+      "stalls": 0,
+      "meanWinSec": 382.8183333333333,
+      "secPerWin": 591.3066666666666
+    },
+    {
+      "job": "ordinary",
+      "mode": "field",
+      "kit": null,
+      "n": 32,
+      "wins": 28,
+      "stalls": 0,
+      "meanWinSec": 405.68630952380954,
+      "secPerWin": 464.2708333333333
+    },
+    {
+      "job": "hitman",
+      "mode": "relay",
+      "kit": "contract",
+      "n": 32,
+      "wins": 32,
+      "stalls": 0,
+      "meanWinSec": 273.86041666666665,
+      "secPerWin": 273.86041666666665
+    },
+    {
+      "job": "hitman",
+      "mode": "field",
+      "kit": "contract",
+      "n": 32,
+      "wins": 32,
+      "stalls": 0,
+      "meanWinSec": 359.90260416666666,
+      "secPerWin": 359.90260416666666
+    },
+    {
+      "job": "spy",
+      "mode": "relay",
+      "kit": "spotter",
+      "n": 32,
+      "wins": 27,
+      "stalls": 0,
+      "meanWinSec": 250.39012345679012,
+      "secPerWin": 298.72407407407405
+    },
+    {
+      "job": "spy",
+      "mode": "field",
+      "kit": "spotter",
+      "n": 32,
+      "wins": 28,
+      "stalls": 0,
+      "meanWinSec": 291.2202380952381,
+      "secPerWin": 327.0654761904762
+    },
+    {
+      "job": "drone_expert",
+      "mode": "relay",
+      "kit": "flightdeck",
+      "n": 32,
+      "wins": 25,
+      "stalls": 0,
+      "meanWinSec": 334.24,
+      "secPerWin": 418.45733333333334
+    },
+    {
+      "job": "drone_expert",
+      "mode": "field",
+      "kit": "flightdeck",
+      "n": 32,
+      "wins": 28,
+      "stalls": 0,
+      "meanWinSec": 371.7607142857143,
+      "secPerWin": 422.9321428571429
+    },
+    {
+      "job": "hooligan",
+      "mode": "relay",
+      "kit": "terrace",
+      "n": 32,
+      "wins": 30,
+      "stalls": 0,
+      "meanWinSec": 298.15166666666664,
+      "secPerWin": 316.6411111111111
+    },
+    {
+      "job": "hooligan",
+      "mode": "field",
+      "kit": "terrace",
+      "n": 32,
+      "wins": 32,
+      "stalls": 0,
+      "meanWinSec": 378.92552083333334,
+      "secPerWin": 378.92552083333334
+    },
+    {
+      "job": "beekeeper",
+      "mode": "relay",
+      "kit": "apiary",
+      "n": 32,
+      "wins": 30,
+      "stalls": 0,
+      "meanWinSec": 347.6766666666667,
+      "secPerWin": 363.9288888888889
+    },
+    {
+      "job": "beekeeper",
+      "mode": "field",
+      "kit": "apiary",
+      "n": 32,
+      "wins": 32,
+      "stalls": 0,
+      "meanWinSec": 379.3880208333333,
+      "secPerWin": 379.3880208333333
+    },
+    {
+      "job": "statue",
+      "mode": "relay",
+      "kit": "plinth",
+      "n": 32,
+      "wins": 32,
+      "stalls": 0,
+      "meanWinSec": 365.98020833333334,
+      "secPerWin": 365.98020833333334
+    },
+    {
+      "job": "statue",
+      "mode": "field",
+      "kit": "plinth",
+      "n": 32,
+      "wins": 31,
+      "stalls": 0,
+      "meanWinSec": 399.9741935483871,
+      "secPerWin": 415.5263440860215
+    },
+    {
+      "job": "hypnotist",
+      "mode": "relay",
+      "kit": "watch",
+      "n": 32,
+      "wins": 30,
+      "stalls": 0,
+      "meanWinSec": 333.10777777777776,
+      "secPerWin": 358.37111111111113
+    },
+    {
+      "job": "hypnotist",
+      "mode": "field",
+      "kit": "watch",
+      "n": 32,
+      "wins": 32,
+      "stalls": 0,
+      "meanWinSec": 384.4010416666667,
+      "secPerWin": 384.4010416666667
+    },
+    {
+      "job": "anarchist",
+      "mode": "relay",
+      "kit": "bottle",
+      "n": 32,
+      "wins": 23,
+      "stalls": 0,
+      "meanWinSec": 327.3231884057971,
+      "secPerWin": 442.9891304347826
+    },
+    {
+      "job": "anarchist",
+      "mode": "field",
+      "kit": "bottle",
+      "n": 32,
+      "wins": 29,
+      "stalls": 0,
+      "meanWinSec": 361.8867816091954,
+      "secPerWin": 396.8270114942529
+    },
+    {
+      "job": "paramedic",
+      "mode": "relay",
+      "kit": "station",
+      "n": 32,
+      "wins": 20,
+      "stalls": 0,
+      "meanWinSec": 432.44166666666666,
+      "secPerWin": 664.0508333333333
+    },
+    {
+      "job": "paramedic",
+      "mode": "field",
+      "kit": "station",
+      "n": 32,
+      "wins": 31,
+      "stalls": 0,
+      "meanWinSec": 454.0768817204301,
+      "secPerWin": 468.18118279569893
+    },
+    {
+      "job": "barrister",
+      "mode": "relay",
+      "kit": "chambers",
+      "n": 32,
+      "wins": 26,
+      "stalls": 0,
+      "meanWinSec": 368.2070512820513,
+      "secPerWin": 452.16858974358973
+    },
+    {
+      "job": "barrister",
+      "mode": "field",
+      "kit": "chambers",
+      "n": 32,
+      "wins": 32,
+      "stalls": 0,
+      "meanWinSec": 400.79583333333335,
+      "secPerWin": 400.79583333333335
+    }
+  ],
+  "samples": [
+    {
+      "seed": "first-clear-0",
+      "opening": "first-clear-0:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1003",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1001",
+          "job": "firefighter"
+        },
+        {
+          "id": "camden-1000",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 28636
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26843
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17117
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24123
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16217
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20978
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20162
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26896
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18744
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20008
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24140
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25488
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23298
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21345
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21877
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28185
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21491
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22135
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27446
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 31824
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23986
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24906
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-1",
+      "opening": "first-clear-1:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1009",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1001",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23777
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29424
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16150
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23344
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18591
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 11,
+          "bosses": 1,
+          "ticks": 11624
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 20935
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25108
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18890
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26010
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22130
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28859
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23530
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29044
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22187
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25317
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22011
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25582
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26561
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29928
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 25299
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29968
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-2",
+      "opening": "first-clear-2:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1001",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1000",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1006",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22206
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23929
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13084
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21427
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 16,
+          "bosses": 2,
+          "ticks": 16268
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16529
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 14582
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21194
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 16711
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23172
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 13924
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18075
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19532
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19338
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17176
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16962
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17125
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20014
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 16,
+          "bosses": 2,
+          "ticks": 16270
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24899
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18609
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20061
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-3",
+      "opening": "first-clear-3:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "it_support"
+        },
+        {
+          "id": "camden-1002",
+          "job": "docker"
+        },
+        {
+          "id": "camden-1001",
+          "job": "lawyer"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 20720
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20226
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16228
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19819
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16628
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18822
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25037
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21098
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20824
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24574
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23745
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22792
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22145
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22983
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20854
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22689
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19941
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23543
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 23163
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27035
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18629
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22038
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-4",
+      "opening": "first-clear-4:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1008",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1001",
+          "job": "docker"
+        },
+        {
+          "id": "camden-1006",
+          "job": "lawyer"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21884
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24536
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14981
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20688
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 12103
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13970
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17177
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22247
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19831
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23941
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19610
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24181
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19850
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24610
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18536
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25532
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19443
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22337
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24801
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26442
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21374
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24081
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-5",
+      "opening": "first-clear-5:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1003",
+          "job": "firefighter"
+        },
+        {
+          "id": "camden-1009",
+          "job": "bartender"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21269
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24012
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20011
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18893
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 12709
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13658
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17486
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18532
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20484
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21567
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16468
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18900
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21003
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20693
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19509
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17923
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15599
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22185
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23273
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23002
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19952
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19539
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-6",
+      "opening": "first-clear-6:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1007",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1002",
+          "job": "removals"
+        },
+        {
+          "id": "camden-1000",
+          "job": "actor"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25842
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21690
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14174
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19602
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13269
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15927
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17092
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20309
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16128
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19596
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19187
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23236
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17944
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22244
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18791
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25374
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23068
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20675
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 23101
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23851
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19233
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23338
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-7",
+      "opening": "first-clear-7:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1004",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1002",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1000",
+          "job": "actor"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21825
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22912
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15330
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21915
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16237
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13197
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18830
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22708
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17466
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23809
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22949
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21450
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22942
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20115
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21176
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21416
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21683
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21228
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26682
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22005
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 20698
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23492
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-8",
+      "opening": "first-clear-8:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "programmer"
+        },
+        {
+          "id": "camden-1002",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1005",
+          "job": "journalist"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 20044
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 24169
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15342
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22341
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14689
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20041
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22827
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19815
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16628
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23703
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21235
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20735
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20857
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24758
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19674
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24070
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17952
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21824
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 17816
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 30435
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21528
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25204
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-9",
+      "opening": "first-clear-9:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1001",
+          "job": "trainer"
+        },
+        {
+          "id": "camden-1003",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23684
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26590
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17490
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23154
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 12812
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17218
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20176
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25333
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20952
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23778
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23223
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25607
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24481
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25743
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20195
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19518
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23745
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25186
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 33994
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29570
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21546
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25289
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-10",
+      "opening": "first-clear-10:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1001",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1004",
+          "job": "lawyer"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22551
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23320
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15321
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19153
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15095
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16837
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17933
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21662
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17336
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21619
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17850
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18623
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22033
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19359
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18841
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19683
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 20932
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 17,
+          "bosses": 2,
+          "ticks": 20223
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21759
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24515
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26174
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27707
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-11",
+      "opening": "first-clear-11:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1001",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1000",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1003",
+          "job": "salesperson"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 22777
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21624
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14501
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17995
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 13669
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 12545
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17272
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18523
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15827
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18008
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19065
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19794
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18027
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19101
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15090
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18393
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18460
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18725
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24158
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21206
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19509
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18790
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-12",
+      "opening": "first-clear-12:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1005",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1002",
+          "job": "removals"
+        },
+        {
+          "id": "camden-1000",
+          "job": "lawyer"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21651
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23635
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16696
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23841
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13710
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17970
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19405
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21496
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20358
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24648
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21622
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23797
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21312
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28362
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21298
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23312
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20404
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21028
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24472
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23644
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21970
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27872
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-13",
+      "opening": "first-clear-13:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1005",
+          "job": "programmer"
+        },
+        {
+          "id": "camden-1002",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1009",
+          "job": "bartender"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 20565
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25622
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15588
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24036
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 18311
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21113
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 23494
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 17211
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 16570
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25712
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "dead",
+          "room": 14,
+          "bosses": 2,
+          "ticks": 15330
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22478
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18306
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26604
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19055
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26504
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18597
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18692
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26930
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29659
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 16262
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25484
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-14",
+      "opening": "first-clear-14:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1003",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1001",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1004",
+          "job": "salesperson"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21897
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23159
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19502
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24474
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 11130
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15567
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21238
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25819
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20072
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24649
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21595
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23485
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24242
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26563
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20012
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22399
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20257
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19758
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22394
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28039
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22474
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23268
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-15",
+      "opening": "first-clear-15:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1008",
+          "job": "programmer"
+        },
+        {
+          "id": "camden-1003",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1000",
+          "job": "salesperson"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 13892
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19368
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16110
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20511
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13115
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 18043
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16064
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20301
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17912
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22649
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17657
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18931
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16362
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22654
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19823
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19524
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 16396
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 19012
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22811
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25460
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15992
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21948
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-16",
+      "opening": "first-clear-16:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1004",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1000",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1003",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25970
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26872
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17189
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21715
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 10976
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17156
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22316
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18363
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13693
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23434
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22274
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19244
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24230
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27674
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20118
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25853
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18885
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20581
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23812
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27356
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21997
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28589
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-17",
+      "opening": "first-clear-17:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1002",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1000",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1004",
+          "job": "bartender"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22352
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22374
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18703
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22720
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14071
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17551
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21513
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26517
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17163
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21378
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20041
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22575
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20887
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22593
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20930
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24650
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 9689
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24644
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24212
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26594
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26360
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20453
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-18",
+      "opening": "first-clear-18:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1007",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1001",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1000",
+          "job": "salesperson"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25158
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28235
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13693
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20137
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 14,
+          "bosses": 2,
+          "ticks": 11220
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19223
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18386
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19756
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18252
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20751
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20070
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23548
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22007
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25784
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18762
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20587
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20481
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23528
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 27338
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 30988
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24358
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23345
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-19",
+      "opening": "first-clear-19:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1001",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1002",
+          "job": "removals"
+        },
+        {
+          "id": "camden-1000",
+          "job": "lawyer"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23266
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25694
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13881
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21395
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18068
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16994
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20728
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21592
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17744
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24128
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18224
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22074
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21390
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24569
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22614
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24148
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18218
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20110
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27239
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26537
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18901
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22286
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-20",
+      "opening": "first-clear-20:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1005",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1001",
+          "job": "docker"
+        },
+        {
+          "id": "camden-1000",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21427
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 23677
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15684
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20279
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17018
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15427
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 18181
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20000
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17238
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20727
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22185
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23136
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24115
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25969
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17961
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20174
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 16,
+          "bosses": 2,
+          "ticks": 14028
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20333
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25442
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27499
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21564
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22386
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-21",
+      "opening": "first-clear-21:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1002",
+          "job": "trainer"
+        },
+        {
+          "id": "camden-1001",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19863
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 22857
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17963
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22179
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18516
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21130
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21872
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 22478
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20647
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21879
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20385
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20372
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24929
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24497
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 19782
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28999
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19914
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24767
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 24403
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 26234
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24259
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22011
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-22",
+      "opening": "first-clear-22:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1001",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1002",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20231
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23968
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17442
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22728
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21788
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16208
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26326
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 24617
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16255
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20065
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21354
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23056
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24489
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23143
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22928
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21230
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 22630
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21827
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 26318
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27308
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24029
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25495
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-23",
+      "opening": "first-clear-23:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1002",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1006",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1000",
+          "job": "actor"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19375
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23841
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17101
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22146
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16007
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 18008
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 14,
+          "bosses": 2,
+          "ticks": 14473
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23956
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18119
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24418
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23725
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22794
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24767
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21580
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19386
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24463
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19933
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21561
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 27793
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27596
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20340
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20361
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-24",
+      "opening": "first-clear-24:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1005",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1002",
+          "job": "bartender"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23560
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18092
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14738
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15651
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 18833
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15234
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15598
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20153
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14717
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16952
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16318
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17303
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18093
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22214
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16945
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19320
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 18,
+          "bosses": 2,
+          "ticks": 14124
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16659
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 23083
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22547
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20873
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16905
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-25",
+      "opening": "first-clear-25:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1003",
+          "job": "programmer"
+        },
+        {
+          "id": "camden-1000",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1001",
+          "job": "journalist"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 17526
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21599
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17157
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20561
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 11082
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13026
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17693
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22478
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13697
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16435
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19045
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22153
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25900
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22421
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17766
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19427
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19905
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18963
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22917
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27312
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20923
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21299
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-26",
+      "opening": "first-clear-26:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1001",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1002",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1008",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 19921
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25848
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20123
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22222
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20274
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19756
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21432
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25096
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 17635
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27952
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19180
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25146
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21499
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22630
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22995
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29530
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 18531
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21953
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 14,
+          "bosses": 2,
+          "ticks": 18514
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 31985
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24669
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26764
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-27",
+      "opening": "first-clear-27:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1002",
+          "job": "cs_student"
+        },
+        {
+          "id": "camden-1005",
+          "job": "builder"
+        },
+        {
+          "id": "camden-1000",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21363
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 27719
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15774
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22403
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13950
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20701
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 17576
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24130
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16624
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24357
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23224
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28113
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22868
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29451
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22887
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29681
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 14244
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24695
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 25018
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28556
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22451
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25258
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-28",
+      "opening": "first-clear-28:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1000",
+          "job": "programmer"
+        },
+        {
+          "id": "camden-1009",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1001",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25773
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23647
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19250
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22493
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 12738
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 13985
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "dead",
+          "room": 14,
+          "bosses": 2,
+          "ticks": 17085
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24721
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15051
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22653
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24053
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25201
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21877
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25274
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 25692
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22769
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21798
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20322
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 31603
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 30192
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 31797
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 30424
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-29",
+      "opening": "first-clear-29:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1003",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1001",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1000",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21083
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 29207
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16951
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24513
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15905
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24376
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20801
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25357
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21052
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26459
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22522
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28950
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23668
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 28927
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21852
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22329
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22978
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23375
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 25114
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 30553
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 25647
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27164
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-30",
+      "opening": "first-clear-30:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1008",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1000",
+          "job": "courier"
+        },
+        {
+          "id": "camden-1001",
+          "job": "actor"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "dead",
+          "room": 20,
+          "bosses": 2,
+          "ticks": 21490
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28143
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16588
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 25322
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16546
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20152
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23820
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22615
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19072
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27909
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22438
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26755
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28040
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 30610
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21484
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24912
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19851
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24178
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 30298
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 33324
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27257
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27611
+        }
+      ]
+    },
+    {
+      "seed": "first-clear-31",
+      "opening": "first-clear-31:camden:0",
+      "ordinary": [
+        {
+          "id": "camden-1003",
+          "job": "streamer"
+        },
+        {
+          "id": "camden-1000",
+          "job": "trainer"
+        },
+        {
+          "id": "camden-1004",
+          "job": "busker"
+        }
+      ],
+      "runs": [
+        {
+          "job": "ordinary",
+          "mode": "relay",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27990
+        },
+        {
+          "job": "ordinary",
+          "mode": "field",
+          "kit": null,
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 27143
+        },
+        {
+          "job": "hitman",
+          "mode": "relay",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 15950
+        },
+        {
+          "job": "hitman",
+          "mode": "field",
+          "kit": "contract",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19233
+        },
+        {
+          "job": "spy",
+          "mode": "relay",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 12388
+        },
+        {
+          "job": "spy",
+          "mode": "field",
+          "kit": "spotter",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16504
+        },
+        {
+          "job": "drone_expert",
+          "mode": "relay",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20176
+        },
+        {
+          "job": "drone_expert",
+          "mode": "field",
+          "kit": "flightdeck",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20445
+        },
+        {
+          "job": "hooligan",
+          "mode": "relay",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18262
+        },
+        {
+          "job": "hooligan",
+          "mode": "field",
+          "kit": "terrace",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20597
+        },
+        {
+          "job": "beekeeper",
+          "mode": "relay",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20304
+        },
+        {
+          "job": "beekeeper",
+          "mode": "field",
+          "kit": "apiary",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 21574
+        },
+        {
+          "job": "statue",
+          "mode": "relay",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18059
+        },
+        {
+          "job": "statue",
+          "mode": "field",
+          "kit": "plinth",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 22027
+        },
+        {
+          "job": "hypnotist",
+          "mode": "relay",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 18872
+        },
+        {
+          "job": "hypnotist",
+          "mode": "field",
+          "kit": "watch",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 23177
+        },
+        {
+          "job": "anarchist",
+          "mode": "relay",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 19012
+        },
+        {
+          "job": "anarchist",
+          "mode": "field",
+          "kit": "bottle",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 20836
+        },
+        {
+          "job": "paramedic",
+          "mode": "relay",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 28126
+        },
+        {
+          "job": "paramedic",
+          "mode": "field",
+          "kit": "station",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 24722
+        },
+        {
+          "job": "barrister",
+          "mode": "relay",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 16723
+        },
+        {
+          "job": "barrister",
+          "mode": "field",
+          "kit": "chambers",
+          "outcome": "won",
+          "room": 20,
+          "bosses": 3,
+          "ticks": 26192
+        }
+      ]
+    }
+  ],
+  "condition": {
+    "baseline": "First three ordinary Camden starters without inheritance, perks or signal actors.",
+    "after": "Return with Aiden only, one free founder recruited into slot 1, same two ordinary teammates. No permanent perks or detours for replacement recruits.",
+    "timing": "60 Hz, from first combat through doors to final reward/ending menu or defeat. No reading, menus or real-time rendering overhead.",
+    "index": "Total ticks including losses per win, relative to ordinary relay=100."
+  }
+}
