@@ -141,9 +141,9 @@ exports.ordnance=({S3,sim,A,build,arena,foe,pad,go})=>{
   const group=make('execute',{deployment:'field',en:[{kind:'heavy',...at},foe('guard',1120,355)]});
   group.en.forEach(e=>{e.hp=2e3;e.speed=0;e.ang=e.base=-Math.PI/2;});
   fire(group,'execute');const fly=group.payloads[0];assert.ok(fly && !group.p.gad[0].armed);
-  go(group,115,pad({...aim,fire:true}));assert.ok(!group.alert && !group.openCombat && group.team.every(m=>!m.body.shots));
+  go(group,115,pad({...aim,fire:true}));assert.ok(!group.alert && !S3.fireteam.covering(group) && group.team.every(m=>!m.body.shots));
   sim.step(group,pad());sim.step(group,pad({...aim,fire:true,g1:true}));assert.ok(!group.alert,'cooldown denial is not a rifle shot');
-  sim.step(group,pad());sim.step(group,pad({...aim,fire:true}));assert.ok(group.alert && group.openCombat && group.p.shots===1);
+  sim.step(group,pad());sim.step(group,pad({...aim,fire:true}));assert.ok(group.alert && S3.fireteam.covering(group) && group.p.shots===1);
   // Swap before impact: only the launcher's vulnerabilities apply; radius, falloff and fixed self-damage survive upgrades.
   for(const id of ['strike','execute']){
     const s=make(id,{xp:{bigbang:1,shortcircuit:1},en:[{kind:'turret',...at},foe('turret',at.x+140,at.y)],slot2:{exploits:{shortcircuit:2}}});
@@ -267,7 +267,7 @@ exports.fireteam=({S3,R,sim,A,arena,foe,anchor,pad,go,crew,newMeta})=>{
   sim.step(s,pad({command:true,ax:s.p.x,ay:s.p.y}));assert.equal(s.order.kind,'follow');
   R.save(r);assert.equal(R.load().deployment,'field');assert.equal(R.simBuild({...r,omni:{overflow:{}}}).deployment,'relay');R.clear();
   const legacy=make([anchor()],'relay').s,old=legacy.p;sim.swapTo(legacy,1);assert.equal(legacy.p,old);assert.ok(legacy.swapCd && !legacy.fireteam);
-  s=make([foe('guard',800,695),foe('guard',1080,720),anchor()]).s;s.alert=true;
+  s=make([foe('guard',800,695),foe('guard',1080,720),anchor()]).s;A.raise(s);S3.fireteam.coverShot(s);
   const [offered,other]=s.en;offered.state='combat';offered.stun=10;other.state='combat';s.team[0].body.x=800;s.team[0].body.y=755;other.hp=other.maxHp=2000;
   go(s,45);assert.ok(!offered.dead && offered.hp===offered.maxHp,'save the close takedown');assert.ok(s.team.slice(1).some(m=>m.body.shots || m.gad[0].cd>0),'allies use weapons or kits');
   assert.ok(!s.payloads.some(z=>s.team.some(m=>Math.hypot(m.body.x-z.x,m.body.y-z.y)<z.r)),'no blast under an ally');
@@ -283,7 +283,7 @@ exports.fireteam=({S3,R,sim,A,arena,foe,anchor,pad,go,crew,newMeta})=>{
   s=make([anchor()]).s;freeze(s);s.en.forEach(e=>e.dead=true);s.waves=[];sim.step(s,pad());s.team[1].body.x=s.cache.x;s.team[1].body.y=s.cache.y;go(s,12);
   assert.ok(!s.cache.taken && s.exit<0,'wing cannot open the cache or doors');
   // Same grenade, same aim: unsafe near a friendly, usable once the lane is clear.
-  s=make([foe('guard',800,500),foe('guard',840,510)]).s;s.alert=true;s.team[2].body.x=800;s.team[2].body.y=760;
+  s=make([foe('guard',800,500),foe('guard',840,510)]).s;A.raise(s);S3.fireteam.coverShot(s);s.team[2].body.x=800;s.team[2].body.y=760;
   s.team[0].body.x=801;s.team[0].body.y=507;s.tick=4;
   const plan=()=>S3.fireteam.as(s,2,()=>s.team[2].ai.wing(s));
   assert.ok(!plan().g1,'wing withholds an incendiary at friendly feet');s.team[0].body.x=380;assert.ok(plan().g1,'wing actually throws on a clear lane');
@@ -291,5 +291,6 @@ exports.fireteam=({S3,R,sim,A,arena,foe,anchor,pad,go,crew,newMeta})=>{
   const healed=make([anchor()]);s=healed.s;freeze(s);s.team[1].body.inv=s.team[1].body.guard=0;
   S3.fireteam.as(s,1,()=>A.hitPlayer(s,2000));s.waves=[];s.en[0].dead=true;sim.step(s,pad());
   assert.ok(!s.team[1].down);R.finishRoom(healed.r,s,healed.meta);assert.equal(healed.r.stats.captured,0);
+  require('./check-s3-squad-ai')({S3,sim,A,arena,foe,pad,go});
   console.log('PASS fireteam: deployment round-trip, distinct bodies and ammo/cooldowns, 4+2 enemies, 3 orders, stealth and reserved target, enemy targeting, rescue vs custody, leader-only cache; legacy relay and OMNI unchanged');
 };

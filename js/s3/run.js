@@ -447,6 +447,16 @@
   }
 
   // ===== 房間打完 =====
+  // Apply the reward before walking to the next door (including a revived or replaced member).
+  function syncRoom(run,s){
+    run.squad.forEach((m,i)=>{
+      const tm=s.team[i];if(!tm || m.down)return;
+      if(tm.down || tm.build.person!==m.p){S3.sim.setMember(s,i,buildOf(run,i),m.hp);return;}
+      tm.maxHp=maxHp(run,i);tm.hp=Math.min(tm.maxHp,m.hp);
+      if(tm.body)tm.body.maxHp=tm.maxHp;
+      if(i===s.active){s.p.maxHp=tm.maxHp;s.p.hp=tm.hp;}
+    });
+  }
   // 把房間的結果記回這一趟，回傳獎勵：{ kind, picks?, n?, bonus }。全隊都倒了回傳 null。
   function finishRoom(run, s, meta) {
     const st = run.stats;
@@ -807,7 +817,7 @@
   }
 
   S3.run = {
-    same, afterLoss, SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax, invitePerson,isInvitation,hasCollectedKit,
+    same, afterLoss, SQUAD, ROSTER_MAX, RECRUIT_COST, rosterMax, invitePerson,isInvitation,hasCollectedKit,syncRoom,
     meta, saveMeta, perkLv, buyPerk, inheritance, inherit, newGame, ensureRoster, volunteers, recruit, dismiss, enlist, crewFor, memberOf, buildOf, simBuild, statsOf, alive,
     start, route, enter, spec, carry, finishRoom, take, reroll, rescue, advance, bail, heal,
     buy, restock, safe, choose, canChoose, finish, addExploit, addGadget, gadgetOwner, maxHp, exploitDef, eventDef, hurtSomeone, isRoom,

@@ -32,6 +32,35 @@
       return [(wx - p.x) / d, (wy - p.y) / d];
     }
 
+    // Cross into the wake of a rotating beam, rather than racing its leading edge.
+    // The core's opposite arm exists during the warning too, before its first rendered endpoint.
+    function laserEscape(s,e,a) {
+      const p=s.p,rx=p.x-e.x,ry=p.y-e.y,r=hyp(rx,ry)||1,angle=Math.atan2(ry,rx);
+      const gapAt=ang=>a.dir*A.angDiff(angle,ang);
+      let gap=gapAt(a.ang);
+      if(e.boss==='keystone'){const opposite=gapAt(a.ang+Math.PI);if(Math.abs(opposite)<Math.abs(gap))gap=opposite;}
+      const margin=(p.r+18)/r,until=a.go?a.t:a.dur;
+      if(gap < -margin || gap > margin+a.rate*Math.min(until,.5) || !A.clear(s,e.x,e.y,p.x,p.y))return null;
+      const lead=Math.max(0,gap*r),canDash=p.dashN>0 && p.lock<=0;
+      // With no charge, don't walk straight into an active beam: keep the head start or reach cover.
+      const retreat=a.go && gap>0 && !canDash && p.dashT<=0;
+      const tx=(retreat?-1:1)*a.dir*ry/r,ty=(retreat?1:-1)*a.dir*rx/r;
+      const imminent=a.go && gap>=-(p.r+6)/r && lead < p.r+10+.13*(a.rate*r+s.st.speed);
+      const stride=imminent && canDash?950*.16*s.st.dashLen:Math.max(55,s.st.speed*.28);
+      // Try the tangent first. At a wall try both diagonals and then the open ends of the lane.
+      let best=null,value=-Infinity;
+      for(const turn of [0,.65,-.65,1.18,-1.18,Math.PI/2,-Math.PI/2,Math.PI]){
+        const c=Math.cos(turn),sn=Math.sin(turn),x=tx*c-ty*sn,y=ty*c+tx*sn;
+        const q={x:p.x,y:p.y,r:p.r},steps=Math.ceil(stride/16),step=stride/steps;
+        for(let i=0;i<steps;i++)A.moveCircle(s,q,x*step,y*step);
+        const dx=q.x-p.x,dy=q.y-p.y,along=dx*tx+dy*ty,moved=hyp(dx,dy);
+        const cover=!A.clear(s,e.x,e.y,q.x,q.y),score=along+.28*moved+(cover?stride:0);
+        if(score>value){value=score;best={x,y,urgent:imminent && canDash && moved>p.r && (along>p.r || cover),any:true,laser:true};}
+        if(!turn && along>=stride-.5)break;
+      }
+      return best;
+    }
+
     // 危險：快打到的子彈、腳下的預告圈、瞄準線、衝撞。回傳 { x, y 該往哪躲, urgent 要不要衝刺 }。
     function danger(s) {
       const p = s.p;
@@ -76,7 +105,7 @@
         };
         if (a.k === 'snipe' && a.t < 0.3) line(a.ang, 1500, 34, a.t < 0.12);
         else if (a.k === 'charge') line(a.ang, 900, 70, a.go || a.t < 0.2);
-        else if (a.k === 'laser') { line(a.ang, 1800, a.go ? 60 : 46, a.go); if (a.x3 !== undefined) line(a.ang + Math.PI, 1800, 60, a.go); }
+        else if (a.k === 'laser') { const path=laserEscape(s,e,a);if(path)return path; }
         else if ((a.k === 'swing' || a.k === 'slam') && hyp(p.x - e.x, p.y - e.y) < 135) {
           const d = hyp(p.x - e.x, p.y - e.y) || 1;
           dx += ((p.x - e.x) / d) * 6; dy += ((p.y - e.y) / d) * 6;
@@ -277,6 +306,13 @@
         inp.mx = mx; inp.my = my;
         if (dg.urgent && p.dashN > 0 && rng.chance(0.8)) inp.dash = true;
         inp.focus = p.hp < p.maxHp * 0.35 && dg.any;
+        if(dg.laser){inp.mx=dg.x;inp.my=dg.y;inp.dash=dg.urgent;inp.melee=false;return inp;}
+        // The test pilot has the same G key as a player. A boss, or a shield its hack
+        // cannot lower, warrants a marked target even when the pilot carries a quiet gun.
+        if(s.fireteam && s.alert && !s.order.target && inp.swap<0 && los && !S3.fireteam.reserved(s,tgt) &&
+          (tgt.boss || tgt.kind==='shield' && tgt.elite==='firewall' && A.shielded(tgt,p.x,p.y))){
+          inp.command=true;inp.ax=tgt.x;inp.ay=tgt.y;inp.fire=inp.melee=false;return inp;
+        }
 
         const hypnotist=s.build.person?.elite==='hypnotist';
         if(hypnotist && (tgt.boss || tgt.def.machine || tgt.state==='combat' && !tgt.trance) && los && inp.fire && (p.focus>35 || p.focusing))inp.focus=true;
@@ -324,23 +360,29 @@
         }
       }
       const dangerNow=danger(s);
+      if(dangerNow.laser && !s.cleared){inp.mx=dangerNow.x;inp.my=dangerNow.y;inp.dash=dangerNow.urgent;return inp;}
       if(dangerNow.any && !s.cleared){inp.mx+=dangerNow.x;inp.my+=dangerNow.y;inp.dash=dangerNow.urgent;}
-      if(s.cleared || (!s.alert && !s.openCombat) || !safe.length)return inp;
-      const target=g.target && safe.includes(g.target)?g.target:safe.slice().sort((a,b)=>dist(a,p)-dist(b,p))[0];
+      if(s.cleared || !s.alert && !S3.fireteam.covering(s))return inp;
+      // A designation before discovery is silent. An alarm allows aid, not unlimited gunfire.
+      // Don't switch to a calm bystander, a hypnotist's audience or a target behind a wall.
+      const marked=g.kind==='focus' && safe.includes(g.target)?g.target:null;
+      const visible=safe.filter(e=>!(e.confused>0 || e.trance>0) && !S3.field.audience(s,e) &&
+        (e===marked || e.boss || e.state==='combat') && A.clear(s,p.x,p.y,e.x,e.y,true) && !A.steamed(s,p.x,p.y,e.x,e.y));
+      const target=g.kind==='focus'?(visible.includes(marked)?marked:null):visible.reduce((a,e)=>!a||dist(e,p)<dist(a,p)?e:a,null);
       if(!target)return inp;
-      const los=A.clear(s,p.x,p.y,target.x,target.y,true),range=dist(target,p);
+      const range=dist(target,p),engage=!!marked || s.alert && S3.fireteam.covering(s);
       readAim();
       const aim=Math.atan2(target.y-p.y,target.x-p.x)+b.aimErr*Math.min(1,range/300);
       inp.ax=p.x+Math.cos(aim)*range;inp.ay=p.y+Math.sin(aim)*range;
       // Covering fire in bursts. A deliberate focus order commits both wings to sustained fire.
       const covering=(s.t+s.active*.47)%1.6<.85;
-      inp.fire=!rescue && !dangerNow.urgent && (g.kind==='focus'||covering) && los && range<s.weapon.range*.92 && !A.shielded(target,p.x,p.y);
+      inp.fire=engage && !rescue && !dangerNow.urgent && (!!marked||covering) && range<s.weapon.range*.92 && !A.shielded(target,p.x,p.y);
       const td=sim.takedownTarget(s);
-      inp.melee=!rescue && td && !reserved(td) && (td===target || dist(td,lead)>185);
+      inp.melee=!rescue && td===target && !reserved(td);
       if(inp.melee)inp.fire=false;
       if(!inp.melee && !rescue && (s.tick+s.active*4)%12===0){
         // Slot two is the player's shared gear. Never let it replace a wing's aim or movement.
-        gadgetPlan(s,safe,inp,false,true);
+        if(engage)gadgetPlan(s,g.kind==='focus'?[target]:visible,inp,false,true);
         const medic=p.gad[0];
         if(medic?.id==='medbeacon' && medic.cd<=0){
           const patient=s.team.filter(m=>!m.down && dist(m.body,p)<S3.data.gadgets.medbeacon.range && m.hp<m.maxHp*.8).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];
@@ -355,7 +397,7 @@
             (['execute','strike','molotov','pipebomb'].includes(id)?s.st.aoeMul:1);
           if(slot || allyArea && (s.team.some(m=>!m.down && dist(m.body,at)<r) || hostile.some(e=>reserved(e) && dist(e,at)<r)))inp[key]=false;
         }
-        if(!inp.g1 && !inp.g2 && los && !reserved(target)){
+        if(!inp.g1 && !inp.g2 && (engage || s.alert && dist(target,p)<180) && !reserved(target)){
           const h=sim.pickHack(s,target.x,target.y);
           if(h?.ok && h.enemy===target && h.act!=='detonate' && !(h.act==='stun' && (target.stun>.3 || target.beeOpen>s.t || target.trance>0))){inp.hack=true;inp.ax=target.x;inp.ay=target.y;inp.fire=false;}
         }
@@ -363,7 +405,7 @@
       const armed=p.gad.find(g=>g.armed);
       if(armed && inp.fire){
         const impact=A.launcherImpact(s,inp.ax,inp.ay),r=impact.r+60;
-        if(!los || impact.unsafe || dist(target,impact)>impact.r+target.r || hostile.some(e=>reserved(e) && dist(e,impact)<r)){
+        if(impact.unsafe || dist(target,impact)>impact.r+target.r || hostile.some(e=>reserved(e) && dist(e,impact)<r)){
           inp.fire=false;inp[p.gad[0]===armed?'g1':'g2']=true; // Unload: the wing can cover this lane with its rifle instead.
         }
       }
@@ -389,10 +431,11 @@
     run.squad.forEach((m, i) => { top += S3.run.maxHp(run, i); if (!m.down) hp += m.hp; });
     return hp / top;
   }
-  function chooseDoor(run) {
+  function chooseDoor(run,keepCrew=false) {
     const frac = health(run);
     let best = 0, bs = -1e9;
     run.options.forEach((o, i) => {
+      if(keepCrew && o.type==='cells')return; // Always at least one combat or non-cell door.
       let sc = 0;
       if (o.type === 'safe') sc = frac < 0.7 ? 9 : 3;
       else if (o.type === 'shop') sc = run.data >= 70 ? 7 : 2;
@@ -440,28 +483,38 @@
 
   // 自己打完一整趟。o：{ perks 永久強化、held 名冊裡有幾個人被關、limit 每間最多幾步 }。回傳 { won, run, rooms: [...] }。
   function playRun(seed, o = {}) {
-    const m = { echoes: 0, perks: o.perks || {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [] };
+    const m = o.meta || { echoes: 0, perks: o.perks || {}, runs: 0, wins: 0, best: 0, seen: {}, roster: [] };
     const people=o.crew || S3.run.crewFor(seed);
     if(o.omni)m.roster=people.map(p=>({p,status:'ready',runs:0}));
     const run=o.omni ? S3.omni.create(seed,people,m) : S3.run.start(seed,people,m,o.deployment);
     if (o.held && !o.omni) run.held = o.held;
     const windows=[];
     const limit = o.limit || 60 * 150, rooms = [];
+    let nextDoor=null;
     for (let guard = 0; guard < (o.omni ? o.stopAt || 300 : 80) && run.phase === 'route'; guard++) {
-      const spec = S3.run.enter(run, chooseDoor(run));
+      const spec = S3.run.enter(run, nextDoor??chooseDoor(run,o.keepCrew));nextDoor=null;
       if(run.omni)S3.omni.snapshot(run,m);
       if (spec) {
         const s = sim.createRoom(spec, S3.run.simBuild(run), S3.run.carry(run));
         const bot = create(seed + ':' + run.roomNo);
-        let n = 0;
-        while (!s.over && !(s.cleared && s.cache.taken) && n++ < limit) { sim.step(s, bot.act(s)); s.ev.length = 0; }
-        const stalled=run.omni && n>=limit && !s.over && !(s.cleared && s.cache.taken);
-        if (!run.omni && n >= limit && !s.cleared) s.over = 'dead';
-        rooms.push({ no: run.roomNo, type: run.node.type, mod: run.node.mod, boss: spec.boss, secs: Math.round(s.rt), hp: Math.round(s.p.hp), hurt: Math.round(s.stats.hurt), dead: s.over === 'dead', timeout: n >= limit, silent: s.silent, down: s.team.filter((t) => t.down).length });
-        if(stalled){run.phase='timeout';break;}
+        const tick=()=>{sim.step(s,bot.act(s));s.ev.length=0;};
+        while (!s.over && !(s.cleared && s.cache.taken) && s.tick<limit)tick();
+        const stalled=!s.over && !(s.cleared && s.cache.taken);
+        const row={ no: run.roomNo, type: run.node.type, mod: run.node.mod, boss: spec.boss, secs: Math.round(s.rt), ticks:s.tick, hp: Math.round(s.p.hp), hurt: Math.round(s.stats.hurt), dead: s.over==='dead', timeout:stalled, silent: s.silent, down: s.team.filter(t=>t.down).length };
+        rooms.push(row);
+        if(stalled && (o.walkDoors || run.omni)){run.phase='timeout';break;}
+        if(stalled && !s.cleared){s.over='dead';row.dead=true;} // Legacy CI pilot treats the limit as a loss.
         const rw = S3.run.finishRoom(run, s, m);
         if (!rw) break;
-        if (rw.kind === 'rescue') S3.run.rescue(run, run.omni?m:null); else S3.run.take(run, chooseReward(run, rw));
+        if (rw.kind === 'rescue') S3.run.rescue(run, run.omni || o.meta?m:null); else S3.run.take(run, chooseReward(run, rw));
+        if(o.walkDoors && S3.run.advance(run)==='route'){
+          S3.run.syncRoom(run,s);s.doorsOpen=true;bot.state.door=chooseDoor(run,o.keepCrew);
+          const stop=s.tick+60*30;
+          while(s.exit<0 && s.tick<stop)tick();
+          row.ticks=s.tick;row.secs=Math.round(s.rt);
+          if(s.exit<0){row.timeout=true;run.phase='timeout';break;}
+          nextDoor=s.exit;if(!run.squad[s.active].down)run.active=s.active;
+        }
       } else visit(run);
       if (run.phase === 'doors' || run.phase === 'done') S3.run.advance(run);
       if(run.omni && run.phase==='window'){

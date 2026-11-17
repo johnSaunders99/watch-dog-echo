@@ -727,15 +727,7 @@
   // 房間裡的狀態跟著改，之後換人也會換到對的人、對的體力。
   function syncTeam() {
     if (!s || !run || !rewarded) return;
-    run.squad.forEach((m, i) => {
-      const tm = s.team[i];
-      if (!tm || m.down) return;
-      if (tm.down || tm.build.person !== m.p) { sim.setMember(s, i, R.buildOf(run, i), m.hp); return; }
-      tm.maxHp = R.maxHp(run, i);
-      tm.hp = Math.min(tm.maxHp, m.hp);
-      if(tm.body)tm.body.maxHp=tm.maxHp;
-      if (i === s.active) { s.p.maxHp = tm.maxHp; s.p.hp = tm.hp; }
-    });
+    R.syncRoom(run,s);
     for (const k of Object.keys(hudCache)) delete hudCache[k];
   }
 

@@ -868,7 +868,7 @@
         }
         s.ev.push({ k: 'shot', x: p.x, y: p.y, ang: p.ang, w: s.build.weapon, suppressed: !!fl.silent && w.noise > 0 });
         if (!fl.silent && w.noise) {
-          if(s.fireteam && s.active===s.control)s.openCombat=true;
+          if(s.fireteam)S3.fireteam.coverShot(s);
           noise(s, p.x, p.y, w.noise * st.noiseMul, true);
           if (w.roomAlarm && !s.cleared) raise(s);
         }
@@ -884,6 +884,7 @@
 
     // 近戰和制伏
     if (inp.melee && p.meleeCd <= 0 && p.lock <= 0) {
+      if(s.fireteam && s.active===s.control)s.coverUntil=0;
       const t = takedownTarget(s);
       if (t) {
         // 撲過去：目標不在身邊，就先衝到它旁邊。
@@ -1464,7 +1465,6 @@
     stepPlayer(s, inp, DT * (p.focusing ? 0.8 : 1));
     if(s.fireteam){
       s.reserved=takedownTarget(s);
-      if(inp.melee && s.en.some(e=>e.state==='combat' && e.call>0))s.openCombat=true;
       s.team.forEach((m,i)=>{if(i!==s.control && !m.down)S3.fireteam.as(s,i,()=>{
         const wing=S3.field.input(s,m.ai.wing(s),dt);s.p.focusing=false;
         s.p.focus=Math.min(s.st.focusMax,s.p.focus+s.st.focusRegen*dt);stepPlayer(s,wing,dt);

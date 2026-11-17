@@ -3,6 +3,10 @@
 (function(S){
   'use strict';
   const A=S.sim.api, d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  // A real, loud trigger pull asks for one short burst. Wings, punches and the alarm
+  // itself cannot renew it; use real time so focus never prolongs covering fire.
+  function coverShot(s){if(s.active===s.control)s.coverUntil=s.rt+1.1;}
+  function covering(s){return s.rt<s.coverUntil;}
   function bind(s,i){
     const m=s.team[i];s.active=i;s.p=m.body;s.st=m.st;s.fl=m.fl;s.build=m.build;s.weapon=m.weapon;
   }
@@ -29,7 +33,7 @@
     Object.defineProperty(m,'hp',{enumerable:true,configurable:true,get:()=>body.hp,set:v=>{body.hp=v;}});
   }
   function install(s,makeBody){
-    s.control=s.active;s.order={kind:'follow'};
+    s.control=s.active;s.order={kind:'follow'};s.coverUntil=0;
     for(const k of ['show','suggestion','shockDrone','standing','freeUsed']){
       Object.defineProperty(s,k,{configurable:true,get(){return s.team[s.active][k];},set(v){s.team[s.active][k]=v;}});
     }
@@ -43,11 +47,11 @@
     }
   }
   function select(s,i,forced=false){if(!s.team[i] || s.team[i].down || s.over || i===s.control)return false;
-    s.control=i;bind(s,i);s.ev.push({k:'swap',x:s.p.x,y:s.p.y,i,forced});return true;}
+    s.control=i;s.coverUntil=0;bind(s,i);s.ev.push({k:'swap',x:s.p.x,y:s.p.y,i,forced});return true;}
   function command(s,x,y){
     const close=s.en.filter(e=>!e.dead && e.ally<=0 && d(e,{x,y})<=e.r+30).sort((a,b)=>d(a,{x,y})-d(b,{x,y}))[0];
-    if(close){s.order=s.order.target===close?{kind:'follow'}:{kind:'focus',target:close};return;}
-    if(d(s.p,{x,y})<60 || s.order.kind==='hold' && d(s.order,{x,y})<65){s.order={kind:'follow'};return;}
+    if(close){if(s.order.target===close){s.order={kind:'follow'};s.coverUntil=0;}else s.order={kind:'focus',target:close};return;}
+    if(d(s.p,{x,y})<60 || s.order.kind==='hold' && d(s.order,{x,y})<65){s.order={kind:'follow'};s.coverUntil=0;return;}
     if(!A.solidAt(s,x,y) && A.field(s,x,y)[A.idx(Math.floor(s.p.x/S.sim.T),Math.floor(s.p.y/S.sim.T))]>=0)s.order={kind:'hold',x,y,ang:Math.atan2(y-s.p.y,x-s.p.x)};
   }
   function enemySlot(s,e){
@@ -103,7 +107,7 @@
       if(m.aid>=1.2)recover(s,m);
       else if((m.rescue=Math.max(0,m.rescue-dt))===0)s.ev.push({k:'fieldHeld',i:s.team.indexOf(m)});
     }
-    if(s.order.target && (s.order.target.dead || s.order.target.ally>0))s.order={kind:'follow'};
+    if(s.order.target && (s.order.target.dead || s.order.target.ally>0)){s.order={kind:'follow'};s.coverUntil=0;}
   }
-  S.fireteam={as,live,attach,place,install,select,command,enemySlot,reserved,post,space,down,endStep};
+  S.fireteam={as,live,attach,place,install,select,command,enemySlot,reserved,post,space,down,endStep,coverShot,covering};
 })(window.ECHO.s3);
