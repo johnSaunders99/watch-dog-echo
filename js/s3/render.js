@@ -131,16 +131,21 @@
   const HELD = {
     pistol: { len: 1.9, grip: 0.1 }, taser: { len: 1.9, grip: 0.1 }, silenced: { len: 2.7, grip: 0.08 },
     shotgun: { len: 3.6, grip: 0.26 }, nailgun: { len: 2.1, grip: 0.12 }, sledge: { len: 3.6, grip: 0.12 },
-    hammer: { len: 4.5, grip: 0.16 }, match: { len: 2.7, grip: .08, sprite: 'silenced' },
+    hammer: { len: 4.5, grip: 0.16 },
+    // 間諜的訂製手槍有自己的圖；圖集裡沒有時，退回消音手槍的圖再加一道銀色滑套。
+    match: { len: 2.35, grip: .12, sprite: 'spypistol', fallback: { len: 2.7, grip: .08, sprite: 'silenced', silver: true } },
     rifle: { len: 3.9, grip: .32 }, carbine: { len: 3.65, grip: .30 },
   };
   function heldItem(ctx, id, x, y, R) {
-    const h = HELD[id] || HELD.pistol, len = h.len * R;
-    const sh = id === 'hammer' ? sheets.gear : sheets.doll, it = sh && sh.items[id === 'hammer' ? 'smash' : 'held-' + (h.sprite || id)];
+    const sh = id === 'hammer' ? sheets.gear : sheets.doll;
+    const find = (h) => sh && sh.items[id === 'hammer' ? 'smash' : 'held-' + (h.sprite || id)];
+    let h = HELD[id] || HELD.pistol, it = find(h);
+    if (!it && h.fallback) { h = h.fallback; it = find(h); }
+    const len = h.len * R;
     if (it) {
       const k = len / it.w;
       ctx.drawImage(sh.img, it.x, it.y, it.w, it.h, x - h.grip * len, y - (it.h * k) / 2, len, it.h * k);
-      if (id === 'match') { ctx.fillStyle = '#c0cbd2'; ctx.fillRect(x + .19 * len, y - .09 * R, .19 * len, .12 * R); }
+      if (h.silver) { ctx.fillStyle = '#c0cbd2'; ctx.fillRect(x + .19 * len, y - .09 * R, .19 * len, .12 * R); }
       return;
     }
     const w = R * 0.42, x0 = x - h.grip * len;
