@@ -73,10 +73,15 @@ small.alias{color:var(--dim);display:block;line-height:1.4;margin:3px 0 0;font-s
       }
     }catch(e){if(t===ticket){stop();$('#status').textContent=w().error;}}
   }
+  // 新做的聲音暫停使用時（js/s3/sounds.js 的 NEW_SOUNDS），不顯示「新的」分頁，也不用介紹新聲音的說明。
+  const paused=!A.cues.some(c=>!c.restored);
+  const pausedText={'zh-Hant':'新做的聲音目前暫停使用，所有動作都播放原本的聲音。','zh-Hans':'新做的声音目前暂停使用，所有动作都播放原本的声音。',en:'The newer sounds are switched off for now; every action plays an original sound.'};
+  if(paused && group==='new')group='gear';
   function draw(){
     stop();E.i18n.set(lang);$('#lang').value=lang;document.title='ZERO DAY / '+w().title;$('h1').textContent=w().title;
-    $('#intro').textContent=({gear:w().gearIntro,guns:w().gunIntro,omni:w().omniIntro,new:w().newIntro})[group] || w().intro;$('#stop').textContent=w().stop;$('nav').setAttribute('aria-label',w().nav);$('nav').replaceChildren();
+    $('#intro').textContent=paused?pausedText[lang]:({gear:w().gearIntro,guns:w().gunIntro,omni:w().omniIntro,new:w().newIntro})[group] || w().intro;$('#stop').textContent=w().stop;$('nav').setAttribute('aria-label',w().nav);$('nav').replaceChildren();
     for(const [i,g] of groups.entries()){
+      if(paused && g==='new')continue;
       const b=document.createElement('button');b.type='button';b.textContent=w().groups[i];b.dataset.group=g;b.setAttribute('aria-pressed',g===group);
       b.onclick=()=>{group=g;draw();$('nav [aria-pressed=true]').focus()};$('nav').append(b);
     }

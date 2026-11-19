@@ -75,7 +75,10 @@ DOLLS = {'file': 'doll-1.png', 'atlas': 'doll', 'scale': 0.4, 'grid': (4, 2),
          'held': [{'file': 'held-1.png', 'scale': 0.4, 'grid': (3, 2),
                    'names': ['pistol', 'taser', 'shotgun', 'nailgun', 'silenced', 'sledge']},
                   {'file': 'held-2.png', 'scale': 0.4, 'grid': (2, 1), 'despill': {'rifle'},
-                   'names': ['rifle', 'carbine']}]}
+                   'names': ['rifle', 'carbine']},
+                  # 間諜的訂製手槍：銀色滑套、黑槍身、金扳機、雕花胡桃木握把（圖像模型不肯畫加裝消音器的版本）。
+                  {'file': 'held-3.png', 'scale': 0.15, 'grid': (1, 1), 'despill': {'spypistol'},
+                   'names': ['spypistol']}]}
 
 # 舊合集留作對照，不當成單張插圖輸出。
 RETIRED = {'gear-1.png', 'gear-2.png'}

@@ -281,6 +281,13 @@
   // 無人機分工後，以同一批 120 個種子實測：2.45 通關 91 次，2.95 通關 68 次。
   const enemyDmg = 2.95;
 
+  // 三人同場（普通戰役可選，OMNI 不用）：三個人一起上，火力和承傷都分攤，所以另外給敵方一些補償。
+  // reserve：警報響後額外增援的人數，按房間原本的普通敵人數計；rescue：倒地後可以被扶起的秒數；
+  // aid：隊友要在旁邊扶幾秒；reviveHp：扶起時回復的體力比例。輪換模式完全不讀這些數字。
+  // 2026-11-19 使用者要同場「調到接近輪換」。原本 0.5／10／1.2／0.35 時，普通隊 64 個首通種子同場勝 57 次、輪換 36 次。
+  // 增援加多只會拖長戰鬥、很少改變勝負，所以主要收緊救援：0.6／5／3／0.2 時同場勝 39 次，含重試每勝時間也和輪換相近。
+  const fireteam = { reserve: 0.6, rescue: 5, aid: 3, reviveHp: 0.2 };
+
   // ===== 區段 =====
   // rooms 首領前有幾個房間；budget 第一間和最後一間的威脅額度；scale 敵人血量和傷害的倍率；layouts 房間骨架；props 各種設施最少和最多幾個。
   const sectors = [
@@ -338,6 +345,6 @@
 
   S3.data = {
     weapons, weaponByCategory, weaponByJob, baseStats, addStats, traitFx, flawFx, quirkFx, jobFx, imprints, endingContacts,
-    exploits, rarityWeight, price, gadgets, gearCooldown, baseImpact, scrapImpact:65, kits, gadgetByJob, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg,
+    exploits, rarityWeight, price, gadgets, gearCooldown, baseImpact, scrapImpact:65, kits, gadgetByJob, enemies, affixes, bosses, props, hacks, mods, sectors, events, perks, enemyDmg, fireteam,
   };
 })(window.ECHO = window.ECHO || {});

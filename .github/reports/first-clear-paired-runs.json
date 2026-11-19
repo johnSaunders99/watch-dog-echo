@@ -18,10 +18,10 @@
       "mode": "field",
       "kit": null,
       "n": 32,
-      "wins": 28,
+      "wins": 20,
       "stalls": 0,
-      "meanWinSec": 405.68630952380954,
-      "secPerWin": 464.2708333333333
+      "meanWinSec": 410.5541666666667,
+      "secPerWin": 649.5066666666667
     },
     {
       "job": "hitman",
@@ -40,8 +40,8 @@
       "n": 32,
       "wins": 32,
       "stalls": 0,
-      "meanWinSec": 359.90260416666666,
-      "secPerWin": 359.90260416666666
+      "meanWinSec": 383.49375,
+      "secPerWin": 383.49375
     },
     {
       "job": "spy",
@@ -58,10 +58,10 @@
       "mode": "field",
       "kit": "spotter",
       "n": 32,
-      "wins": 28,
+      "wins": 22,
       "stalls": 0,
-      "meanWinSec": 291.2202380952381,
-      "secPerWin": 327.0654761904762
+      "meanWinSec": 291.3121212121212,
+      "secPerWin": 418.2265151515152
     },
     {
       "job": "drone_expert",
@@ -70,18 +70,18 @@
       "n": 32,
       "wins": 25,
       "stalls": 0,
-      "meanWinSec": 334.24,
-      "secPerWin": 418.45733333333334
+      "meanWinSec": 335.04266666666666,
+      "secPerWin": 419.26
     },
     {
       "job": "drone_expert",
       "mode": "field",
       "kit": "flightdeck",
       "n": 32,
-      "wins": 28,
+      "wins": 22,
       "stalls": 0,
-      "meanWinSec": 371.7607142857143,
-      "secPerWin": 422.9321428571429
+      "meanWinSec": 404.8727272727273,
+      "secPerWin": 568.0659090909091
     },
     {
       "job": "hooligan",
@@ -98,10 +98,10 @@
       "mode": "field",
       "kit": "terrace",
       "n": 32,
-      "wins": 32,
+      "wins": 30,
       "stalls": 0,
-      "meanWinSec": 378.92552083333334,
-      "secPerWin": 378.92552083333334
+      "meanWinSec": 405.9922222222222,
+      "secPerWin": 429.6322222222222
     },
     {
       "job": "beekeeper",
@@ -118,10 +118,10 @@
       "mode": "field",
       "kit": "apiary",
       "n": 32,
-      "wins": 32,
+      "wins": 30,
       "stalls": 0,
-      "meanWinSec": 379.3880208333333,
-      "secPerWin": 379.3880208333333
+      "meanWinSec": 385.3211111111111,
+      "secPerWin": 412.57
     },
     {
       "job": "statue",
@@ -130,18 +130,18 @@
       "n": 32,
       "wins": 32,
       "stalls": 0,
-      "meanWinSec": 365.98020833333334,
-      "secPerWin": 365.98020833333334
+      "meanWinSec": 365.98229166666664,
+      "secPerWin": 365.98229166666664
     },
     {
       "job": "statue",
       "mode": "field",
       "kit": "plinth",
       "n": 32,
-      "wins": 31,
+      "wins": 29,
       "stalls": 0,
-      "meanWinSec": 399.9741935483871,
-      "secPerWin": 415.5263440860215
+      "meanWinSec": 411.70344827586206,
+      "secPerWin": 454.5471264367816
     },
     {
       "job": "hypnotist",
@@ -158,10 +158,10 @@
       "mode": "field",
       "kit": "watch",
       "n": 32,
-      "wins": 32,
+      "wins": 28,
       "stalls": 0,
-      "meanWinSec": 384.4010416666667,
-      "secPerWin": 384.4010416666667
+      "meanWinSec": 391.63154761904764,
+      "secPerWin": 446.6386904761905
     },
     {
       "job": "anarchist",
@@ -178,10 +178,10 @@
       "mode": "field",
       "kit": "bottle",
       "n": 32,
-      "wins": 29,
+      "wins": 21,
       "stalls": 0,
-      "meanWinSec": 361.8867816091954,
-      "secPerWin": 396.8270114942529
+      "meanWinSec": 376.2785714285714,
+      "secPerWin": 571.3063492063492
     },
     {
       "job": "paramedic",
@@ -198,10 +198,10 @@
       "mode": "field",
       "kit": "station",
       "n": 32,
-      "wins": 31,
+      "wins": 29,
       "stalls": 0,
-      "meanWinSec": 454.0768817204301,
-      "secPerWin": 468.18118279569893
+      "meanWinSec": 475.00344827586207,
+      "secPerWin": 523.5206896551724
     },
     {
       "job": "barrister",
@@ -218,10 +218,10 @@
       "mode": "field",
       "kit": "chambers",
       "n": 32,
-      "wins": 32,
+      "wins": 18,
       "stalls": 0,
-      "meanWinSec": 400.79583333333335,
-      "secPerWin": 400.79583333333335
+      "meanWinSec": 409.2990740740741,
+      "secPerWin": 666.7037037037037
     }
   ],
   "samples": [
@@ -256,10 +256,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 26843
+          "bosses": 2,
+          "ticks": 28337
         },
         {
           "job": "hitman",
@@ -277,7 +277,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24123
+          "ticks": 24906
         },
         {
           "job": "spy",
@@ -292,10 +292,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 20978
+          "bosses": 2,
+          "ticks": 18087
         },
         {
           "job": "drone_expert",
@@ -313,7 +313,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26896
+          "ticks": 26766
         },
         {
           "job": "hooligan",
@@ -331,7 +331,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20008
+          "ticks": 23852
         },
         {
           "job": "beekeeper",
@@ -349,7 +349,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25488
+          "ticks": 23938
         },
         {
           "job": "statue",
@@ -367,7 +367,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21345
+          "ticks": 26444
         },
         {
           "job": "hypnotist",
@@ -385,7 +385,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 28185
+          "ticks": 28908
         },
         {
           "job": "anarchist",
@@ -400,10 +400,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 22135
+          "outcome": "dead",
+          "room": 15,
+          "bosses": 2,
+          "ticks": 17255
         },
         {
           "job": "paramedic",
@@ -421,7 +421,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 31824
+          "ticks": 32410
         },
         {
           "job": "barrister",
@@ -439,7 +439,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24906
+          "ticks": 26752
         }
       ]
     },
@@ -477,7 +477,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29424
+          "ticks": 31122
         },
         {
           "job": "hitman",
@@ -495,7 +495,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23344
+          "ticks": 26244
         },
         {
           "job": "spy",
@@ -511,9 +511,9 @@
           "mode": "field",
           "kit": "spotter",
           "outcome": "dead",
-          "room": 11,
-          "bosses": 1,
-          "ticks": 11624
+          "room": 20,
+          "bosses": 2,
+          "ticks": 24063
         },
         {
           "job": "drone_expert",
@@ -531,7 +531,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25108
+          "ticks": 26910
         },
         {
           "job": "hooligan",
@@ -549,7 +549,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26010
+          "ticks": 27608
         },
         {
           "job": "beekeeper",
@@ -567,7 +567,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 28859
+          "ticks": 30158
         },
         {
           "job": "statue",
@@ -585,7 +585,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29044
+          "ticks": 29646
         },
         {
           "job": "hypnotist",
@@ -603,7 +603,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25317
+          "ticks": 27447
         },
         {
           "job": "anarchist",
@@ -621,7 +621,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25582
+          "ticks": 27545
         },
         {
           "job": "paramedic",
@@ -639,7 +639,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29928
+          "ticks": 31538
         },
         {
           "job": "barrister",
@@ -657,7 +657,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29968
+          "ticks": 27746
         }
       ]
     },
@@ -695,7 +695,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23929
+          "ticks": 25050
         },
         {
           "job": "hitman",
@@ -713,7 +713,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21427
+          "ticks": 22016
         },
         {
           "job": "spy",
@@ -731,7 +731,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16529
+          "ticks": 17982
         },
         {
           "job": "drone_expert",
@@ -749,7 +749,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21194
+          "ticks": 23031
         },
         {
           "job": "hooligan",
@@ -767,7 +767,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23172
+          "ticks": 25298
         },
         {
           "job": "beekeeper",
@@ -785,7 +785,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18075
+          "ticks": 18852
         },
         {
           "job": "statue",
@@ -803,7 +803,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19338
+          "ticks": 21325
         },
         {
           "job": "hypnotist",
@@ -821,7 +821,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16962
+          "ticks": 17849
         },
         {
           "job": "anarchist",
@@ -839,7 +839,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20014
+          "ticks": 19814
         },
         {
           "job": "paramedic",
@@ -857,7 +857,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24899
+          "ticks": 25158
         },
         {
           "job": "barrister",
@@ -875,7 +875,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20061
+          "ticks": 22975
         }
       ]
     },
@@ -913,7 +913,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20226
+          "ticks": 24302
         },
         {
           "job": "hitman",
@@ -931,7 +931,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19819
+          "ticks": 22088
         },
         {
           "job": "spy",
@@ -949,7 +949,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18822
+          "ticks": 18288
         },
         {
           "job": "drone_expert",
@@ -967,7 +967,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21098
+          "ticks": 21146
         },
         {
           "job": "hooligan",
@@ -985,7 +985,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24574
+          "ticks": 26585
         },
         {
           "job": "beekeeper",
@@ -1003,7 +1003,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22792
+          "ticks": 24641
         },
         {
           "job": "statue",
@@ -1021,7 +1021,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22983
+          "ticks": 20137
         },
         {
           "job": "hypnotist",
@@ -1039,7 +1039,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22689
+          "ticks": 21141
         },
         {
           "job": "anarchist",
@@ -1057,7 +1057,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23543
+          "ticks": 23067
         },
         {
           "job": "paramedic",
@@ -1075,7 +1075,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27035
+          "ticks": 29084
         },
         {
           "job": "barrister",
@@ -1090,10 +1090,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 22038
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 12756
         }
       ]
     },
@@ -1131,7 +1131,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24536
+          "ticks": 27229
         },
         {
           "job": "hitman",
@@ -1149,7 +1149,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20688
+          "ticks": 23309
         },
         {
           "job": "spy",
@@ -1167,7 +1167,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 13970
+          "ticks": 14156
         },
         {
           "job": "drone_expert",
@@ -1185,7 +1185,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22247
+          "ticks": 23519
         },
         {
           "job": "hooligan",
@@ -1203,7 +1203,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23941
+          "ticks": 25579
         },
         {
           "job": "beekeeper",
@@ -1221,7 +1221,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24181
+          "ticks": 25964
         },
         {
           "job": "statue",
@@ -1239,7 +1239,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24610
+          "ticks": 25395
         },
         {
           "job": "hypnotist",
@@ -1257,7 +1257,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25532
+          "ticks": 26308
         },
         {
           "job": "anarchist",
@@ -1275,7 +1275,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22337
+          "ticks": 22902
         },
         {
           "job": "paramedic",
@@ -1293,7 +1293,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26442
+          "ticks": 27428
         },
         {
           "job": "barrister",
@@ -1311,7 +1311,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24081
+          "ticks": 20268
         }
       ]
     },
@@ -1349,7 +1349,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24012
+          "ticks": 20874
         },
         {
           "job": "hitman",
@@ -1367,7 +1367,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18893
+          "ticks": 19332
         },
         {
           "job": "spy",
@@ -1385,7 +1385,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 13658
+          "ticks": 14604
         },
         {
           "job": "drone_expert",
@@ -1403,7 +1403,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18532
+          "ticks": 22421
         },
         {
           "job": "hooligan",
@@ -1421,7 +1421,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21567
+          "ticks": 24062
         },
         {
           "job": "beekeeper",
@@ -1439,7 +1439,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18900
+          "ticks": 19470
         },
         {
           "job": "statue",
@@ -1454,10 +1454,10 @@
           "job": "statue",
           "mode": "field",
           "kit": "plinth",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 20693
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 15939
         },
         {
           "job": "hypnotist",
@@ -1475,7 +1475,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 17923
+          "ticks": 24280
         },
         {
           "job": "anarchist",
@@ -1490,10 +1490,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 22185
+          "bosses": 2,
+          "ticks": 23169
         },
         {
           "job": "paramedic",
@@ -1511,7 +1511,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23002
+          "ticks": 22964
         },
         {
           "job": "barrister",
@@ -1529,7 +1529,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19539
+          "ticks": 23717
         }
       ]
     },
@@ -1567,7 +1567,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21690
+          "ticks": 21712
         },
         {
           "job": "hitman",
@@ -1585,7 +1585,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19602
+          "ticks": 20070
         },
         {
           "job": "spy",
@@ -1603,7 +1603,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 15927
+          "ticks": 13594
         },
         {
           "job": "drone_expert",
@@ -1618,10 +1618,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 20309
+          "bosses": 2,
+          "ticks": 23005
         },
         {
           "job": "hooligan",
@@ -1639,7 +1639,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19596
+          "ticks": 22283
         },
         {
           "job": "beekeeper",
@@ -1657,7 +1657,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23236
+          "ticks": 24277
         },
         {
           "job": "statue",
@@ -1675,7 +1675,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22244
+          "ticks": 21475
         },
         {
           "job": "hypnotist",
@@ -1693,7 +1693,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25374
+          "ticks": 17841
         },
         {
           "job": "anarchist",
@@ -1711,7 +1711,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20675
+          "ticks": 19148
         },
         {
           "job": "paramedic",
@@ -1729,7 +1729,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23851
+          "ticks": 26064
         },
         {
           "job": "barrister",
@@ -1747,7 +1747,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23338
+          "ticks": 25742
         }
       ]
     },
@@ -1785,7 +1785,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22912
+          "ticks": 23716
         },
         {
           "job": "hitman",
@@ -1803,7 +1803,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21915
+          "ticks": 21922
         },
         {
           "job": "spy",
@@ -1821,7 +1821,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 13197
+          "ticks": 14308
         },
         {
           "job": "drone_expert",
@@ -1836,10 +1836,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 22708
+          "bosses": 2,
+          "ticks": 23276
         },
         {
           "job": "hooligan",
@@ -1857,7 +1857,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23809
+          "ticks": 24538
         },
         {
           "job": "beekeeper",
@@ -1875,7 +1875,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21450
+          "ticks": 21684
         },
         {
           "job": "statue",
@@ -1893,7 +1893,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20115
+          "ticks": 21526
         },
         {
           "job": "hypnotist",
@@ -1911,7 +1911,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21416
+          "ticks": 22345
         },
         {
           "job": "anarchist",
@@ -1929,7 +1929,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21228
+          "ticks": 21751
         },
         {
           "job": "paramedic",
@@ -1947,7 +1947,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22005
+          "ticks": 22535
         },
         {
           "job": "barrister",
@@ -1965,7 +1965,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23492
+          "ticks": 22512
         }
       ]
     },
@@ -2000,10 +2000,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 24169
+          "bosses": 3,
+          "ticks": 23355
         },
         {
           "job": "hitman",
@@ -2021,7 +2021,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22341
+          "ticks": 22374
         },
         {
           "job": "spy",
@@ -2036,10 +2036,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 20041
+          "outcome": "dead",
+          "room": 15,
+          "bosses": 2,
+          "ticks": 15334
         },
         {
           "job": "drone_expert",
@@ -2054,10 +2054,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 19815
+          "bosses": 2,
+          "ticks": 19855
         },
         {
           "job": "hooligan",
@@ -2075,7 +2075,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23703
+          "ticks": 24466
         },
         {
           "job": "beekeeper",
@@ -2093,7 +2093,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20735
+          "ticks": 21882
         },
         {
           "job": "statue",
@@ -2111,7 +2111,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24758
+          "ticks": 24224
         },
         {
           "job": "hypnotist",
@@ -2129,7 +2129,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24070
+          "ticks": 24638
         },
         {
           "job": "anarchist",
@@ -2144,10 +2144,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 21824
+          "bosses": 2,
+          "ticks": 23794
         },
         {
           "job": "paramedic",
@@ -2165,7 +2165,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 30435
+          "ticks": 31788
         },
         {
           "job": "barrister",
@@ -2180,10 +2180,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 25204
+          "outcome": "dead",
+          "room": 15,
+          "bosses": 2,
+          "ticks": 17836
         }
       ]
     },
@@ -2221,7 +2221,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26590
+          "ticks": 27419
         },
         {
           "job": "hitman",
@@ -2239,7 +2239,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23154
+          "ticks": 24340
         },
         {
           "job": "spy",
@@ -2257,7 +2257,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 17218
+          "ticks": 18359
         },
         {
           "job": "drone_expert",
@@ -2275,7 +2275,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25333
+          "ticks": 25789
         },
         {
           "job": "hooligan",
@@ -2293,7 +2293,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23778
+          "ticks": 27455
         },
         {
           "job": "beekeeper",
@@ -2311,7 +2311,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25607
+          "ticks": 24537
         },
         {
           "job": "statue",
@@ -2326,10 +2326,10 @@
           "job": "statue",
           "mode": "field",
           "kit": "plinth",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 25743
+          "bosses": 2,
+          "ticks": 28958
         },
         {
           "job": "hypnotist",
@@ -2347,7 +2347,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19518
+          "ticks": 19853
         },
         {
           "job": "anarchist",
@@ -2365,7 +2365,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25186
+          "ticks": 26463
         },
         {
           "job": "paramedic",
@@ -2383,7 +2383,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29570
+          "ticks": 31653
         },
         {
           "job": "barrister",
@@ -2398,10 +2398,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 25289
+          "bosses": 2,
+          "ticks": 27161
         }
       ]
     },
@@ -2436,10 +2436,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 23320
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 13734
         },
         {
           "job": "hitman",
@@ -2457,7 +2457,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19153
+          "ticks": 23841
         },
         {
           "job": "spy",
@@ -2475,7 +2475,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16837
+          "ticks": 17433
         },
         {
           "job": "drone_expert",
@@ -2493,7 +2493,7 @@
           "outcome": "dead",
           "room": 20,
           "bosses": 2,
-          "ticks": 21662
+          "ticks": 23265
         },
         {
           "job": "hooligan",
@@ -2511,7 +2511,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21619
+          "ticks": 22652
         },
         {
           "job": "beekeeper",
@@ -2529,7 +2529,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18623
+          "ticks": 19950
         },
         {
           "job": "statue",
@@ -2547,7 +2547,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19359
+          "ticks": 19261
         },
         {
           "job": "hypnotist",
@@ -2565,7 +2565,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19683
+          "ticks": 20770
         },
         {
           "job": "anarchist",
@@ -2581,9 +2581,9 @@
           "mode": "field",
           "kit": "bottle",
           "outcome": "dead",
-          "room": 17,
+          "room": 20,
           "bosses": 2,
-          "ticks": 20223
+          "ticks": 24785
         },
         {
           "job": "paramedic",
@@ -2601,7 +2601,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24515
+          "ticks": 25862
         },
         {
           "job": "barrister",
@@ -2619,7 +2619,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27707
+          "ticks": 23593
         }
       ]
     },
@@ -2654,10 +2654,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 21624
+          "bosses": 2,
+          "ticks": 23149
         },
         {
           "job": "hitman",
@@ -2675,7 +2675,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 17995
+          "ticks": 18973
         },
         {
           "job": "spy",
@@ -2693,7 +2693,7 @@
           "outcome": "dead",
           "room": 20,
           "bosses": 2,
-          "ticks": 12545
+          "ticks": 12519
         },
         {
           "job": "drone_expert",
@@ -2708,10 +2708,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 18523
+          "bosses": 2,
+          "ticks": 17704
         },
         {
           "job": "hooligan",
@@ -2729,7 +2729,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18008
+          "ticks": 18415
         },
         {
           "job": "beekeeper",
@@ -2747,7 +2747,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19794
+          "ticks": 20487
         },
         {
           "job": "statue",
@@ -2765,7 +2765,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19101
+          "ticks": 18868
         },
         {
           "job": "hypnotist",
@@ -2783,7 +2783,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18393
+          "ticks": 21172
         },
         {
           "job": "anarchist",
@@ -2798,10 +2798,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 18725
+          "bosses": 2,
+          "ticks": 20249
         },
         {
           "job": "paramedic",
@@ -2819,7 +2819,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21206
+          "ticks": 22402
         },
         {
           "job": "barrister",
@@ -2837,7 +2837,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18790
+          "ticks": 21825
         }
       ]
     },
@@ -2875,7 +2875,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23635
+          "ticks": 23822
         },
         {
           "job": "hitman",
@@ -2893,7 +2893,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23841
+          "ticks": 25098
         },
         {
           "job": "spy",
@@ -2911,7 +2911,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 17970
+          "ticks": 19187
         },
         {
           "job": "drone_expert",
@@ -2929,7 +2929,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21496
+          "ticks": 24892
         },
         {
           "job": "hooligan",
@@ -2947,7 +2947,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24648
+          "ticks": 25934
         },
         {
           "job": "beekeeper",
@@ -2965,7 +2965,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23797
+          "ticks": 24213
         },
         {
           "job": "statue",
@@ -2983,7 +2983,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 28362
+          "ticks": 26669
         },
         {
           "job": "hypnotist",
@@ -3001,7 +3001,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23312
+          "ticks": 23738
         },
         {
           "job": "anarchist",
@@ -3019,7 +3019,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21028
+          "ticks": 19528
         },
         {
           "job": "paramedic",
@@ -3037,7 +3037,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23644
+          "ticks": 24274
         },
         {
           "job": "barrister",
@@ -3055,7 +3055,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27872
+          "ticks": 19918
         }
       ]
     },
@@ -3090,10 +3090,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 25622
+          "bosses": 2,
+          "ticks": 26367
         },
         {
           "job": "hitman",
@@ -3111,7 +3111,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24036
+          "ticks": 24449
         },
         {
           "job": "spy",
@@ -3129,7 +3129,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21113
+          "ticks": 18633
         },
         {
           "job": "drone_expert",
@@ -3144,10 +3144,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 17211
+          "bosses": 3,
+          "ticks": 21963
         },
         {
           "job": "hooligan",
@@ -3165,7 +3165,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25712
+          "ticks": 27537
         },
         {
           "job": "beekeeper",
@@ -3180,10 +3180,10 @@
           "job": "beekeeper",
           "mode": "field",
           "kit": "apiary",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 22478
+          "bosses": 2,
+          "ticks": 20008
         },
         {
           "job": "statue",
@@ -3201,7 +3201,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26604
+          "ticks": 26564
         },
         {
           "job": "hypnotist",
@@ -3219,7 +3219,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26504
+          "ticks": 24104
         },
         {
           "job": "anarchist",
@@ -3237,7 +3237,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18692
+          "ticks": 19964
         },
         {
           "job": "paramedic",
@@ -3255,7 +3255,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29659
+          "ticks": 31080
         },
         {
           "job": "barrister",
@@ -3270,10 +3270,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 25484
+          "outcome": "dead",
+          "room": 8,
+          "bosses": 1,
+          "ticks": 10187
         }
       ]
     },
@@ -3311,7 +3311,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23159
+          "ticks": 24048
         },
         {
           "job": "hitman",
@@ -3329,7 +3329,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24474
+          "ticks": 25674
         },
         {
           "job": "spy",
@@ -3347,7 +3347,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 15567
+          "ticks": 14138
         },
         {
           "job": "drone_expert",
@@ -3365,7 +3365,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25819
+          "ticks": 26835
         },
         {
           "job": "hooligan",
@@ -3383,7 +3383,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24649
+          "ticks": 24457
         },
         {
           "job": "beekeeper",
@@ -3401,7 +3401,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23485
+          "ticks": 24308
         },
         {
           "job": "statue",
@@ -3410,7 +3410,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24242
+          "ticks": 24246
         },
         {
           "job": "statue",
@@ -3419,7 +3419,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26563
+          "ticks": 27398
         },
         {
           "job": "hypnotist",
@@ -3434,10 +3434,10 @@
           "job": "hypnotist",
           "mode": "field",
           "kit": "watch",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 22399
+          "bosses": 2,
+          "ticks": 23689
         },
         {
           "job": "anarchist",
@@ -3455,7 +3455,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19758
+          "ticks": 23044
         },
         {
           "job": "paramedic",
@@ -3473,7 +3473,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 28039
+          "ticks": 29189
         },
         {
           "job": "barrister",
@@ -3491,7 +3491,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23268
+          "ticks": 23413
         }
       ]
     },
@@ -3529,7 +3529,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19368
+          "ticks": 19481
         },
         {
           "job": "hitman",
@@ -3547,7 +3547,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20511
+          "ticks": 21508
         },
         {
           "job": "spy",
@@ -3562,10 +3562,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 18043
+          "bosses": 3,
+          "ticks": 15276
         },
         {
           "job": "drone_expert",
@@ -3574,7 +3574,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16064
+          "ticks": 17268
         },
         {
           "job": "drone_expert",
@@ -3583,7 +3583,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20301
+          "ticks": 24788
         },
         {
           "job": "hooligan",
@@ -3601,7 +3601,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22649
+          "ticks": 23441
         },
         {
           "job": "beekeeper",
@@ -3619,7 +3619,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18931
+          "ticks": 19175
         },
         {
           "job": "statue",
@@ -3637,7 +3637,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22654
+          "ticks": 23891
         },
         {
           "job": "hypnotist",
@@ -3655,7 +3655,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19524
+          "ticks": 23280
         },
         {
           "job": "anarchist",
@@ -3670,10 +3670,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 19012
+          "bosses": 3,
+          "ticks": 23257
         },
         {
           "job": "paramedic",
@@ -3688,10 +3688,10 @@
           "job": "paramedic",
           "mode": "field",
           "kit": "station",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 25460
+          "bosses": 2,
+          "ticks": 26465
         },
         {
           "job": "barrister",
@@ -3706,10 +3706,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 21948
+          "bosses": 2,
+          "ticks": 24361
         }
       ]
     },
@@ -3747,7 +3747,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26872
+          "ticks": 28021
         },
         {
           "job": "hitman",
@@ -3765,7 +3765,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21715
+          "ticks": 21238
         },
         {
           "job": "spy",
@@ -3783,7 +3783,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 17156
+          "ticks": 15269
         },
         {
           "job": "drone_expert",
@@ -3801,7 +3801,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18363
+          "ticks": 15210
         },
         {
           "job": "hooligan",
@@ -3819,7 +3819,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23434
+          "ticks": 22081
         },
         {
           "job": "beekeeper",
@@ -3837,7 +3837,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19244
+          "ticks": 19515
         },
         {
           "job": "statue",
@@ -3855,7 +3855,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27674
+          "ticks": 22445
         },
         {
           "job": "hypnotist",
@@ -3873,7 +3873,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25853
+          "ticks": 26746
         },
         {
           "job": "anarchist",
@@ -3891,7 +3891,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20581
+          "ticks": 24011
         },
         {
           "job": "paramedic",
@@ -3909,7 +3909,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27356
+          "ticks": 27778
         },
         {
           "job": "barrister",
@@ -3927,7 +3927,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 28589
+          "ticks": 22709
         }
       ]
     },
@@ -3965,7 +3965,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22374
+          "ticks": 24495
         },
         {
           "job": "hitman",
@@ -3983,7 +3983,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22720
+          "ticks": 24715
         },
         {
           "job": "spy",
@@ -3998,10 +3998,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 17551
+          "bosses": 2,
+          "ticks": 18291
         },
         {
           "job": "drone_expert",
@@ -4019,7 +4019,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26517
+          "ticks": 30876
         },
         {
           "job": "hooligan",
@@ -4037,7 +4037,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21378
+          "ticks": 23900
         },
         {
           "job": "beekeeper",
@@ -4055,7 +4055,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22575
+          "ticks": 19462
         },
         {
           "job": "statue",
@@ -4073,7 +4073,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22593
+          "ticks": 24002
         },
         {
           "job": "hypnotist",
@@ -4091,7 +4091,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24650
+          "ticks": 25807
         },
         {
           "job": "anarchist",
@@ -4109,7 +4109,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24644
+          "ticks": 23403
         },
         {
           "job": "paramedic",
@@ -4127,7 +4127,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26594
+          "ticks": 27515
         },
         {
           "job": "barrister",
@@ -4145,7 +4145,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20453
+          "ticks": 25135
         }
       ]
     },
@@ -4180,10 +4180,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 28235
+          "outcome": "dead",
+          "room": 17,
+          "bosses": 2,
+          "ticks": 20023
         },
         {
           "job": "hitman",
@@ -4201,7 +4201,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20137
+          "ticks": 21331
         },
         {
           "job": "spy",
@@ -4219,7 +4219,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19223
+          "ticks": 18692
         },
         {
           "job": "drone_expert",
@@ -4234,10 +4234,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 19756
+          "bosses": 2,
+          "ticks": 20544
         },
         {
           "job": "hooligan",
@@ -4255,7 +4255,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20751
+          "ticks": 21955
         },
         {
           "job": "beekeeper",
@@ -4273,7 +4273,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23548
+          "ticks": 24786
         },
         {
           "job": "statue",
@@ -4291,7 +4291,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25784
+          "ticks": 25930
         },
         {
           "job": "hypnotist",
@@ -4306,10 +4306,10 @@
           "job": "hypnotist",
           "mode": "field",
           "kit": "watch",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 20587
+          "bosses": 2,
+          "ticks": 21364
         },
         {
           "job": "anarchist",
@@ -4324,10 +4324,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 23528
+          "bosses": 2,
+          "ticks": 22510
         },
         {
           "job": "paramedic",
@@ -4342,10 +4342,10 @@
           "job": "paramedic",
           "mode": "field",
           "kit": "station",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 30988
+          "bosses": 2,
+          "ticks": 30323
         },
         {
           "job": "barrister",
@@ -4360,10 +4360,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 23345
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 16333
         }
       ]
     },
@@ -4401,7 +4401,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25694
+          "ticks": 26709
         },
         {
           "job": "hitman",
@@ -4419,7 +4419,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21395
+          "ticks": 23405
         },
         {
           "job": "spy",
@@ -4437,7 +4437,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16994
+          "ticks": 20789
         },
         {
           "job": "drone_expert",
@@ -4455,7 +4455,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21592
+          "ticks": 25357
         },
         {
           "job": "hooligan",
@@ -4473,7 +4473,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24128
+          "ticks": 26356
         },
         {
           "job": "beekeeper",
@@ -4491,7 +4491,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22074
+          "ticks": 22784
         },
         {
           "job": "statue",
@@ -4509,7 +4509,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24569
+          "ticks": 23458
         },
         {
           "job": "hypnotist",
@@ -4527,7 +4527,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24148
+          "ticks": 29524
         },
         {
           "job": "anarchist",
@@ -4545,7 +4545,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20110
+          "ticks": 21830
         },
         {
           "job": "paramedic",
@@ -4563,7 +4563,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26537
+          "ticks": 27983
         },
         {
           "job": "barrister",
@@ -4581,7 +4581,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22286
+          "ticks": 24959
         }
       ]
     },
@@ -4616,10 +4616,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 23677
+          "bosses": 3,
+          "ticks": 25672
         },
         {
           "job": "hitman",
@@ -4637,7 +4637,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20279
+          "ticks": 21636
         },
         {
           "job": "spy",
@@ -4655,7 +4655,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 15427
+          "ticks": 15257
         },
         {
           "job": "drone_expert",
@@ -4670,10 +4670,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 20000
+          "bosses": 2,
+          "ticks": 20928
         },
         {
           "job": "hooligan",
@@ -4691,7 +4691,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20727
+          "ticks": 20472
         },
         {
           "job": "beekeeper",
@@ -4709,7 +4709,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23136
+          "ticks": 22818
         },
         {
           "job": "statue",
@@ -4727,7 +4727,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25969
+          "ticks": 30453
         },
         {
           "job": "hypnotist",
@@ -4745,7 +4745,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20174
+          "ticks": 21995
         },
         {
           "job": "anarchist",
@@ -4763,7 +4763,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20333
+          "ticks": 19526
         },
         {
           "job": "paramedic",
@@ -4781,7 +4781,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27499
+          "ticks": 28685
         },
         {
           "job": "barrister",
@@ -4796,10 +4796,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 22386
+          "bosses": 2,
+          "ticks": 27108
         }
       ]
     },
@@ -4835,9 +4835,9 @@
           "mode": "field",
           "kit": null,
           "outcome": "dead",
-          "room": 20,
+          "room": 17,
           "bosses": 2,
-          "ticks": 22857
+          "ticks": 18315
         },
         {
           "job": "hitman",
@@ -4855,7 +4855,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22179
+          "ticks": 25074
         },
         {
           "job": "spy",
@@ -4873,7 +4873,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21130
+          "ticks": 21592
         },
         {
           "job": "drone_expert",
@@ -4888,10 +4888,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 22478
+          "bosses": 3,
+          "ticks": 24223
         },
         {
           "job": "hooligan",
@@ -4909,7 +4909,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21879
+          "ticks": 28929
         },
         {
           "job": "beekeeper",
@@ -4927,7 +4927,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20372
+          "ticks": 21701
         },
         {
           "job": "statue",
@@ -4945,7 +4945,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24497
+          "ticks": 23252
         },
         {
           "job": "hypnotist",
@@ -4960,10 +4960,10 @@
           "job": "hypnotist",
           "mode": "field",
           "kit": "watch",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 28999
+          "bosses": 2,
+          "ticks": 29854
         },
         {
           "job": "anarchist",
@@ -4981,7 +4981,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24767
+          "ticks": 23887
         },
         {
           "job": "paramedic",
@@ -4999,7 +4999,7 @@
           "outcome": "dead",
           "room": 20,
           "bosses": 2,
-          "ticks": 26234
+          "ticks": 27632
         },
         {
           "job": "barrister",
@@ -5014,10 +5014,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 22011
+          "outcome": "dead",
+          "room": 14,
+          "bosses": 2,
+          "ticks": 15686
         }
       ]
     },
@@ -5055,7 +5055,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23968
+          "ticks": 21580
         },
         {
           "job": "hitman",
@@ -5073,7 +5073,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22728
+          "ticks": 23625
         },
         {
           "job": "spy",
@@ -5091,7 +5091,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16208
+          "ticks": 19888
         },
         {
           "job": "drone_expert",
@@ -5106,10 +5106,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 24617
+          "bosses": 3,
+          "ticks": 29399
         },
         {
           "job": "hooligan",
@@ -5127,7 +5127,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20065
+          "ticks": 22187
         },
         {
           "job": "beekeeper",
@@ -5145,7 +5145,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23056
+          "ticks": 24504
         },
         {
           "job": "statue",
@@ -5163,7 +5163,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23143
+          "ticks": 25873
         },
         {
           "job": "hypnotist",
@@ -5181,7 +5181,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21230
+          "ticks": 22165
         },
         {
           "job": "anarchist",
@@ -5196,10 +5196,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 21827
+          "bosses": 2,
+          "ticks": 23811
         },
         {
           "job": "paramedic",
@@ -5217,7 +5217,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27308
+          "ticks": 28790
         },
         {
           "job": "barrister",
@@ -5232,10 +5232,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 25495
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 14702
         }
       ]
     },
@@ -5270,10 +5270,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 23841
+          "bosses": 2,
+          "ticks": 24329
         },
         {
           "job": "hitman",
@@ -5291,7 +5291,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22146
+          "ticks": 23033
         },
         {
           "job": "spy",
@@ -5309,7 +5309,7 @@
           "outcome": "dead",
           "room": 20,
           "bosses": 2,
-          "ticks": 18008
+          "ticks": 18158
         },
         {
           "job": "drone_expert",
@@ -5324,10 +5324,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 23956
+          "bosses": 2,
+          "ticks": 21650
         },
         {
           "job": "hooligan",
@@ -5342,10 +5342,10 @@
           "job": "hooligan",
           "mode": "field",
           "kit": "terrace",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 24418
+          "bosses": 2,
+          "ticks": 24260
         },
         {
           "job": "beekeeper",
@@ -5363,7 +5363,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22794
+          "ticks": 26300
         },
         {
           "job": "statue",
@@ -5381,7 +5381,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21580
+          "ticks": 24871
         },
         {
           "job": "hypnotist",
@@ -5399,7 +5399,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24463
+          "ticks": 30547
         },
         {
           "job": "anarchist",
@@ -5415,9 +5415,9 @@
           "mode": "field",
           "kit": "bottle",
           "outcome": "dead",
-          "room": 20,
+          "room": 14,
           "bosses": 2,
-          "ticks": 21561
+          "ticks": 16822
         },
         {
           "job": "paramedic",
@@ -5435,7 +5435,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27596
+          "ticks": 29880
         },
         {
           "job": "barrister",
@@ -5450,10 +5450,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 20361
+          "bosses": 2,
+          "ticks": 24827
         }
       ]
     },
@@ -5491,7 +5491,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 18092
+          "ticks": 19302
         },
         {
           "job": "hitman",
@@ -5509,7 +5509,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 15651
+          "ticks": 19244
         },
         {
           "job": "spy",
@@ -5524,10 +5524,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 15234
+          "bosses": 2,
+          "ticks": 14319
         },
         {
           "job": "drone_expert",
@@ -5545,7 +5545,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20153
+          "ticks": 19774
         },
         {
           "job": "hooligan",
@@ -5560,10 +5560,10 @@
           "job": "hooligan",
           "mode": "field",
           "kit": "terrace",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 16952
+          "bosses": 2,
+          "ticks": 18292
         },
         {
           "job": "beekeeper",
@@ -5581,7 +5581,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 17303
+          "ticks": 20296
         },
         {
           "job": "statue",
@@ -5599,7 +5599,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22214
+          "ticks": 21575
         },
         {
           "job": "hypnotist",
@@ -5617,7 +5617,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19320
+          "ticks": 16370
         },
         {
           "job": "anarchist",
@@ -5635,7 +5635,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16659
+          "ticks": 20762
         },
         {
           "job": "paramedic",
@@ -5653,7 +5653,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22547
+          "ticks": 23761
         },
         {
           "job": "barrister",
@@ -5668,10 +5668,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 16905
+          "bosses": 2,
+          "ticks": 18539
         }
       ]
     },
@@ -5706,10 +5706,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 21599
+          "bosses": 2,
+          "ticks": 22115
         },
         {
           "job": "hitman",
@@ -5727,7 +5727,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20561
+          "ticks": 22548
         },
         {
           "job": "spy",
@@ -5745,7 +5745,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 13026
+          "ticks": 14186
         },
         {
           "job": "drone_expert",
@@ -5760,10 +5760,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 22478
+          "bosses": 2,
+          "ticks": 24139
         },
         {
           "job": "hooligan",
@@ -5781,7 +5781,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 16435
+          "ticks": 19867
         },
         {
           "job": "beekeeper",
@@ -5799,7 +5799,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22153
+          "ticks": 23143
         },
         {
           "job": "statue",
@@ -5817,7 +5817,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22421
+          "ticks": 25457
         },
         {
           "job": "hypnotist",
@@ -5835,7 +5835,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19427
+          "ticks": 16210
         },
         {
           "job": "anarchist",
@@ -5850,10 +5850,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 18963
+          "bosses": 2,
+          "ticks": 22262
         },
         {
           "job": "paramedic",
@@ -5871,7 +5871,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27312
+          "ticks": 30961
         },
         {
           "job": "barrister",
@@ -5889,7 +5889,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21299
+          "ticks": 20044
         }
       ]
     },
@@ -5924,10 +5924,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 25848
+          "bosses": 2,
+          "ticks": 28225
         },
         {
           "job": "hitman",
@@ -5945,7 +5945,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22222
+          "ticks": 25315
         },
         {
           "job": "spy",
@@ -5963,7 +5963,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19756
+          "ticks": 21384
         },
         {
           "job": "drone_expert",
@@ -5981,7 +5981,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25096
+          "ticks": 26451
         },
         {
           "job": "hooligan",
@@ -5999,7 +5999,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27952
+          "ticks": 29402
         },
         {
           "job": "beekeeper",
@@ -6017,7 +6017,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25146
+          "ticks": 25277
         },
         {
           "job": "statue",
@@ -6035,7 +6035,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22630
+          "ticks": 24029
         },
         {
           "job": "hypnotist",
@@ -6050,10 +6050,10 @@
           "job": "hypnotist",
           "mode": "field",
           "kit": "watch",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 29530
+          "outcome": "dead",
+          "room": 14,
+          "bosses": 2,
+          "ticks": 17505
         },
         {
           "job": "anarchist",
@@ -6071,7 +6071,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21953
+          "ticks": 24776
         },
         {
           "job": "paramedic",
@@ -6089,7 +6089,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 31985
+          "ticks": 33950
         },
         {
           "job": "barrister",
@@ -6104,10 +6104,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 26764
+          "outcome": "dead",
+          "room": 13,
+          "bosses": 1,
+          "ticks": 16648
         }
       ]
     },
@@ -6142,10 +6142,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "dead",
+          "outcome": "won",
           "room": 20,
-          "bosses": 2,
-          "ticks": 27719
+          "bosses": 3,
+          "ticks": 29372
         },
         {
           "job": "hitman",
@@ -6163,7 +6163,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22403
+          "ticks": 24435
         },
         {
           "job": "spy",
@@ -6178,10 +6178,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 20701
+          "bosses": 2,
+          "ticks": 16895
         },
         {
           "job": "drone_expert",
@@ -6199,7 +6199,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24130
+          "ticks": 24192
         },
         {
           "job": "hooligan",
@@ -6217,7 +6217,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24357
+          "ticks": 23102
         },
         {
           "job": "beekeeper",
@@ -6235,7 +6235,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 28113
+          "ticks": 26234
         },
         {
           "job": "statue",
@@ -6253,7 +6253,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29451
+          "ticks": 30537
         },
         {
           "job": "hypnotist",
@@ -6271,7 +6271,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 29681
+          "ticks": 28929
         },
         {
           "job": "anarchist",
@@ -6289,7 +6289,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24695
+          "ticks": 22760
         },
         {
           "job": "paramedic",
@@ -6307,7 +6307,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 28556
+          "ticks": 29086
         },
         {
           "job": "barrister",
@@ -6322,10 +6322,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 25258
+          "bosses": 2,
+          "ticks": 25473
         }
       ]
     },
@@ -6363,7 +6363,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23647
+          "ticks": 25384
         },
         {
           "job": "hitman",
@@ -6381,7 +6381,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22493
+          "ticks": 23625
         },
         {
           "job": "spy",
@@ -6399,7 +6399,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 13985
+          "ticks": 21286
         },
         {
           "job": "drone_expert",
@@ -6414,10 +6414,10 @@
           "job": "drone_expert",
           "mode": "field",
           "kit": "flightdeck",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 24721
+          "outcome": "dead",
+          "room": 16,
+          "bosses": 2,
+          "ticks": 21049
         },
         {
           "job": "hooligan",
@@ -6435,7 +6435,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22653
+          "ticks": 24701
         },
         {
           "job": "beekeeper",
@@ -6453,7 +6453,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25201
+          "ticks": 27175
         },
         {
           "job": "statue",
@@ -6471,7 +6471,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25274
+          "ticks": 26390
         },
         {
           "job": "hypnotist",
@@ -6489,7 +6489,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22769
+          "ticks": 23337
         },
         {
           "job": "anarchist",
@@ -6504,10 +6504,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 20322
+          "bosses": 2,
+          "ticks": 26868
         },
         {
           "job": "paramedic",
@@ -6525,7 +6525,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 30192
+          "ticks": 33789
         },
         {
           "job": "barrister",
@@ -6540,10 +6540,10 @@
           "job": "barrister",
           "mode": "field",
           "kit": "chambers",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 30424
+          "bosses": 2,
+          "ticks": 26380
         }
       ]
     },
@@ -6578,10 +6578,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 29207
+          "bosses": 2,
+          "ticks": 24018
         },
         {
           "job": "hitman",
@@ -6599,7 +6599,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24513
+          "ticks": 25003
         },
         {
           "job": "spy",
@@ -6614,10 +6614,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 24376
+          "bosses": 2,
+          "ticks": 20155
         },
         {
           "job": "drone_expert",
@@ -6635,7 +6635,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25357
+          "ticks": 27122
         },
         {
           "job": "hooligan",
@@ -6653,7 +6653,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26459
+          "ticks": 24647
         },
         {
           "job": "beekeeper",
@@ -6668,10 +6668,10 @@
           "job": "beekeeper",
           "mode": "field",
           "kit": "apiary",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 28950
+          "bosses": 2,
+          "ticks": 29040
         },
         {
           "job": "statue",
@@ -6689,7 +6689,7 @@
           "outcome": "dead",
           "room": 20,
           "bosses": 2,
-          "ticks": 28927
+          "ticks": 29651
         },
         {
           "job": "hypnotist",
@@ -6707,7 +6707,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22329
+          "ticks": 23683
         },
         {
           "job": "anarchist",
@@ -6722,10 +6722,10 @@
           "job": "anarchist",
           "mode": "field",
           "kit": "bottle",
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 23375
+          "bosses": 2,
+          "ticks": 24210
         },
         {
           "job": "paramedic",
@@ -6743,7 +6743,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 30553
+          "ticks": 29646
         },
         {
           "job": "barrister",
@@ -6761,7 +6761,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27164
+          "ticks": 33990
         }
       ]
     },
@@ -6796,10 +6796,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 28143
+          "bosses": 2,
+          "ticks": 27759
         },
         {
           "job": "hitman",
@@ -6817,7 +6817,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 25322
+          "ticks": 22346
         },
         {
           "job": "spy",
@@ -6835,7 +6835,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20152
+          "ticks": 20231
         },
         {
           "job": "drone_expert",
@@ -6853,7 +6853,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22615
+          "ticks": 22935
         },
         {
           "job": "hooligan",
@@ -6871,7 +6871,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27909
+          "ticks": 26742
         },
         {
           "job": "beekeeper",
@@ -6889,7 +6889,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26755
+          "ticks": 23398
         },
         {
           "job": "statue",
@@ -6907,7 +6907,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 30610
+          "ticks": 30902
         },
         {
           "job": "hypnotist",
@@ -6925,7 +6925,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24912
+          "ticks": 25070
         },
         {
           "job": "anarchist",
@@ -6943,7 +6943,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24178
+          "ticks": 26474
         },
         {
           "job": "paramedic",
@@ -6961,7 +6961,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 33324
+          "ticks": 34758
         },
         {
           "job": "barrister",
@@ -6979,7 +6979,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 27611
+          "ticks": 30550
         }
       ]
     },
@@ -7014,10 +7014,10 @@
           "job": "ordinary",
           "mode": "field",
           "kit": null,
-          "outcome": "won",
+          "outcome": "dead",
           "room": 20,
-          "bosses": 3,
-          "ticks": 27143
+          "bosses": 2,
+          "ticks": 30372
         },
         {
           "job": "hitman",
@@ -7035,7 +7035,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 19233
+          "ticks": 23591
         },
         {
           "job": "spy",
@@ -7050,10 +7050,10 @@
           "job": "spy",
           "mode": "field",
           "kit": "spotter",
-          "outcome": "won",
-          "room": 20,
-          "bosses": 3,
-          "ticks": 16504
+          "outcome": "dead",
+          "room": 15,
+          "bosses": 2,
+          "ticks": 9706
         },
         {
           "job": "drone_expert",
@@ -7071,7 +7071,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20445
+          "ticks": 20833
         },
         {
           "job": "hooligan",
@@ -7089,7 +7089,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20597
+          "ticks": 22283
         },
         {
           "job": "beekeeper",
@@ -7107,7 +7107,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 21574
+          "ticks": 22649
         },
         {
           "job": "statue",
@@ -7125,7 +7125,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 22027
+          "ticks": 24367
         },
         {
           "job": "hypnotist",
@@ -7143,7 +7143,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 23177
+          "ticks": 23884
         },
         {
           "job": "anarchist",
@@ -7161,7 +7161,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 20836
+          "ticks": 20199
         },
         {
           "job": "paramedic",
@@ -7179,7 +7179,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 24722
+          "ticks": 26495
         },
         {
           "job": "barrister",
@@ -7197,7 +7197,7 @@
           "outcome": "won",
           "room": 20,
           "bosses": 3,
-          "ticks": 26192
+          "ticks": 26195
         }
       ]
     }

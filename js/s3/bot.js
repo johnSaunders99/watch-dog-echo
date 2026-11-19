@@ -282,6 +282,11 @@
         inp.ax = p.x + Math.cos(ang) * d; inp.ay = p.y + Math.sin(ang) * d;
         const w = s.weapon, reach = Math.min(w.range * 0.9, 520);
         inp.fire = los && d < reach && (!A.shielded(tgt, p.x, p.y) || tgt.state !== 'combat');
+        // 走不過去時（例如砲塔在牆另一邊），站著超過一秒、又有射擊線，就用整把槍的射程開火，不要一直貼著牆。
+        const moved = hyp(p.x - (b.lastX ?? p.x), p.y - (b.lastY ?? p.y));
+        b.stuckT = moved < 0.5 ? (b.stuckT || 0) + sim.DT : 0; b.lastX = p.x; b.lastY = p.y;
+        // 行為藝術家表演時本來就要站著不動，不算卡住。
+        if (!inp.fire && !s.show && los && b.stuckT > 1 && d < w.range * 0.9 && (!A.shielded(tgt, p.x, p.y) || tgt.state !== 'combat')) inp.fire = true;
         // 走位：太遠就靠近、太近就退、其他時候橫移。近戰型的敵人保持更遠。
         const melee = tgt.kind === 'rusher' || tgt.kind === 'hound' || tgt.boss === 'bulldog';
         const want = melee ? 250 : w.range < 500 ? 190 : 260;

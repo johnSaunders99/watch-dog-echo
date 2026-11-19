@@ -231,9 +231,19 @@
     return {osc,grain,ring,thud,tick,wood,blades,clap,heart,rnd};
   }
 
+  // 2026-11-20 使用者：新做的音效很敷衍，暫時不用。NEW_SOUNDS 關掉時，第 6 階段之後才有的每個用途都改指向一個原本就有的聲音；
+  // 下面的合成配方先留著，之後要重做時再打開。
+  const NEW_SOUNDS=false;
+  const OLD_FOR={rifle:'s3gun',rifleQuiet:'s3silenced',carbine:'s3gun',carbineQuiet:'s3silenced',
+    cargo:'droneJam',cargoDrop:'s3boom',eagleLure:'s3shriek',execute:'takedown',quickstep:'s3dash',veil:'dream',
+    shockdrone:'droneJam',droneArc:'s3zap',rush:'s3swing',hiveguard:'s3shriek',performance:'s3wave',stageReady:'lock',
+    stageFlash:'s3shock',watch:'dream',metronome:'dream',metroTick:'click',order:'click',molotov:'s3swing',
+    molotovImpact:'s3boom',pipebomb:'s3swing',pipeImpact:'s3boom',medbeacon:'gain',injunction:'blackout',
+    escortWrit:'lock',omniEntry:'dream',omniWindow:'event',omniOverflow:'gain',omniHeld:'lock'};
   sfx.add(kit=>{
     const scores={};
     function fresh(group,key,label,make,previous=key) {
+      if(!NEW_SOUNDS){list(group,key,OLD_FOR[key]||'blip',label,true);return;}
       const id='s3x_'+key;
       list(group,key,id,label,false,previous?'s3v6_'+previous:null);
       scores[id]=()=>make(materials(kit));
