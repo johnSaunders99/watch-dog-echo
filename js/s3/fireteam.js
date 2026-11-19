@@ -42,7 +42,7 @@
     // Derive a separate reserve, never more initial damage or duplicate bosses. Quiet clears still bypass the alarm reserves.
     const ordinary=s.spec.enemies.concat(...s.waves).filter(e=>!e.boss && e.kind!=='boss');
     if(ordinary.length){
-      const rng=window.ECHO.rng.derive(s.spec.seed,'field-reserve'),count=Math.round(ordinary.length*.5);
+      const rng=window.ECHO.rng.derive(s.spec.seed,'field-reserve'),count=Math.round(ordinary.length*S.data.fireteam.reserve);
       for(let n=0;n<count;){const wave=[];for(let j=0;j<3 && n<count;j++,n++)wave.push({kind:rng.pick(ordinary).kind});s.waves.push(wave);}
     }
   }
@@ -89,12 +89,12 @@
     }
   }
   function down(s,i){
-    const m=s.team[i];m.down=true;m.body.hp=0;m.rescue=10;m.aid=0;m.show=null;
+    const m=s.team[i];m.down=true;m.body.hp=0;m.rescue=S.data.fireteam.rescue;m.aid=0;m.show=null;
     s.ev.push({k:'down',x:m.body.x,y:m.body.y,i});
     if(s.team.every(n=>n.down)){s.team.forEach(n=>n.rescue=0);s.over='dead';s.ev.push({k:'dead',x:m.body.x,y:m.body.y});}
   }
   function recover(s,m){
-    m.down=false;m.rescue=0;m.aid=0;m.body.hp=Math.ceil(m.maxHp*.35);m.body.inv=1;
+    m.down=false;m.rescue=0;m.aid=0;m.body.hp=Math.ceil(m.maxHp*S.data.fireteam.reviveHp);m.body.inv=1;
     s.ev.push({k:'revive',x:m.body.x,y:m.body.y});
   }
   function endStep(s,dt){
@@ -104,7 +104,7 @@
       if(s.cleared){recover(s,m);continue;}
       const helping=s.team.some(n=>!n.down && d(m.body,n.body)<62 && A.clear(s,n.body.x,n.body.y,m.body.x,m.body.y,true));
       m.aid=helping?m.aid+dt:0;
-      if(m.aid>=1.2)recover(s,m);
+      if(m.aid>=S.data.fireteam.aid)recover(s,m);
       else if((m.rescue=Math.max(0,m.rescue-dt))===0)s.ev.push({k:'fieldHeld',i:s.team.indexOf(m)});
     }
     if(s.order.target && (s.order.target.dead || s.order.target.ally>0)){s.order={kind:'follow'};s.coverUntil=0;}

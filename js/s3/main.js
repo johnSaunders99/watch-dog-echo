@@ -657,11 +657,13 @@
     else if (run.phase === 'done' || run.phase === 'doors') afterNode();
     else showRoute(true);
   }
+  // 同場救援的數字來自 S3.data.fireteam，說明文字跟著調整，不另外寫死。
+  const fieldAid = () => ({ s: D.fireteam.rescue, aid: D.fireteam.aid, hp: Math.round(D.fireteam.reviveHp * 100) });
   function controlsHtml() {
     const field = run?.deployment === 'field' && !run.omni;
     const rows = ['move', 'aim', 'fire', 'hack', 'dash', 'focus', 'melee', ...(field ? ['take', 'order'] : ['swap']), 'gadget', 'reload', 'pause'];
     return `<div class="controls">${rows.map((k) => `<div><kbd>${esc(t('s3.ctl.' + (k === 'take' ? 'swap' : k) + '.k'))}</kbd><span>${esc(t('s3.ctl.' + k))}</span></div>`).join('')}</div>`
-      + (field ? `<p class="field-help">${esc(t('s3.team.aidText'))}</p>` : '');
+      + (field ? `<p class="field-help">${esc(t('s3.team.aidText', fieldAid()))}</p>` : '');
   }
   function showControls(next) {
     modal(`<h2>${esc(t('s3.ctlbox.title'))}</h2>${controlsHtml()}<div class="s3-actions"><button type="button" class="primary" data-act="go">${esc(t('s3.ctlbox.go'))}</button></div>`, () => { closeModal(); next(); }, 'wide');
@@ -1141,7 +1143,7 @@
       else if (ev.k === 'hijack') comm('hijack');
       else if (ev.k === 'getaway') comm('getaway', {}, true);
       else if (ev.k === 'swap') { lowSaid = false; if (!ev.forced) toast(t(s.fireteam?'s3.team.take':'s3.toast.swap', { name: nameOf(run.squad[ev.i].p) })); }
-      else if(s.fireteam && ev.k==='down'){if(!s.over)toast(t('s3.team.fallen',{name:nameOf(run.squad[ev.i].p)}),'warn');}
+      else if(s.fireteam && ev.k==='down'){if(!s.over)toast(t('s3.team.fallen',{name:nameOf(run.squad[ev.i].p),s:D.fireteam.rescue}),'warn');}
       else if(s.fireteam && ev.k==='fieldHeld')toast(t('s3.toast.down',{name:nameOf(run.squad[ev.i].p)}),'warn');
       else if (ev.k === 'down' && !run.omni) {
         // 有人倒下、被帶走：停一下，讓玩家看清楚換了誰上來。

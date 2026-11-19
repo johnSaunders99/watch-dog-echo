@@ -275,10 +275,12 @@ exports.fireteam=({S3,R,sim,A,arena,foe,anchor,pad,go,crew,newMeta})=>{
   const e=s.en[0],front=s.team[1];e.x=front.body.x+10;e.y=front.body.y-60;e.state='combat';assert.equal(S3.fireteam.enemySlot(s,e),1);
   const oldHp=s.team.map(m=>m.hp);s.bul.push({side:'e',x:front.body.x-25,y:600,vx:1300,vy:0,life:1,r:4,dmg:12});sim.step(s,pad());
   assert.ok(front.hp<oldHp[1] && s.team[0].hp===oldHp[0] && s.team[2].hp===oldHp[2]);
-  S3.fireteam.as(s,1,()=>{s.p.guard=s.p.inv=0;A.hitPlayer(s,2000);});assert.ok(front.down && front.rescue===10);assert.ok(!sim.swapTo(s,1));
-  s.p.x=front.body.x-33;s.p.y=front.body.y;go(s,74);assert.ok(!front.down && front.hp>0 && s.active===0);
+  const FT=S3.data.fireteam,aidTicks=Math.ceil(FT.aid*60);
+  S3.fireteam.as(s,1,()=>{s.p.guard=s.p.inv=0;A.hitPlayer(s,2000);});assert.ok(front.down && front.rescue===FT.rescue);assert.ok(!sim.swapTo(s,1));
+  s.p.x=front.body.x-33;s.p.y=front.body.y;go(s,aidTicks-6);assert.ok(front.down,'a revive takes the full aid time');
+  go(s,8);assert.ok(!front.down && front.hp>0 && front.hp<=Math.ceil(front.maxHp*FT.reviveHp)+1 && s.active===0,'revived with the reduced share of health');
   const t=make([anchor()]);s=t.s;freeze(s);s.team[0].body.x=190;s.team[1].body.x=790;s.team[2].body.x=1120;s.en[0].stun=100;
-  S3.fireteam.as(s,1,()=>{s.p.guard=s.p.inv=0;A.hitPlayer(s,2000);});go(s,605);assert.equal(s.team[1].rescue,0);
+  S3.fireteam.as(s,1,()=>{s.p.guard=s.p.inv=0;A.hitPlayer(s,2000);});go(s,Math.ceil(FT.rescue*60)+5);assert.equal(s.team[1].rescue,0);
   R.finishRoom(t.r,s,t.meta);assert.equal(t.r.stats.captured,1);assert.ok(t.r.squad[1].down);
   s=make([anchor()]).s;freeze(s);s.en.forEach(e=>e.dead=true);s.waves=[];sim.step(s,pad());s.team[1].body.x=s.cache.x;s.team[1].body.y=s.cache.y;go(s,12);
   assert.ok(!s.cache.taken && s.exit<0,'wing cannot open the cache or doors');
