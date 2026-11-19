@@ -1826,8 +1826,10 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
     for(const key of ['eagleLure','stageFlash','stageReady','order'])recipe({k:key});
     for(const [k,cue] of [['boom','cargoDrop'],['arc','droneArc'],['gadget','watch'],['hypnosis','metroTick'],['boom','molotovImpact'],['boom','pipeImpact']])recipe({k,cue});
     ck(!recipe({k:'arc',cue:false}) && !recipe({k:'punch'}),'silent extra arc and original visual-only punch');
+    // 長槍保留 105 毫秒的最短間隔，連發不會疊成一團。2026-11-20 起新音效暫停使用，長槍改用原本的手槍／消音手槍聲。
+    const longGunsNew=audio.cues.some(c=>!c.restored);
     for(const w of ['rifle','carbine'])for(const suppressed of [false,true])
-      ck(String(recipe({k:'shot',w,suppressed}))===String(['s3x_'+w+(suppressed?'Quiet':''),105]),'automatic '+w+' / '+suppressed);
+      ck(String(recipe({k:'shot',w,suppressed}))===String([longGunsNew?'s3x_'+w+(suppressed?'Quiet':''):suppressed?'s3silenced':'s3gun',105]),'automatic '+w+' / '+suppressed);
 
     // Direct player controls and all authored encounter aliases belong to the same playback inventory.
     for(const m of text.matchAll(/\bplay\(([^;]*?)\)/g))for(const n of m[1].matchAll(/(?:^|[?:]\s*)'(\w+)'/g))used.add(n[1]);
@@ -1893,23 +1895,25 @@ module.exports = function checkS3({ sandbox, fail, section, storage, root }) {
       return result;
     }
     const cast=i=>({g1:i===0,ax:880,ay:630});
-    for(const [id,on,hit,delay] of [['cargo','s3x_cargo','s3x_cargoDrop',D.gadgets.cargo.fuse],
-      ['sergei','sergei','s3boom',D.gadgets.sergei.fuse],['molotov','s3x_molotov','s3x_molotovImpact',D.gadgets.molotov.flight],
-      ['pipebomb','s3x_pipebomb','s3x_pipeImpact',D.gadgets.pipebomb.flight]]){
-      const calls=perform(scene(id),60,cast),land=calls.filter(([i,sound])=>sound===hit);
-      ck(calls.some(([i,k])=>i===0 && k===on) && land.length===1 && Math.abs(land[0][0]-delay/sim.DT)<=1.1,id+' touchdown is timed to the actual payload');
-      if(id!=='sergei')ck(!calls.some(([,k])=>k==='sergei'||k==='s3boom'),'unwanted voice / generic blast: '+id);
+    // 用途對到的聲音從播放清單讀，新音效開或關都檢查同一個時機。新音效關掉時（2026-11-20 起），貨箱和投擲物落地沿用原本的爆炸聲。
+    const idOf=k=>audio.byKey[k].id, newSet=audio.cues.some(c=>!c.restored), ticks=xs=>[...new Set(xs.map(([i])=>i))];
+    for(const [id,on,hit,delay] of [['cargo',idOf('cargo'),idOf('cargoDrop'),D.gadgets.cargo.fuse],
+      ['sergei','sergei','s3boom',D.gadgets.sergei.fuse],['molotov',idOf('molotov'),idOf('molotovImpact'),D.gadgets.molotov.flight],
+      ['pipebomb',idOf('pipebomb'),idOf('pipeImpact'),D.gadgets.pipebomb.flight]]){
+      const calls=perform(scene(id),60,cast),land=ticks(calls.filter(([i,sound])=>sound===hit && i>0));
+      ck(calls.some(([i,k])=>i===0 && k===on) && land.length===1 && Math.abs(land[0]-delay/sim.DT)<=1.1,id+' touchdown is timed to the actual payload');
+      if(id!=='sergei')ck(!calls.some(([,k])=>k==='sergei' || newSet && k==='s3boom'),'unwanted voice / generic blast: '+id);
     }
     const show=perform(scene('performance'),60,i=>({...cast(i),mx:i===57?1:0})).map(x=>x[1]);
-    ck(['s3x_performance','s3x_stageReady','s3x_stageFlash'].every(k=>show.includes(k)),'charged curtain call');
+    ck(['performance','stageReady','stageFlash'].map(idOf).every(k=>show.includes(k)),'charged curtain call');
     const early=perform(scene('performance'),9,i=>({...cast(i),mx:i===7?1:0}));
-    ck(!early.some(([,k])=>k==='s3x_stageFlash'),'no flash without a charge');
+    ck(!early.some(([,k])=>k===idOf('stageFlash')),'no flash without a charge');
     const watch=S3.ops.person('hypnotist','ticking','watch');
-    ck(perform(scene('hypnosis',watch),1,cast).some(([,k])=>k==='s3x_watch') && perform(scene('hypnosis'),1,cast).some(([,k])=>k==='dream'),'watch template versus legacy hypnosis');
+    ck(perform(scene('hypnosis',watch),1,cast).some(([,k])=>k===idOf('watch')) && perform(scene('hypnosis'),1,cast).some(([,k])=>k==='dream'),'watch template versus legacy hypnosis');
     const borrowed=room({enemies:[{kind:'turret',x:120,y:110}]},{person:watch,gadgets:[{id:'mask',lv:1},{id:'hypnosis',lv:1}]});
     ck(perform(borrowed,1,()=>({g2:true})).some(([,k])=>k==='dream'),'borrowed hypnosis is not the signature pocket watch');
     ck(perform(scene('lure'),1,cast).filter(([,k])=>k==='s3shriek').length===2,'original speaker activation and emitted shriek');
-    const beats=perform(scene('metronome'),94,cast).filter(([,k])=>k==='s3x_metronome'||k==='s3x_metroTick').map(x=>x[0]);
+    const beats=ticks(perform(scene('metronome'),94,cast).filter(([,k])=>k===idOf('metronome')||k===idOf('metroTick')));
     ck(beats.length===3 && beats[0]===0 && Math.abs(beats[1]-43)<=1 && Math.abs(beats[2]-86)<=1,'three audible beats follow the trance pulses');
     // 音樂：三種情境的每一步都排得出來。
     if (X.now() !== 0) fail('s3 music: the clock should be readable once sound is on');
